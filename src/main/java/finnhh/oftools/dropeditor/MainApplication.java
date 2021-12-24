@@ -1,0 +1,210 @@
+package finnhh.oftools.dropeditor;
+
+import finnhh.oftools.dropeditor.model.data.Preferences;
+import finnhh.oftools.dropeditor.model.exception.EditorInitializationException;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+public class MainApplication extends Application {
+    private DataStore dataStore;
+    private JSONManager jsonManager;
+
+    private Optional<ButtonType> showAlert(Alert.AlertType alertType, String title, String body) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(title);
+        alert.setContentText(body);
+        return alert.showAndWait();
+    }
+
+    private Optional<File> chooseFile(Stage stage, File initialDirectory, String title) {
+        FileChooser chooser = new FileChooser();
+        chooser.setInitialDirectory(initialDirectory);
+        chooser.setTitle(title);
+        return Optional.ofNullable(chooser.showOpenDialog(stage));
+    }
+
+    private Optional<File> chooseDirectory(Stage stage, File initialDirectory, String title) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setInitialDirectory(initialDirectory);
+        chooser.setTitle(title);
+        return Optional.ofNullable(chooser.showDialog(stage));
+    }
+
+    private void userSetup(Stage stage) throws EditorInitializationException {
+        // step 0: prompt for previous program preferences
+        Optional<Preferences> preferences = jsonManager.getPreferences();
+
+        if (preferences.isPresent()) {
+            Optional<ButtonType> result = showAlert(Alert.AlertType.CONFIRMATION,
+                    "Existing Setup",
+                    "Use previously set preferences (drops directory, patches, save directory etc.)?");
+
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                try {
+                    jsonManager.setFromPreferences(preferences.get());
+                } catch (NullPointerException | IOException e) {
+                    throw new EditorInitializationException(e,
+                            "Corrupted Preference File",
+                            "The program preferences from your last session appears to be corrupted. " +
+                                    "Please relaunch the editor, and opt to not load the preference file.");
+                }
+                return;
+            }
+        }
+
+        // fresh start
+        showAlert(Alert.AlertType.INFORMATION,
+                "Welcome to Open Fusion Drop Editor!",
+                "Welcome! We have a few steps ahead to set you up, but don't worry, we will save these " +
+                        "settings so that you can use the editor immediately the next time you open the editor.");
+
+        // step 1: select directory of drops.json
+        Optional<File> dropsDirectory = chooseDirectory(stage,
+                new File("."),
+                "Choose Drops Directory");
+
+        try {
+            jsonManager.setDropsDirectory(dropsDirectory.get());
+        } catch (NullPointerException | NoSuchElementException | IOException e) {
+            throw new EditorInitializationException(e,
+                    "Invalid Drops Directory",
+                    "Please relaunch the editor and select the directory in your server with \"drops.json\" inside.");
+        }
+
+        // step 2: select xdt file
+        Optional<File> xdtFile = chooseFile(stage,
+                dropsDirectory.get(),
+                "Choose XDT File for Your Build");
+
+        try {
+            jsonManager.setXDT(xdtFile.get());
+        } catch (NullPointerException | NoSuchElementException | IOException e) {
+            throw new EditorInitializationException(e,
+                    "Invalid XDT File",
+                    "Please relaunch the editor select the XDT file for your build.");
+        }
+
+        // step 3: patch selection loop
+        Optional<ButtonType> patchSelection = showAlert(Alert.AlertType.CONFIRMATION,
+                "Select Patch ?",
+                "Would you like to specify a patch directory? " +
+                        "This is required for builds that use the 104 (OG FF 2010) build as a base (Academy 1013 " +
+                        "build etc.).");
+
+        while (patchSelection.isPresent() && patchSelection.get() == ButtonType.OK) {
+            Optional<File> patchDirectory = chooseDirectory(stage,
+                    dropsDirectory.get(),
+                    "Choose Patch Directory");
+
+            try {
+                jsonManager.addPatchPath(patchDirectory.get());
+            } catch (NoSuchElementException | IOException e) {
+                showAlert(Alert.AlertType.WARNING,
+                        "Invalid Patch Folder",
+                        "There exists no JSON files to use for the patch in this folder (i.e. \"drops.json\"). " +
+                                "Skipping...");
+            }
+
+            patchSelection = showAlert(Alert.AlertType.CONFIRMATION,
+                    "Select Another Patch ?",
+                    "Would you like to specify another patch directory?");
+        }
+
+        // step 4: decide on saving preferences
+        // step 4.1: decide on save mode (standalone / cumulative)
+        boolean standaloneSave = true;
+
+        if (jsonManager.getPatchDirectories().size() > 0) {
+            Optional<ButtonType> saveTypeSelection = showAlert(Alert.AlertType.CONFIRMATION,
+                    "Save as Standalone Patch ?",
+                    "Would you like to save your edits as a standalone patch over the base build? " +
+                            "If not, the saved files will build on top of the patches you specified, and you will " +
+                            "have to specify the loading order of the patches in the server configuration file.");
+
+            standaloneSave = saveTypeSelection.isPresent() && saveTypeSelection.get() == ButtonType.OK;
+        }
+
+        // step 4.2: select save directory
+        Optional<File> saveDirectory = chooseDirectory(stage,
+                dropsDirectory.get(),
+                "Choose Save Directory");
+
+        try {
+            jsonManager.setSavePreferences(saveDirectory.get(), standaloneSave);
+        } catch (IllegalArgumentException | NoSuchElementException e) {
+            throw new EditorInitializationException(e,
+                    "Invalid Save Directory",
+                    "Save directory is invalid. Keep in mind that you cannot save your progress in a patch file " +
+                            "you loaded, unless it is the last one loaded.");
+        }
+
+        // step 5: prompt for custom icon directory
+        Optional<ButtonType> iconDirectorySelection = showAlert(Alert.AlertType.CONFIRMATION,
+                "Select Custom Icon Directory ?",
+                "Would you like to select a directory containing in-game icons?");
+
+        if (iconDirectorySelection.isPresent() && iconDirectorySelection.get() == ButtonType.OK) {
+            Optional<File> iconDirectory = chooseDirectory(stage,
+                    dropsDirectory.get(),
+                    "Choose Icon Directory");
+
+            iconDirectory.ifPresent(jsonManager::setIconDirectory);
+        }
+
+        // step 6: save preferences for future use
+        try {
+            jsonManager.savePreferences();
+        } catch (IOException e) {
+            throw new EditorInitializationException(e,
+                    "Preferences Not Saved",
+                    "Your preferences could not be saved. Please delete or move the preference file and relaunch.");
+        }
+    }
+
+    @Override
+    public void init() throws Exception {
+        super.init();
+        dataStore = new DataStore();
+        jsonManager = new JSONManager();
+    }
+
+    @Override
+    public void start(Stage stage) throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("main-view.fxml"));
+        Scene scene = new Scene(fxmlLoader.load(), 320, 240);
+        stage.setTitle("Hello!");
+        stage.setScene(scene);
+
+        try {
+            userSetup(stage);
+        } catch (EditorInitializationException e) {
+            showAlert(Alert.AlertType.ERROR, e.getTitle(), e.getContent());
+            throw e;
+        }
+
+        MainController controller = fxmlLoader.getController();
+        controller.setDataStore(dataStore);
+        controller.setJSONManager(jsonManager);
+        controller.setApplication(this);
+
+        // TODO saving from DataStore
+
+        stage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
