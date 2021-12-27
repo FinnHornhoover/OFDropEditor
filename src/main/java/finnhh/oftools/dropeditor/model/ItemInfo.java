@@ -1,8 +1,20 @@
 package finnhh.oftools.dropeditor.model;
 
-public record ItemInfo(int id, int type, int gender, byte[] icon) {
+import java.util.Objects;
+
+public record ItemInfo(int id, int type, boolean tradeable, boolean sellable, int buyPrice,
+                       int sellPrice, int stackSize, int rarity, int level, int pointDamage, int groupDamage,
+                       int fireRate, int defense, int gender, int weaponType, String name, String comment,
+                       String iconName) {
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, type);
+    }
+
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof ItemInfo && this.id == ((ItemInfo) obj).id && this.type == ((ItemInfo) obj).type;
+        return obj instanceof ItemInfo &&
+                this.id == ((ItemInfo) obj).id &&
+                this.type == ((ItemInfo) obj).type;
     }
 }

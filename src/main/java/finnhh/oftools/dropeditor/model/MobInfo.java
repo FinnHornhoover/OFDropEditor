@@ -1,8 +1,6 @@
 package finnhh.oftools.dropeditor.model;
 
-public record MobInfo(int id, int level, byte[] icon) {
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof MobInfo && this.id == ((MobInfo) obj).id;
-    }
+import java.util.Optional;
+
+public record MobInfo(MobTypeInfo mobTypeInfo, Optional<MobTypeInfo> parentTypeInfo, int x, int y, long instanceID) {
 }
