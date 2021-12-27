@@ -1,31 +1,63 @@
 package finnhh.oftools.dropeditor;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
+import finnhh.oftools.dropeditor.model.*;
+import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Preferences;
+import javafx.util.Pair;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class JSONManager {
     public static final String PREFERENCE_PATH = "drop_editor_preferences.json";
     public static final String[] PATCH_NAMES = new String[] {
             "drops",
+            "NPCs",
+            "mobs",
+            "eggs",
+            "paths",
+    };
+    public static final String[] ITEM_TYPES = new String[] {
+            "m_pWeaponItemTable",
+            "m_pShirtsItemTable",
+            "m_pPantsItemTable",
+            "m_pShoesItemTable",
+            "m_pHatItemTable",
+            "m_pGlassItemTable",
+            "m_pBackItemTable",
+            "m_pGeneralItemTable",
+            "",
+            "m_pChestItemTable",
+            "m_pVehicleItemTable",
+    };
+    public static final String[] ITEM_ICON_NAMES = new String[] {
+            "wpnicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "generalitemicon",
+            "error",
+            "generalitemicon",
+            "vehicle",
     };
 
     private final Gson gson;
 
     private final Map<String, JsonObject> prePatchObjects;
     private final Map<String, JsonObject> postPatchObjects;
-    private JsonObject xdt;  // TODO: do not save, directly turn into static data
 
     private final List<File> patchDirectories;
     private File saveDirectory;
     private boolean standaloneSave;
-    private File iconDirectory; // TODO: do not save, directly turn into static data
 
     private Preferences preferences;
 
@@ -124,6 +156,188 @@ public class JSONManager {
         return targetObject;
     }
 
+    private void readItemData(JsonObject xdt, StaticDataStore staticDataStore) {
+        Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap = staticDataStore.getItemInfoMap();
+
+        for (int i = 0; i < ITEM_TYPES.length; i++) {
+            if (i == 8)
+                continue;
+
+            JsonObject typedItemObject = xdt.get(ITEM_TYPES[i]).getAsJsonObject();
+            JsonArray itemDataArray = typedItemObject.get("m_pItemData").getAsJsonArray();
+            JsonArray itemStringArray = typedItemObject.get("m_pItemStringData").getAsJsonArray();
+            JsonArray itemIconArray = typedItemObject.get("m_pItemIconData").getAsJsonArray();
+
+            for (JsonElement itemElement : itemDataArray) {
+                JsonObject itemData = itemElement.getAsJsonObject();
+                JsonObject itemStringData = itemStringArray
+                        .get(itemData.get("m_iItemName").getAsInt())
+                        .getAsJsonObject();
+
+                String name = itemStringData.get("m_strName").getAsString();
+
+                String comment = (i == 9) ?
+                        itemStringData.get("m_strComment").getAsString() :
+                        itemStringArray
+                                .get(itemData.get("m_iComment").getAsInt())
+                                .getAsJsonObject()
+                                .get("m_strComment")
+                                .getAsString();
+
+                String iconName = ITEM_ICON_NAMES[i] + "_" + itemIconArray
+                        .get(itemData.get("m_iIcon").getAsInt())
+                        .getAsJsonObject()
+                        .get("m_iIconNumber")
+                        .getAsInt();
+
+                int id = itemData.get("m_iItemNumber").getAsInt();
+
+                ItemInfo itemInfo = new ItemInfo(
+                        id,
+                        i,
+                        itemData.get("m_iTradeAble").getAsInt() == 1,
+                        itemData.get("m_iSellAble").getAsInt() == 1,
+                        itemData.get("m_iItemPrice").getAsInt(),
+                        itemData.get("m_iItemSellPrice").getAsInt(),
+                        itemData.get("m_iStackNumber").getAsInt(),
+                        (i == 7 || i == 9) ? 1 : itemData.get("m_iRarity").getAsInt(),
+                        (i == 7 || i == 9) ? 0 : itemData.get("m_iMinReqLev").getAsInt(),
+                        (i == 7 || i == 9) ? 0 : itemData.get("m_iPointRat").getAsInt(),
+                        (i == 7 || i == 9) ? 0 : itemData.get("m_iGroupRat").getAsInt(),
+                        (i == 7 || i == 9) ? 0 : itemData.get("m_iDelayTime").getAsInt(),
+                        (i == 7 || i == 9) ? 0 : itemData.get("m_iDefenseRat").getAsInt(),
+                        (i == 7 || i == 9) ? 0 : itemData.get("m_iReqSex").getAsInt(),
+                        (i == 7 || i == 9) ? 0 : itemData.get("m_iEquipType").getAsInt(),
+                        name,
+                        comment,
+                        iconName
+                );
+
+                itemInfoMap.put(new Pair<>(id, i), itemInfo);
+            }
+        }
+    }
+
+    private void readMobData(JsonObject xdt, StaticDataStore staticDataStore) {
+        Map<Integer, MobTypeInfo> mobTypeInfoMap = staticDataStore.getMobTypeInfoMap();
+        Map<Integer, List<MobInfo>> mobInfoMap = staticDataStore.getMobInfoMap();
+
+        JsonObject npcTableObject = xdt.get("m_pNpcTable").getAsJsonObject();
+        JsonArray npcDataArray = npcTableObject.get("m_pNpcData").getAsJsonArray();
+        JsonArray npcStringArray = npcTableObject.get("m_pNpcStringData").getAsJsonArray();
+        JsonArray npcIconArray = npcTableObject.get("m_pNpcIconData").getAsJsonArray();
+
+        for (int type = 1; type < npcDataArray.size(); type++) {
+            JsonObject npcData = npcDataArray.get(type).getAsJsonObject();
+
+            String name = npcStringArray
+                    .get(npcData.get("m_iNpcName").getAsInt())
+                    .getAsJsonObject()
+                    .get("m_strName")
+                    .getAsString();
+
+            String iconName = "mobicon_" + npcIconArray
+                    .get(npcData.get("m_iIcon1").getAsInt())
+                    .getAsJsonObject()
+                    .get("m_iIconNumber")
+                    .getAsInt();
+
+            MobTypeInfo mobTypeInfo = new MobTypeInfo(
+                    type,
+                    npcData.get("m_iNpcLevel").getAsInt(),
+                    name,
+                    iconName
+            );
+
+            mobTypeInfoMap.put(type, mobTypeInfo);
+            mobInfoMap.put(type, new ArrayList<>());
+        }
+
+        JsonObject mobDataObject = getPatchedObject("mobs", JsonObject.class);
+        List<JsonObject> mobObjectList = Stream.of("mobs", "groups")
+                .flatMap(key -> mobDataObject.get(key).getAsJsonObject().entrySet().stream())
+                .map(e -> e.getValue().getAsJsonObject())
+                .toList();
+
+        for (JsonObject mobObject : mobObjectList) {
+            int type = mobObject.get("iNPCType").getAsInt();
+
+            if (!mobTypeInfoMap.containsKey(type))
+                continue;
+
+            MobTypeInfo mobTypeInfo = mobTypeInfoMap.get(type);
+
+            MobInfo mobInfo = new MobInfo(
+                    mobTypeInfo,
+                    Optional.empty(),
+                    mobObject.get("iX").getAsInt(),
+                    mobObject.get("iY").getAsInt(),
+                    !mobObject.has("iMapNum") ? 0 : mobObject.get("iMapNum").getAsInt()
+            );
+
+            mobInfoMap.get(type).add(mobInfo);
+
+            if (!mobObject.has("aFollowers"))
+                continue;
+
+            for (JsonElement followerElement : mobObject.get("aFollowers").getAsJsonArray()) {
+                JsonObject followerObject = followerElement.getAsJsonObject();
+                int followerType = followerObject.get("iNPCType").getAsInt();
+
+                if (!mobTypeInfoMap.containsKey(followerType))
+                    continue;
+
+                MobTypeInfo followerTypeInfo = mobTypeInfoMap.get(followerType);
+
+                MobInfo followerInfo = new MobInfo(
+                        followerTypeInfo,
+                        Optional.of(mobTypeInfo),
+                        mobInfo.x() + followerObject.get("iOffsetX").getAsInt(),
+                        mobInfo.y() + followerObject.get("iOffsetY").getAsInt(),
+                        mobInfo.instanceID()
+                );
+
+                mobInfoMap.get(followerType).add(followerInfo);
+            }
+        }
+    }
+
+    private void readEggData(StaticDataStore staticDataStore) {
+        Map<Integer, EggTypeInfo> eggTypeInfoMap = staticDataStore.getEggTypeInfoMap();
+        Map<Integer, EggInfo> eggInfoMap = staticDataStore.getEggInfoMap();
+
+        JsonObject eggDataObject = getPatchedObject("eggs", JsonObject.class);
+        JsonArray eggTypeArray = eggDataObject.getAsJsonArray("EggTypes");
+        JsonArray eggArray = eggDataObject.getAsJsonArray("Eggs");
+
+        for (JsonElement eggTypeElement : eggTypeArray) {
+            JsonObject eggTypeObject = eggTypeElement.getAsJsonObject();
+
+            int type = eggTypeObject.get("Id").getAsInt();
+            EggTypeInfo eggTypeInfo = new EggTypeInfo(type, eggTypeObject.get("DropCrateId").getAsInt());
+
+            eggTypeInfoMap.put(type, eggTypeInfo);
+        }
+
+        for (JsonElement eggElement : eggArray) {
+            JsonObject eggObject = eggElement.getAsJsonObject();
+
+            int type = eggObject.get("iType").getAsInt();
+
+            if (!eggTypeInfoMap.containsKey(type))
+                continue;
+
+            EggInfo eggInfo = new EggInfo(
+                    eggTypeInfoMap.get(type),
+                    eggObject.get("iX").getAsInt(),
+                    eggObject.get("iY").getAsInt(),
+                    !eggObject.has("iMapNum") ? 0 : eggObject.get("iMapNum").getAsInt()
+            );
+
+            eggInfoMap.put(type, eggInfo);
+        }
+    }
+
     public Optional<Preferences> getPreferences() {
         File preferenceFile = new File(PREFERENCE_PATH);
 
@@ -134,13 +348,15 @@ public class JSONManager {
         }
     }
 
-    public void setFromPreferences(Preferences preferences) throws NullPointerException, IOException {
-        setDropsDirectory(new File(preferences.dropDirectory));
+    public void setFromPreferences(Preferences preferences, StaticDataStore staticDataStore)
+            throws NullPointerException, IOException {
 
-        setXDT(new File(preferences.xdtFile));
+        setDropsDirectory(new File(preferences.dropDirectory));
 
         for (String patchName : preferences.patchDirectories)
             addPatchPath(new File(patchName));
+
+        setXDT(new File(preferences.xdtFile), staticDataStore);
 
         setSavePreferences(new File(preferences.saveDirectory), preferences.standaloneSave);
 
@@ -166,14 +382,6 @@ public class JSONManager {
         preferences.dropDirectory = dropsDirectory.getAbsolutePath();
     }
 
-    public void setXDT(File xdtFile) throws NullPointerException, IOException {
-        try (FileReader fileReader = new FileReader(xdtFile)) {
-            xdt = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class), "Invalid XDT file.");
-        }
-
-        preferences.xdtFile = xdtFile.getAbsolutePath();
-    }
-
     public void addPatchPath(File patchDirectory) throws IOException {
         boolean patchedOnce = false;
         Path patchPath = patchDirectory.toPath();
@@ -196,6 +404,19 @@ public class JSONManager {
         }
     }
 
+    public void setXDT(File xdtFile, StaticDataStore staticDataStore) throws NullPointerException, IOException {
+        try (FileReader fileReader = new FileReader(xdtFile)) {
+            JsonObject xdt = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
+                    "Invalid XDT file.");
+
+            readItemData(xdt, staticDataStore);
+            readMobData(xdt, staticDataStore);
+            readEggData(staticDataStore);
+        }
+
+        preferences.xdtFile = xdtFile.getAbsolutePath();
+    }
+
     public void setSavePreferences(File saveDirectory, boolean standaloneSave) throws IllegalArgumentException {
         if (!standaloneSave && patchDirectories.contains(saveDirectory))
             throw new IllegalArgumentException("Cannot save edits to a loaded patch folder without standalone mode.");
@@ -208,8 +429,6 @@ public class JSONManager {
     }
 
     public void setIconDirectory(File iconDirectory) {
-        this.iconDirectory = iconDirectory;
-
         preferences.iconDirectory = iconDirectory.getAbsolutePath();
     }
 
@@ -225,15 +444,30 @@ public class JSONManager {
         return patchDirectories;
     }
 
-    public void save(Map<String, ?> objectMap) throws IOException {
-        Path savePath = saveDirectory.toPath();
+    public <T> T getPatchedObject(String name, Class<T> tClass) {
+        return gson.fromJson(postPatchObjects.get(name), tClass);
+    }
+
+    public void save(Drops drops) throws IOException {
         for (String name : PATCH_NAMES) {
-            try (FileWriter writer = new FileWriter(savePath.resolve(name).toFile())) {
-                JsonObject changedObject = gson.toJsonTree(objectMap.get(name)).getAsJsonObject();
-                JsonObject objectToSave = getChangedTree(  // TODO: ideally, keep cumulative patch objects at each patch
-                        standaloneSave ? prePatchObjects.get(name) : postPatchObjects.get(name),
-                        changedObject);
-                gson.toJson(objectToSave, writer);
+            // shortcut
+            if (!standaloneSave && !name.equals("drops"))
+                continue;
+
+            JsonObject baseObject = standaloneSave ?
+                    prePatchObjects.get(name) :
+                    postPatchObjects.get(name);
+
+            JsonObject changedObject = name.equals("drops") ?
+                    gson.toJsonTree(drops).getAsJsonObject() :
+                    postPatchObjects.get(name);
+
+            JsonObject objectToSave = getChangedTree(baseObject, changedObject);
+
+            if (objectToSave.size() > 0) {
+                try (FileWriter writer = new FileWriter(saveDirectory.toPath().resolve(name + ".json").toFile())) {
+                    gson.toJson(objectToSave, writer);
+                }
             }
         }
     }

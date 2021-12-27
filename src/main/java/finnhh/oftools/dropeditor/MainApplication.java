@@ -1,5 +1,6 @@
 package finnhh.oftools.dropeditor;
 
+import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Preferences;
 import finnhh.oftools.dropeditor.model.exception.EditorInitializationException;
 import javafx.application.Application;
@@ -17,8 +18,10 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public class MainApplication extends Application {
-    private DataStore dataStore;
+    private StaticDataStore staticDataStore;
+    private Drops drops;
     private JSONManager jsonManager;
+    private IconManager iconManager;
 
     private Optional<ButtonType> showAlert(Alert.AlertType alertType, String title, String body) {
         Alert alert = new Alert(alertType);
@@ -53,7 +56,13 @@ public class MainApplication extends Application {
 
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 try {
-                    jsonManager.setFromPreferences(preferences.get());
+                    String iconDirectory = preferences.get().iconDirectory;
+
+                    if (iconDirectory != null)
+                        iconManager.setIconDirectory(new File(iconDirectory));
+
+                    jsonManager.setFromPreferences(preferences.get(), staticDataStore);
+                    drops = jsonManager.getPatchedObject("drops", Drops.class);
                 } catch (NullPointerException | IOException e) {
                     throw new EditorInitializationException(e,
                             "Corrupted Preference File",
@@ -83,20 +92,7 @@ public class MainApplication extends Application {
                     "Please relaunch the editor and select the directory in your server with \"drops.json\" inside.");
         }
 
-        // step 2: select xdt file
-        Optional<File> xdtFile = chooseFile(stage,
-                dropsDirectory.get(),
-                "Choose XDT File for Your Build");
-
-        try {
-            jsonManager.setXDT(xdtFile.get());
-        } catch (NullPointerException | NoSuchElementException | IOException e) {
-            throw new EditorInitializationException(e,
-                    "Invalid XDT File",
-                    "Please relaunch the editor select the XDT file for your build.");
-        }
-
-        // step 3: patch selection loop
+        // step 2: patch selection loop
         Optional<ButtonType> patchSelection = showAlert(Alert.AlertType.CONFIRMATION,
                 "Select Patch ?",
                 "Would you like to specify a patch directory? " +
@@ -120,6 +116,21 @@ public class MainApplication extends Application {
             patchSelection = showAlert(Alert.AlertType.CONFIRMATION,
                     "Select Another Patch ?",
                     "Would you like to specify another patch directory?");
+        }
+
+        drops = jsonManager.getPatchedObject("drops", Drops.class);
+
+        // step 3: select xdt file
+        Optional<File> xdtFile = chooseFile(stage,
+                dropsDirectory.get(),
+                "Choose XDT File for Your Build");
+
+        try {
+            jsonManager.setXDT(xdtFile.get(), staticDataStore);
+        } catch (NullPointerException | NoSuchElementException | IOException e) {
+            throw new EditorInitializationException(e,
+                    "Invalid XDT File",
+                    "Please relaunch the editor select the XDT file for your build.");
         }
 
         // step 4: decide on saving preferences
@@ -160,7 +171,15 @@ public class MainApplication extends Application {
                     dropsDirectory.get(),
                     "Choose Icon Directory");
 
-            iconDirectory.ifPresent(jsonManager::setIconDirectory);
+            try {
+                iconManager.setIconDirectory(iconDirectory.get());
+                jsonManager.setIconDirectory(iconDirectory.get());
+            } catch (NoSuchElementException | IOException e) {
+                throw new EditorInitializationException(e,
+                        "Icons Not Loaded",
+                        "The icon directory does not contain any icons or does not conform to the UnityPackFF " +
+                                "extraction format. Please reload and select a valid icon directory.");
+            }
         }
 
         // step 6: save preferences for future use
@@ -176,8 +195,9 @@ public class MainApplication extends Application {
     @Override
     public void init() throws Exception {
         super.init();
-        dataStore = new DataStore();
+        staticDataStore = new StaticDataStore();
         jsonManager = new JSONManager();
+        iconManager = new IconManager();
     }
 
     @Override
@@ -195,13 +215,18 @@ public class MainApplication extends Application {
         }
 
         MainController controller = fxmlLoader.getController();
-        controller.setDataStore(dataStore);
         controller.setJSONManager(jsonManager);
+        controller.setIconManager(iconManager);
+        controller.setDrops(drops);
         controller.setApplication(this);
 
-        // TODO saving from DataStore
-
         stage.show();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        jsonManager.save(drops);
+        super.stop();
     }
 
     public static void main(String[] args) {
