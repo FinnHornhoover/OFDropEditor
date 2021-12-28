@@ -1,5 +1,6 @@
 package finnhh.oftools.dropeditor;
 
+import com.google.gson.JsonSyntaxException;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Preferences;
 import finnhh.oftools.dropeditor.model.exception.EditorInitializationException;
@@ -15,6 +16,7 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 
 public class MainApplication extends Application {
@@ -62,8 +64,9 @@ public class MainApplication extends Application {
                         iconManager.setIconDirectory(new File(iconDirectory));
 
                     jsonManager.setFromPreferences(preferences.get(), staticDataStore);
-                    drops = jsonManager.getPatchedObject("drops", Drops.class);
-                } catch (NullPointerException | IOException e) {
+                    drops = Objects.requireNonNull(jsonManager.getPatchedObject("drops", Drops.class));
+
+                } catch (NullPointerException | IllegalStateException | JsonSyntaxException | IOException e) {
                     throw new EditorInitializationException(e,
                             "Corrupted Preference File",
                             "The program preferences from your last session appears to be corrupted. " +
@@ -86,7 +89,7 @@ public class MainApplication extends Application {
 
         try {
             jsonManager.setDropsDirectory(dropsDirectory.get());
-        } catch (NullPointerException | NoSuchElementException | IOException e) {
+        } catch (NullPointerException | NoSuchElementException | JsonSyntaxException | IOException e) {
             throw new EditorInitializationException(e,
                     "Invalid Drops Directory",
                     "Please relaunch the editor and select the directory in your server with \"drops.json\" inside.");
@@ -118,7 +121,14 @@ public class MainApplication extends Application {
                     "Would you like to specify another patch directory?");
         }
 
-        drops = jsonManager.getPatchedObject("drops", Drops.class);
+        try {
+            drops = Objects.requireNonNull(jsonManager.getPatchedObject("drops", Drops.class));
+        } catch (NullPointerException | JsonSyntaxException e) {
+            throw new EditorInitializationException(e,
+                    "Invalid Drops Directory or Patch Directory",
+                    "Please relaunch the editor and select the main and patch directories in your server with " +
+                            "\"drops.json\" inside.");
+        }
 
         // step 3: select xdt file
         Optional<File> xdtFile = chooseFile(stage,
@@ -127,7 +137,11 @@ public class MainApplication extends Application {
 
         try {
             jsonManager.setXDT(xdtFile.get(), staticDataStore);
-        } catch (NullPointerException | NoSuchElementException | IOException e) {
+        } catch (NullPointerException
+                | NoSuchElementException
+                | IllegalStateException
+                | JsonSyntaxException
+                | IOException e) {
             throw new EditorInitializationException(e,
                     "Invalid XDT File",
                     "Please relaunch the editor select the XDT file for your build.");
@@ -154,7 +168,7 @@ public class MainApplication extends Application {
 
         try {
             jsonManager.setSavePreferences(saveDirectory.get(), standaloneSave);
-        } catch (IllegalArgumentException | NoSuchElementException e) {
+        } catch (NoSuchElementException | IllegalArgumentException e) {
             throw new EditorInitializationException(e,
                     "Invalid Save Directory",
                     "Save directory is invalid. Keep in mind that you cannot save your progress in a patch file " +
@@ -225,7 +239,7 @@ public class MainApplication extends Application {
 
     @Override
     public void stop() throws Exception {
-        jsonManager.save(drops);
+        jsonManager.save(drops);  // TODO save prompt
         super.stop();
     }
 

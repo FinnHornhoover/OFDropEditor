@@ -135,19 +135,19 @@ public class JSONManager {
                     if (targetValue.size() > 0)
                         targetObject.add(key, targetValue);
 
-                    // case 1.2: if elements are anything else, and they are not equal,
-                    //           override previous value explicitly
+                // case 1.2: if elements are anything else, and they are not equal,
+                //           override previous value explicitly
                 } else if (!baseValue.equals(changedValue)) {
                     targetObject.add("!" + key, changedValue);
                 }
 
                 // case 1.3: if elements are equal, no-op
 
-                // case 2: only base contains the key, add a null value for deletion
+            // case 2: only base contains the key, add a null value for deletion
             } else if (baseKeys.contains(key)) {
                 targetObject.add(key, null);
 
-                // case 3: only difference contains the key, add the value
+            // case 3: only difference contains the key, add the value
             } else {
                 targetObject.add(key, changedObject.get(key));
             }
@@ -156,17 +156,19 @@ public class JSONManager {
         return targetObject;
     }
 
-    private void readItemData(JsonObject xdt, StaticDataStore staticDataStore) {
+    private void readItemData(JsonObject xdt, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException {
+
         Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap = staticDataStore.getItemInfoMap();
 
         for (int i = 0; i < ITEM_TYPES.length; i++) {
             if (i == 8)
                 continue;
 
-            JsonObject typedItemObject = xdt.get(ITEM_TYPES[i]).getAsJsonObject();
-            JsonArray itemDataArray = typedItemObject.get("m_pItemData").getAsJsonArray();
-            JsonArray itemStringArray = typedItemObject.get("m_pItemStringData").getAsJsonArray();
-            JsonArray itemIconArray = typedItemObject.get("m_pItemIconData").getAsJsonArray();
+            JsonObject typedItemObject = xdt.getAsJsonObject(ITEM_TYPES[i]);
+            JsonArray itemDataArray = typedItemObject.getAsJsonArray("m_pItemData");
+            JsonArray itemStringArray = typedItemObject.getAsJsonArray("m_pItemStringData");
+            JsonArray itemIconArray = typedItemObject.getAsJsonArray("m_pItemIconData");
 
             for (JsonElement itemElement : itemDataArray) {
                 JsonObject itemData = itemElement.getAsJsonObject();
@@ -218,14 +220,16 @@ public class JSONManager {
         }
     }
 
-    private void readMobData(JsonObject xdt, StaticDataStore staticDataStore) {
+    private void readMobData(JsonObject xdt, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, JsonSyntaxException {
+
         Map<Integer, MobTypeInfo> mobTypeInfoMap = staticDataStore.getMobTypeInfoMap();
         Map<Integer, List<MobInfo>> mobInfoMap = staticDataStore.getMobInfoMap();
 
-        JsonObject npcTableObject = xdt.get("m_pNpcTable").getAsJsonObject();
-        JsonArray npcDataArray = npcTableObject.get("m_pNpcData").getAsJsonArray();
-        JsonArray npcStringArray = npcTableObject.get("m_pNpcStringData").getAsJsonArray();
-        JsonArray npcIconArray = npcTableObject.get("m_pNpcIconData").getAsJsonArray();
+        JsonObject npcTableObject = xdt.getAsJsonObject("m_pNpcTable");
+        JsonArray npcDataArray = npcTableObject.getAsJsonArray("m_pNpcData");
+        JsonArray npcStringArray = npcTableObject.getAsJsonArray("m_pNpcStringData");
+        JsonArray npcIconArray = npcTableObject.getAsJsonArray("m_pNpcIconData");
 
         for (int type = 1; type < npcDataArray.size(); type++) {
             JsonObject npcData = npcDataArray.get(type).getAsJsonObject();
@@ -255,7 +259,7 @@ public class JSONManager {
 
         JsonObject mobDataObject = getPatchedObject("mobs", JsonObject.class);
         List<JsonObject> mobObjectList = Stream.of("mobs", "groups")
-                .flatMap(key -> mobDataObject.get(key).getAsJsonObject().entrySet().stream())
+                .flatMap(key -> mobDataObject.getAsJsonObject(key).entrySet().stream())
                 .map(e -> e.getValue().getAsJsonObject())
                 .toList();
 
@@ -280,7 +284,7 @@ public class JSONManager {
             if (!mobObject.has("aFollowers"))
                 continue;
 
-            for (JsonElement followerElement : mobObject.get("aFollowers").getAsJsonArray()) {
+            for (JsonElement followerElement : mobObject.getAsJsonArray("aFollowers")) {
                 JsonObject followerObject = followerElement.getAsJsonObject();
                 int followerType = followerObject.get("iNPCType").getAsInt();
 
@@ -300,9 +304,17 @@ public class JSONManager {
                 mobInfoMap.get(followerType).add(followerInfo);
             }
         }
+
+        // remove npc types that did not appear in the mobs object
+        List<Integer> nonMobKeys = mobTypeInfoMap.keySet().stream()
+                .filter(key -> !mobInfoMap.containsKey(key))
+                .toList();
+        nonMobKeys.forEach(mobTypeInfoMap::remove);
     }
 
-    private void readEggData(StaticDataStore staticDataStore) {
+    private void readEggData(StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, JsonSyntaxException {
+
         Map<Integer, EggTypeInfo> eggTypeInfoMap = staticDataStore.getEggTypeInfoMap();
         Map<Integer, EggInfo> eggInfoMap = staticDataStore.getEggInfoMap();
 
@@ -343,13 +355,13 @@ public class JSONManager {
 
         try (FileReader fileReader = new FileReader(preferenceFile)) {
             return Optional.ofNullable(gson.fromJson(fileReader, Preferences.class));
-        } catch (IOException e) {
+        } catch (JsonSyntaxException | IOException e) {
             return Optional.empty();
         }
     }
 
     public void setFromPreferences(Preferences preferences, StaticDataStore staticDataStore)
-            throws NullPointerException, IOException {
+            throws NullPointerException, IllegalStateException, JsonSyntaxException, IOException {
 
         setDropsDirectory(new File(preferences.dropDirectory));
 
@@ -366,7 +378,7 @@ public class JSONManager {
         this.preferences = preferences;
     }
 
-    public void setDropsDirectory(File dropsDirectory) throws NullPointerException, IOException {
+    public void setDropsDirectory(File dropsDirectory) throws NullPointerException, JsonSyntaxException, IOException {
         Path dropsPath = dropsDirectory.toPath();
 
         for (String name : PATCH_NAMES) {
@@ -384,15 +396,14 @@ public class JSONManager {
 
     public void addPatchPath(File patchDirectory) throws IOException {
         boolean patchedOnce = false;
-        Path patchPath = patchDirectory.toPath();
 
         for (String name : PATCH_NAMES) {
-            try (FileReader fileReader = new FileReader(patchPath.resolve(name + ".json").toFile())) {
+            try (FileReader fileReader = new FileReader(patchDirectory.toPath().resolve(name + ".json").toFile())) {
                 JsonObject jsonObject = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class));
 
                 patch(postPatchObjects.get(name), jsonObject);
                 patchedOnce = true;
-            } catch (IOException | NullPointerException ignored) {
+            } catch (NullPointerException | JsonSyntaxException | IOException ignored) {
             }
         }
 
@@ -404,7 +415,9 @@ public class JSONManager {
         }
     }
 
-    public void setXDT(File xdtFile, StaticDataStore staticDataStore) throws NullPointerException, IOException {
+    public void setXDT(File xdtFile, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, JsonSyntaxException, IOException {
+
         try (FileReader fileReader = new FileReader(xdtFile)) {
             JsonObject xdt = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                     "Invalid XDT file.");
@@ -444,7 +457,7 @@ public class JSONManager {
         return patchDirectories;
     }
 
-    public <T> T getPatchedObject(String name, Class<T> tClass) {
+    public <T> T getPatchedObject(String name, Class<T> tClass) throws JsonSyntaxException {
         return gson.fromJson(postPatchObjects.get(name), tClass);
     }
 
