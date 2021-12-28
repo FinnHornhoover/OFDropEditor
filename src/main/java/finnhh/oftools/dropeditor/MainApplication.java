@@ -66,7 +66,11 @@ public class MainApplication extends Application {
                     jsonManager.setFromPreferences(preferences.get(), staticDataStore);
                     drops = Objects.requireNonNull(jsonManager.getPatchedObject("drops", Drops.class));
 
-                } catch (NullPointerException | IllegalStateException | JsonSyntaxException | IOException e) {
+                } catch (NullPointerException
+                        | IllegalStateException
+                        | ClassCastException
+                        | JsonSyntaxException
+                        | IOException e) {
                     throw new EditorInitializationException(e,
                             "Corrupted Preference File",
                             "The program preferences from your last session appears to be corrupted. " +
@@ -140,6 +144,7 @@ public class MainApplication extends Application {
         } catch (NullPointerException
                 | NoSuchElementException
                 | IllegalStateException
+                | ClassCastException
                 | JsonSyntaxException
                 | IOException e) {
             throw new EditorInitializationException(e,
@@ -217,7 +222,7 @@ public class MainApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("main-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 320, 240);
+        Scene scene = new Scene(fxmlLoader.load(), 800, 600);
         stage.setTitle("Hello!");
         stage.setScene(scene);
 

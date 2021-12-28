@@ -157,7 +157,7 @@ public class JSONManager {
     }
 
     private void readItemData(JsonObject xdt, StaticDataStore staticDataStore)
-            throws NullPointerException, IllegalStateException {
+            throws NullPointerException, IllegalStateException, ClassCastException {
 
         Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap = staticDataStore.getItemInfoMap();
 
@@ -221,7 +221,7 @@ public class JSONManager {
     }
 
     private void readMobData(JsonObject xdt, StaticDataStore staticDataStore)
-            throws NullPointerException, IllegalStateException, JsonSyntaxException {
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
 
         Map<Integer, MobTypeInfo> mobTypeInfoMap = staticDataStore.getMobTypeInfoMap();
         Map<Integer, List<MobInfo>> mobInfoMap = staticDataStore.getMobInfoMap();
@@ -313,17 +313,17 @@ public class JSONManager {
     }
 
     private void readEggData(StaticDataStore staticDataStore)
-            throws NullPointerException, IllegalStateException, JsonSyntaxException {
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
 
         Map<Integer, EggTypeInfo> eggTypeInfoMap = staticDataStore.getEggTypeInfoMap();
         Map<Integer, EggInfo> eggInfoMap = staticDataStore.getEggInfoMap();
 
         JsonObject eggDataObject = getPatchedObject("eggs", JsonObject.class);
-        JsonArray eggTypeArray = eggDataObject.getAsJsonArray("EggTypes");
-        JsonArray eggArray = eggDataObject.getAsJsonArray("Eggs");
+        JsonObject eggTypeData = eggDataObject.getAsJsonObject("EggTypes");
+        JsonObject eggData = eggDataObject.getAsJsonObject("Eggs");
 
-        for (JsonElement eggTypeElement : eggTypeArray) {
-            JsonObject eggTypeObject = eggTypeElement.getAsJsonObject();
+        for (var eggTypeEntry : eggTypeData.entrySet()) {
+            JsonObject eggTypeObject = eggTypeEntry.getValue().getAsJsonObject();
 
             int type = eggTypeObject.get("Id").getAsInt();
             EggTypeInfo eggTypeInfo = new EggTypeInfo(type, eggTypeObject.get("DropCrateId").getAsInt());
@@ -331,8 +331,8 @@ public class JSONManager {
             eggTypeInfoMap.put(type, eggTypeInfo);
         }
 
-        for (JsonElement eggElement : eggArray) {
-            JsonObject eggObject = eggElement.getAsJsonObject();
+        for (var eggEntry : eggData.entrySet()) {
+            JsonObject eggObject = eggEntry.getValue().getAsJsonObject();
 
             int type = eggObject.get("iType").getAsInt();
 
@@ -361,7 +361,7 @@ public class JSONManager {
     }
 
     public void setFromPreferences(Preferences preferences, StaticDataStore staticDataStore)
-            throws NullPointerException, IllegalStateException, JsonSyntaxException, IOException {
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException, IOException {
 
         setDropsDirectory(new File(preferences.dropDirectory));
 
@@ -416,7 +416,7 @@ public class JSONManager {
     }
 
     public void setXDT(File xdtFile, StaticDataStore staticDataStore)
-            throws NullPointerException, IllegalStateException, JsonSyntaxException, IOException {
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException, IOException {
 
         try (FileReader fileReader = new FileReader(xdtFile)) {
             JsonObject xdt = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
