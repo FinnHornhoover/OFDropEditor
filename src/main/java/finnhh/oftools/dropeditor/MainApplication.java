@@ -233,6 +233,7 @@ public class MainApplication extends Application {
         controller.setIconManager(iconManager);
         controller.setDrops(drops);
         controller.setApplication(this);
+        controller.setup();
 
         stage.show();
     }
