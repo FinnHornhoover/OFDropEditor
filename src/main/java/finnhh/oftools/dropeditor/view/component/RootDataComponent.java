@@ -1,0 +1,15 @@
+package finnhh.oftools.dropeditor.view.component;
+
+import finnhh.oftools.dropeditor.model.data.Drops;
+
+public interface RootDataComponent extends DataComponent {
+    @Override
+    default DataComponent getParentComponent() {
+        return null;
+    }
+
+    @Override
+    default void makeEditable(Drops drops) {
+        // do not alter the root ids freely
+    }
+}

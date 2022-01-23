@@ -6,14 +6,16 @@ module finnhh.oftools.dropeditor {
     requires validatorfx;
     requires org.kordamp.ikonli.javafx;
     requires com.google.gson;
+    requires org.hildan.fxgson;
 
     opens finnhh.oftools.dropeditor to com.google.gson, javafx.fxml;
+    opens finnhh.oftools.dropeditor.model to com.google.gson, javafx.fxml;
+    opens finnhh.oftools.dropeditor.model.data to com.google.gson, javafx.fxml;
+    opens finnhh.oftools.dropeditor.model.exception to com.google.gson, javafx.fxml;
 
     exports finnhh.oftools.dropeditor;
     exports finnhh.oftools.dropeditor.model;
-    opens finnhh.oftools.dropeditor.model to com.google.gson, javafx.fxml;
     exports finnhh.oftools.dropeditor.model.data;
-    opens finnhh.oftools.dropeditor.model.data to com.google.gson, javafx.fxml;
     exports finnhh.oftools.dropeditor.model.exception;
-    opens finnhh.oftools.dropeditor.model.exception to com.google.gson, javafx.fxml;
+    exports finnhh.oftools.dropeditor.view.component;
 }

@@ -49,7 +49,7 @@ public class MainApplication extends Application {
 
     private void userSetup(Stage stage) throws EditorInitializationException {
         // step 0: prompt for previous program preferences
-        Optional<Preferences> preferences = jsonManager.getPreferences();
+        Optional<Preferences> preferences = jsonManager.readPreferences();
 
         if (preferences.isPresent()) {
             Optional<ButtonType> result = showAlert(Alert.AlertType.CONFIRMATION,
@@ -65,11 +65,13 @@ public class MainApplication extends Application {
 
                     jsonManager.setFromPreferences(preferences.get(), staticDataStore);
                     drops = Objects.requireNonNull(jsonManager.getPatchedObject("drops", Drops.class));
+                    drops.manageMaps();
 
                 } catch (NullPointerException
                         | IllegalStateException
                         | ClassCastException
                         | JsonSyntaxException
+                        | NumberFormatException
                         | IOException e) {
                     throw new EditorInitializationException(e,
                             "Corrupted Preference File",
@@ -127,7 +129,8 @@ public class MainApplication extends Application {
 
         try {
             drops = Objects.requireNonNull(jsonManager.getPatchedObject("drops", Drops.class));
-        } catch (NullPointerException | JsonSyntaxException e) {
+            drops.manageMaps();
+        } catch (NullPointerException | NumberFormatException | JsonSyntaxException e) {
             throw new EditorInitializationException(e,
                     "Invalid Drops Directory or Patch Directory",
                     "Please relaunch the editor and select the main and patch directories in your server with " +
@@ -222,7 +225,8 @@ public class MainApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("main-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 800, 600);
+        Scene scene = new Scene(fxmlLoader.load(), 1400, 700);
+        scene.getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
         stage.setTitle("Hello!");
         stage.setScene(scene);
 
@@ -237,6 +241,7 @@ public class MainApplication extends Application {
         controller.setJSONManager(jsonManager);
         controller.setIconManager(iconManager);
         controller.setDrops(drops);
+        controller.setStaticDataStore(staticDataStore);
         controller.setApplication(this);
         controller.setup();
 

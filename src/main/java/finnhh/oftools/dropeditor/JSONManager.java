@@ -1,10 +1,12 @@
 package finnhh.oftools.dropeditor;
 
 import com.google.gson.*;
+import com.google.gson.stream.JsonWriter;
 import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Preferences;
 import javafx.util.Pair;
+import org.hildan.fxgson.FxGson;
 
 import java.io.File;
 import java.io.FileReader;
@@ -49,6 +51,19 @@ public class JSONManager {
             "generalitemicon",
             "vehicle",
     };
+    public static final String[] MOB_ICON_NAMES = new String[] {
+            "error",
+            "error",
+            "error",
+            "error",
+            "npcicon",
+            "error",
+            "error",
+            "error",
+            "mobicon",
+            "error",
+            "hnpcicon",
+    };
 
     private final Gson gson;
 
@@ -62,8 +77,10 @@ public class JSONManager {
     private Preferences preferences;
 
     public JSONManager() {
-        gson = new GsonBuilder()
+        gson = FxGson.coreBuilder()
                 .serializeNulls()
+                .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
+                .excludeFieldsWithoutExposeAnnotation()
                 .setPrettyPrinting()
                 .create();
         prePatchObjects = new HashMap<>();
@@ -83,7 +100,7 @@ public class JSONManager {
             if (key.startsWith("!")) {
                 originalObject.add(key.substring(1), patchValue);
 
-                // case 2: if key already exists
+            // case 2: if key already exists
             } else if (originalObject.has(key)) {
                 JsonElement originalValue = originalObject.get(key);
 
@@ -105,7 +122,7 @@ public class JSONManager {
                     patch(originalValue.getAsJsonObject(), patchValue.getAsJsonObject());
                 }
 
-                // case 3: if key not present, add patch
+            // case 3: if key not present, add patch
             } else {
                 originalObject.add(key, patchValue);
             }
@@ -118,7 +135,7 @@ public class JSONManager {
         Set<String> baseKeys = baseObject.keySet();
         Set<String> changedKeys = changedObject.keySet();
 
-        Set<String> allKeys = new HashSet<>(baseKeys);
+        Set<String> allKeys = new LinkedHashSet<>(baseKeys);
         allKeys.addAll(changedKeys);
 
         for (String key : allKeys) {
@@ -186,11 +203,11 @@ public class JSONManager {
                                 .get("m_strComment")
                                 .getAsString();
 
-                String iconName = ITEM_ICON_NAMES[i] + "_" + itemIconArray
+                String iconName = ITEM_ICON_NAMES[i] + "_" + String.format("%02d", itemIconArray
                         .get(itemData.get("m_iIcon").getAsInt())
                         .getAsJsonObject()
                         .get("m_iIconNumber")
-                        .getAsInt();
+                        .getAsInt());
 
                 int id = itemData.get("m_iItemNumber").getAsInt();
 
@@ -240,11 +257,12 @@ public class JSONManager {
                     .get("m_strName")
                     .getAsString();
 
-            String iconName = "mobicon_" + npcIconArray
+            JsonObject mobIconObject = npcIconArray
                     .get(npcData.get("m_iIcon1").getAsInt())
-                    .getAsJsonObject()
-                    .get("m_iIconNumber")
-                    .getAsInt();
+                    .getAsJsonObject();
+            int mobIconType = Math.max(0, mobIconObject.get("m_iIconType").getAsInt()) % MOB_ICON_NAMES.length;
+            int mobIconNumber = mobIconObject.get("m_iIconNumber").getAsInt();
+            String iconName = MOB_ICON_NAMES[mobIconType] + "_" + String.format("%02d", mobIconNumber);
 
             MobTypeInfo mobTypeInfo = new MobTypeInfo(
                     type,
@@ -350,7 +368,7 @@ public class JSONManager {
         }
     }
 
-    public Optional<Preferences> getPreferences() {
+    public Optional<Preferences> readPreferences() {
         File preferenceFile = new File(PREFERENCE_PATH);
 
         try (FileReader fileReader = new FileReader(preferenceFile)) {
@@ -479,7 +497,9 @@ public class JSONManager {
 
             if (objectToSave.size() > 0) {
                 try (FileWriter writer = new FileWriter(saveDirectory.toPath().resolve(name + ".json").toFile())) {
-                    gson.toJson(objectToSave, writer);
+                    JsonWriter jsonWriter = gson.newJsonWriter(writer);
+                    jsonWriter.setIndent("    ");
+                    gson.toJson(objectToSave, jsonWriter);
                 }
             }
         }

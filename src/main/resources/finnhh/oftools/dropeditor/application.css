@@ -1,0 +1,120 @@
+// definitions
+
+@font-face {
+    src: url("JefferiesExtended.ttf");
+}
+
+// global settings
+
+.root {
+    -fx-background-color: #002252;
+    -fx-font-family: "Jefferies";
+    -fx-font-size: 10px;
+}
+
+.button, .label, .choice-box {
+    -fx-background-color: #005289;
+    -fx-border-color: #00ffff;
+    -fx-text-fill: white;
+    -fx-background-radius: 3, 2;
+    -fx-border-radius: 3, 2;
+}
+
+.choice-box .context-menu {
+    -fx-background-color: #005289;
+}
+
+.choice-box .arrow, .choice-box .arrow-button {
+    -fx-background-color: white;
+}
+
+.choice-box .menu-item:focused {
+    -fx-background-color: #00ffff;
+}
+
+.choice-box .menu-item > .label {
+    -fx-border-color: transparent;
+    -fx-background-color: #005289;
+}
+
+.choice-box .menu-item:focused > .label {
+    -fx-border-color: transparent;
+    -fx-background-color: #00ffff;
+    -fx-text-fill: black;
+}
+
+.choice-box .radio-menu-item:checked > .left-container > .radio {
+    -fx-background-color: white;
+}
+
+.choice-box .radio-menu-item:checked:focused > .left-container > .radio {
+    -fx-background-color: black;
+}
+
+.list-view {
+    -fx-control-inner-background: gainsboro;
+}
+
+.spinner, .spinner:focused, .spinner:contains-focus {
+    -fx-background-color: #005289;
+}
+
+.spinner .text-field {
+    -fx-background-color: white;
+}
+
+.spinner .increment-arrow-button {
+    -fx-background-color: transparent;
+}
+
+.spinner .decrement-arrow-button {
+    -fx-background-color: transparent;
+}
+
+.spinner .increment-arrow-button .increment-arrow {
+    -fx-background-color: white;
+}
+
+.spinner .decrement-arrow-button .decrement-arrow {
+    -fx-background-color: white;
+}
+
+.spinner .increment-arrow-button:hover {
+    -fx-background-color: #00ffff;
+}
+
+.spinner .decrement-arrow-button:hover {
+    -fx-background-color: #00ffff;
+}
+
+.spinner .increment-arrow-button:hover .increment-arrow {
+    -fx-background-color: black;
+}
+
+.spinner .decrement-arrow-button:hover .decrement-arrow {
+    -fx-background-color: black;
+}
+
+// utility classes
+
+.vertical {
+    -fx-rotate: -90;
+}
+
+// specific classes - ids
+
+.bordered-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: #00ffff;
+    -fx-text-fill: white;
+    -fx-background-radius: 3, 2;
+    -fx-border-radius: 3, 2;
+}
+
+.disabled-id {
+    -fx-text-fill: red;
+}
+
+.id-label:hover {
+    -fx-text-fill: orange;
+}
