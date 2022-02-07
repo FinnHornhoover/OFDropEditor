@@ -44,8 +44,11 @@ public class Racing extends Data {
         malformed.bind(EPID.lessThan(0)
                 .or(rankScores.isNull())
                 .or(rankScores.emptyProperty())
+                .or(rankScores.sizeProperty().greaterThan(5))
                 .or(rewards.isNull())
                 .or(rewards.emptyProperty())
+                .or(rewards.sizeProperty().greaterThan(5))
+                .or(rewards.sizeProperty().isNotEqualTo(rankScores.sizeProperty()))
                 .or(timeLimit.lessThan(0)));
 
         id.set(String.valueOf(EPID.get()));

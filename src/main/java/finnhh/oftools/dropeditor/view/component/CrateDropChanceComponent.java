@@ -10,13 +10,10 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -25,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 public class CrateDropChanceComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<CrateDropChance> crateDropChance;
@@ -35,10 +33,12 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     private final double boxWidth;
     private final DataComponent parent;
 
-    private final HBox contentHBox;
+    private final HBox listHBox;
+    private final ScrollPane contentScrollPane;
     private final Label idLabel;
 
-    private final ListChangeListener<Node> childrenListener;
+    private final List<ChanceVBox> chanceVBoxCache;
+
     private final List<ChangeListener<Integer>> valueListeners;
 
     public CrateDropChanceComponent(double boxSpacing,
@@ -51,58 +51,52 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
-        contentHBox = new HBox(boxSpacing);
-        contentHBox.setAlignment(Pos.CENTER);
-        contentHBox.getStyleClass().add("bordered-pane");
+        listHBox = new HBox(boxSpacing);
+        listHBox.setAlignment(Pos.CENTER);
+        listHBox.getStyleClass().add("bordered-pane");
+
+        contentScrollPane = new ScrollPane(listHBox);
+        contentScrollPane.setFitToHeight(true);
+        contentScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
 
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
         setTop(idLabel);
-        setCenter(contentHBox);
+        setCenter(contentScrollPane);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
-        childrenListener = change -> {
-            makeEditable(this.drops);
-            unbindListVariables();
+        chanceVBoxCache = new ArrayList<>();
 
-            ObservableList<Integer> weights = crateDropChance.get().getCrateTypeDropWeights();
-            weights.clear();
-            weights.addAll(contentHBox.getChildren().stream()
-                    .filter(c -> c instanceof ChanceVBox)
-                    .map(c -> ((ChanceVBox) c).getSpinner().getValue())
-                    .toList());
-
-            bindListVariables();
-        };
         valueListeners = new ArrayList<>();
 
         idLabel.setText(CrateDropChance.class.getSimpleName() + ": null");
-        contentHBox.setDisable(true);
+        listHBox.setDisable(true);
         setIdDisable(true);
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         crateDropChance.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
                 idLabel.setText(CrateDropChance.class.getSimpleName() + ": null");
-                contentHBox.setDisable(true);
+                listHBox.setDisable(true);
                 setIdDisable(true);
             } else {
                 idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentHBox.setDisable(false);
+                listHBox.setDisable(false);
                 setIdDisable(newVal.isMalformed());
             }
         });
     }
 
     private void bindListVariables() {
-        DoubleExpression totalExpression = contentHBox.getChildren().stream()
+        DoubleExpression totalExpression = listHBox.getChildren().stream()
+                .filter(c -> c instanceof ChanceVBox)
                 .map(c -> DoubleBinding.doubleExpression(
                         ((ChanceVBox) c).getSpinner().valueProperty()))
                 .reduce(DoubleExpression::add)
                 .orElse(Bindings.createDoubleBinding(() -> 0.0));
 
-        var children = contentHBox.getChildren().filtered(c -> c instanceof ChanceVBox);
+        var children = listHBox.getChildren().filtered(c -> c instanceof ChanceVBox);
 
         for (int index = 0; index < children.size(); index++) {
             ChanceVBox cvb = (ChanceVBox) children.get(index);
@@ -119,7 +113,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
                 makeEditable(drops);
                 crateDropChance.get().getCrateTypeDropWeights().set(finalIndex, newVal);
 
-                ChanceVBox current = (ChanceVBox) contentHBox.getChildren()
+                ChanceVBox current = (ChanceVBox) listHBox.getChildren()
                         .filtered(c -> c instanceof ChanceVBox)
                         .get(finalIndex);
                 current.getSpinner().getValueFactory().setValue(newVal);
@@ -129,7 +123,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     }
 
     private void unbindListVariables() {
-        var children = contentHBox.getChildren().filtered(c -> c instanceof ChanceVBox);
+        var children = listHBox.getChildren().filtered(c -> c instanceof ChanceVBox);
 
         for (int index = 0; index < children.size(); index++) {
             ChanceVBox cvb = (ChanceVBox) children.get(index);
@@ -142,24 +136,77 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         valueListeners.clear();
     }
 
+    private void populateListBox() {
+        var dropWeights = crateDropChance.get().getCrateTypeDropWeights();
+
+        if (chanceVBoxCache.size() < dropWeights.size()) {
+            IntStream.range(0, dropWeights.size() - chanceVBoxCache.size())
+                    .mapToObj(i -> new ChanceVBox(boxWidth))
+                    .forEach(chanceVBoxCache::add);
+        }
+
+        IntStream.range(0, dropWeights.size())
+                .mapToObj(i -> {
+                    ChanceVBox cvb = chanceVBoxCache.get(i);
+                    cvb.getSpinner().getValueFactory().setValue(dropWeights.get(i));
+                    return cvb;
+                })
+                .forEach(listHBox.getChildren()::add);
+    }
+
+    public void crateDropAdded() {
+        makeEditable(drops);
+
+        unbindListVariables();
+        listHBox.getChildren().clear();
+
+        crateDropChance.get().getCrateTypeDropWeights().add(0);
+
+        populateListBox();
+        bindListVariables();
+    }
+
+    public void crateDropRemoved(int index) {
+        makeEditable(drops);
+
+        unbindListVariables();
+        listHBox.getChildren().clear();
+
+        crateDropChance.get().getCrateTypeDropWeights().remove(index);
+
+        populateListBox();
+        bindListVariables();
+    }
+
+    public void crateDropPermuted(List<Integer> indexList) {
+        makeEditable(drops);
+
+        unbindListVariables();
+        listHBox.getChildren().clear();
+
+        var dropWeights = crateDropChance.get().getCrateTypeDropWeights();
+        var newDropWeights = IntStream.range(0, dropWeights.size())
+                .mapToObj(i -> dropWeights.get(indexList.get(i)))
+                .toList();
+
+        dropWeights.clear();
+        dropWeights.addAll(newDropWeights);
+
+        populateListBox();
+        bindListVariables();
+    }
+
     @Override
     public void setObservable(Data data) {
         crateDropChance.set((CrateDropChance) data);
 
-        contentHBox.getChildren().removeListener(childrenListener);
         unbindListVariables();
-        contentHBox.getChildren().clear();
+        listHBox.getChildren().clear();
 
         if (crateDropChance.isNotNull().get()) {
-            contentHBox.getChildren().addAll(crateDropChance.get()
-                    .getCrateTypeDropWeights().stream()
-                    .map(i -> new ChanceVBox(boxWidth, i))
-                    .toList());
-
+            populateListBox();
             bindListVariables();
         }
-
-        contentHBox.getChildren().addListener(childrenListener);
     }
 
     public double getBoxSpacing() {
@@ -178,8 +225,12 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         return crateDropChance;
     }
 
-    public HBox getContentHBox() {
-        return contentHBox;
+    public HBox getListHBox() {
+        return listHBox;
+    }
+
+    public ScrollPane getContentScrollPane() {
+        return contentScrollPane;
     }
 
     @Override
@@ -201,11 +252,17 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         private final Spinner<Integer> spinner;
         private final Label percentageLabel;
 
-        public ChanceVBox(double width, int dropWeightValue) {
-            var spinnerValueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(
-                    0, Integer.MAX_VALUE, dropWeightValue);
-            spinner = new Spinner<>(spinnerValueFactory);
+        public ChanceVBox(double width) {
+            spinner = new Spinner<>(0, Integer.MAX_VALUE, 0);
             spinner.setEditable(true);
+            spinner.getEditor().setOnAction(event -> {
+                try {
+                    Integer.parseInt(spinner.getEditor().getText());
+                    spinner.commitValue();
+                } catch (NumberFormatException e) {
+                    spinner.cancelEdit();
+                }
+            });
 
             percentageLabel = new Label();
 

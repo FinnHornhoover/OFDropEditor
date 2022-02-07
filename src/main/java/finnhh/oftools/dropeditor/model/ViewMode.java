@@ -1,5 +1,6 @@
 package finnhh.oftools.dropeditor.model;
 
+import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Mob;
@@ -13,6 +14,11 @@ public enum ViewMode {
             drops -> drops.getMobs()
                     .values().stream()
                     .sorted(Comparator.comparingInt(Mob::getMobID))
+                    .toList()),
+    CRATE("Crates",
+            drops -> drops.getCrates()
+                    .values().stream()
+                    .sorted(Comparator.comparingInt(Crate::getCrateID))
                     .toList());
 
     private final String modeString;

@@ -1,14 +1,16 @@
 package finnhh.oftools.dropeditor.view.component;
 
-import finnhh.oftools.dropeditor.model.data.CrateDropType;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.MiscDropType;
-import javafx.application.Platform;
-import javafx.beans.property.*;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Spinner;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -33,6 +35,7 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
     private final TypeVBox taroVBox;
     private final TypeVBox fmVBox;
     private final HBox contentHBox;
+    private final ScrollPane contentScrollPane;
     private final Label idLabel;
 
     private final ChangeListener<Number> potionListener;
@@ -61,11 +64,15 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         contentHBox.setAlignment(Pos.CENTER);
         contentHBox.getStyleClass().add("bordered-pane");
 
+        contentScrollPane = new ScrollPane(contentHBox);
+        contentScrollPane.setFitToHeight(true);
+        contentScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
         setTop(idLabel);
-        setCenter(contentHBox);
+        setCenter(contentScrollPane);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
         potionListener = (o, oldVal, newVal) -> {
@@ -185,6 +192,10 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         return contentHBox;
     }
 
+    public ScrollPane getContentScrollPane() {
+        return contentScrollPane;
+    }
+
     @Override
     public ReadOnlyObjectProperty<MiscDropType> getObservable() {
         return miscDropType;
@@ -209,10 +220,16 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         }
 
         public TypeVBox(int amountValue, byte[] icon, double width) {
-            var spinnerValueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(
-                    0, Integer.MAX_VALUE, amountValue);
-            amountSpinner = new Spinner<>(spinnerValueFactory);
+            amountSpinner = new Spinner<>(0, Integer.MAX_VALUE, amountValue);
             amountSpinner.setEditable(true);
+            amountSpinner.getEditor().setOnAction(event -> {
+                try {
+                    Integer.parseInt(amountSpinner.getEditor().getText());
+                    amountSpinner.commitValue();
+                } catch (NumberFormatException e) {
+                    amountSpinner.cancelEdit();
+                }
+            });
 
             iconView = new ImageView(new Image(new ByteArrayInputStream(icon)));
             iconView.setFitWidth(64);

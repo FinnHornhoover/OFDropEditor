@@ -32,6 +32,7 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
     private final ChanceVBox taroVBox;
     private final ChanceVBox fmVBox;
     private final HBox contentHBox;
+    private final ScrollPane contentScrollPane;
     private final Label idLabel;
 
     private final ChangeListener<Number> potionChanceListener;
@@ -62,11 +63,15 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         contentHBox.setAlignment(Pos.CENTER);
         contentHBox.getStyleClass().add("bordered-pane");
 
+        contentScrollPane = new ScrollPane(contentHBox);
+        contentScrollPane.setFitToHeight(true);
+        contentScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
         setTop(idLabel);
-        setCenter(contentHBox);
+        setCenter(contentScrollPane);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
         potionChanceListener = (o, oldVal, newVal) -> {
@@ -232,6 +237,10 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         return contentHBox;
     }
 
+    public ScrollPane getContentScrollPane() {
+        return contentScrollPane;
+    }
+
     @Override
     public ReadOnlyObjectProperty<MiscDropChance> getObservable() {
         return miscDropChance;
@@ -262,12 +271,26 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         public ChanceVBox(int chanceValue, int chanceTotalValue, double width) {
             var spinnerValueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(
                     0, chanceTotalValue, chanceValue);
-            var totalSpinnerValueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(
-                    1, Integer.MAX_VALUE, chanceTotalValue);
             chanceSpinner = new Spinner<>(spinnerValueFactory);
             chanceSpinner.setEditable(true);
-            chanceTotalSpinner = new Spinner<>(totalSpinnerValueFactory);
+            chanceSpinner.getEditor().setOnAction(event -> {
+                try {
+                    Integer.parseInt(chanceSpinner.getEditor().getText());
+                    chanceSpinner.commitValue();
+                } catch (NumberFormatException e) {
+                    chanceSpinner.cancelEdit();
+                }
+            });
+            chanceTotalSpinner = new Spinner<>(1, Integer.MAX_VALUE, chanceTotalValue);
             chanceTotalSpinner.setEditable(true);
+            chanceTotalSpinner.getEditor().setOnAction(event -> {
+                try {
+                    Integer.parseInt(chanceTotalSpinner.getEditor().getText());
+                    chanceTotalSpinner.commitValue();
+                } catch (NumberFormatException e) {
+                    chanceTotalSpinner.cancelEdit();
+                }
+            });
 
             chanceSeparator = new Separator(Orientation.HORIZONTAL);
 

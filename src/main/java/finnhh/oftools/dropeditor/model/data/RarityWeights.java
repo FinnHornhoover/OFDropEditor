@@ -33,7 +33,8 @@ public class RarityWeights extends Data {
     public void constructBindings() {
         malformed.bind(rarityWeightID.lessThan(0)
                 .or(weights.isNull())
-                .or(weights.emptyProperty()));
+                .or(weights.emptyProperty())
+                .or(weights.sizeProperty().greaterThan(4)));
 
         id.set(String.valueOf(rarityWeightID.get()));
         rarityWeightID.addListener((o, oldVal, newVal) -> id.set(String.valueOf(newVal.intValue())));

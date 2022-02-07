@@ -20,6 +20,12 @@
     -fx-border-radius: 3, 2;
 }
 
+.button:hover {
+    -fx-background-color: #00ffff;
+    -fx-border-color: #005289;
+    -fx-text-fill: black;
+}
+
 .choice-box .context-menu {
     -fx-background-color: #005289;
 }
@@ -117,4 +123,39 @@
 
 .id-label:hover {
     -fx-text-fill: orange;
+}
+
+.add-button {
+    -fx-background-color: #00cc00;
+    -fx-border-color: #00ff00;
+}
+
+.add-button:hover {
+    -fx-background-color: #00ff00;
+    -fx-border-color: #00cc00;
+}
+
+.remove-button {
+    -fx-background-color: #cc0000;
+    -fx-border-color: #ff0000;
+}
+
+.remove-button:hover {
+    -fx-background-color: #ff0000;
+    -fx-border-color: #cc0000;
+}
+
+.drag-entered {
+    -fx-background-color: #00ffff;
+    -fx-opacity: 0.3;
+}
+
+.drag-exited {
+    -fx-background-color: transparent;
+    -fx-opacity: 1.0;
+}
+
+.drag-released {
+    -fx-background-color: transparent;
+    -fx-opacity: 1.0;
 }

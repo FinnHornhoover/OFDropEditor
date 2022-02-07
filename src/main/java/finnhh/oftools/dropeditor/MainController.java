@@ -4,6 +4,7 @@ import finnhh.oftools.dropeditor.model.EditMode;
 import finnhh.oftools.dropeditor.model.ViewMode;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
+import finnhh.oftools.dropeditor.view.component.CrateComponent;
 import finnhh.oftools.dropeditor.view.component.MobComponent;
 import finnhh.oftools.dropeditor.view.util.NoSelectionModel;
 import javafx.application.Platform;
@@ -74,12 +75,18 @@ public class MainController {
 
         mainListView.setCellFactory(cfData -> new ListCell<>() {
             private final MobComponent mobComponent;
+            private final CrateComponent crateComponent;
 
             {
                 mobComponent = new MobComponent(drops,
                         staticDataStore.getMobTypeInfoMap(),
                         staticDataStore.getItemInfoMap(),
-                        iconManager.getIconMap());
+                        iconManager.getIconMap(),
+                        mainListView);
+                crateComponent = new CrateComponent(drops,
+                        staticDataStore.getItemInfoMap(),
+                        iconManager.getIconMap(),
+                        mainListView);
             }
 
             @Override
@@ -93,6 +100,10 @@ public class MainController {
                         case MONSTER -> {
                             mobComponent.setObservable(data);
                             graphic = mobComponent;
+                        }
+                        case CRATE -> {
+                            crateComponent.setObservable(data);
+                            graphic = crateComponent;
                         }
                     }
                 }

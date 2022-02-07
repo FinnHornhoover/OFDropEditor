@@ -9,6 +9,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -31,7 +32,8 @@ public class MobComponent extends HBox implements RootDataComponent {
     public MobComponent(Drops drops,
                         Map<Integer, MobTypeInfo> mobTypeInfoMap,
                         Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                        Map<String, byte[]> iconMap) {
+                        Map<String, byte[]> iconMap,
+                        ListView<Data> listView) {
 
         mob = new SimpleObjectProperty<>();
 
@@ -40,6 +42,11 @@ public class MobComponent extends HBox implements RootDataComponent {
 
         mobInfoComponent = new MobInfoComponent(iconMap);
         mobDropComponent = new MobDropComponent(drops, itemInfoMap, iconMap, this);
+
+        mobDropComponent.prefWidthProperty().bind(listView.widthProperty()
+                .subtract(mobInfoComponent.widthProperty())
+                .subtract(28));
+        mobDropComponent.setMaxWidth(USE_PREF_SIZE);
 
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
@@ -102,6 +109,14 @@ public class MobComponent extends HBox implements RootDataComponent {
     @Override
     public Label getIdLabel() {
         return idLabel;
+    }
+
+    public Mob getMob() {
+        return mob.get();
+    }
+
+    public ReadOnlyObjectProperty<Mob> mobProperty() {
+        return mob;
     }
 
     public MobInfoComponent getMobComponent() {
