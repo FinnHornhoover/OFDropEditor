@@ -107,7 +107,7 @@ public class CrateComponent extends HBox implements RootDataComponent {
         int newItemSetID = itemSetComponent.getItemSet().getItemSetID();
 
         if (newRarityWeightsID != crate.get().getRarityWeightID())
-            crate.get().setCrateID(newRarityWeightsID);
+            crate.get().setRarityWeightID(newRarityWeightsID);
         if (newItemSetID != crate.get().getItemSetID())
             crate.get().setItemSetID(newItemSetID);
     }

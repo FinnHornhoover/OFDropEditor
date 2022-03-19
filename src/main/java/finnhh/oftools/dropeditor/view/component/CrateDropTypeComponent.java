@@ -89,7 +89,8 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
         typeVBoxCache = new ArrayList<>();
 
-        addClickHandler = event -> crateDropAdded();
+        addClickHandler = event -> this.controller.showSelectionMenuForResult(Crate.class)
+                .ifPresent(d -> crateDropAdded(((Crate) d).getCrateID()));
         valueListeners = new ArrayList<>();
         removeClickHandlers = new ArrayList<>();
         dragDetectedHandlers = new ArrayList<>();
@@ -101,8 +102,9 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         listHBox.setDisable(true);
         setIdDisable(true);
 
+        // TODO: size mismatch with crate types
         idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropType.class)
-                .ifPresent(this::setObservable);
+                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         crateDropType.addListener((o, oldVal, newVal) -> {
@@ -209,13 +211,13 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
                 .forEach(listHBox.getChildren()::add);
     }
 
-    public void crateDropAdded() {
+    public void crateDropAdded(int newCrateID) {
         makeEditable(controller.getDrops());
 
         unbindListVariables();
         listHBox.getChildren().clear();
 
-        crateDropType.get().getCrateIDs().add(-1);
+        crateDropType.get().getCrateIDs().add(newCrateID);
 
         populateListBox();
         parent.getCrateDropChanceComponent().crateDropAdded();
@@ -395,6 +397,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
             contentVBox.setDisable(true);
             setIdDisable(true);
 
+            // observable is listened, it is okay to just set the observable
             idClickHandler = event -> this.controller.showSelectionMenuForResult(Crate.class)
                     .ifPresent(this::setObservable);
 

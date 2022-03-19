@@ -11,8 +11,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 
-import java.util.stream.IntStream;
-
 public class ReferenceTrailComponent extends HBox {
     private final ListProperty<Data> dataList;
     private final MainController controller;
@@ -35,14 +33,20 @@ public class ReferenceTrailComponent extends HBox {
         this.controller = other.controller;
         this.imageWidth = other.imageWidth;
 
+        setSpacing(2);
+        setAlignment(Pos.CENTER_LEFT);
+    }
+
+    public void constructView() {
         for (int i = 1; i < this.dataList.size(); i++) {
             if (i > 1)
                 getChildren().add(new Label(">"));
             getChildren().add(new ImageSummaryComponent(this.imageWidth, this.controller, this.dataList.get(i)));
         }
+    }
 
-        setSpacing(2);
-        setAlignment(Pos.CENTER_LEFT);
+    public void destroyView() {
+        getChildren().clear();
     }
 
     public ObservableList<Data> getDataList() {

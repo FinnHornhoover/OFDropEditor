@@ -76,7 +76,7 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
         // TODO: slow
         idClickHandler = event -> this.controller.showSelectionMenuForResult(RarityWeights.class)
-                .ifPresent(this::setObservable);
+                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         rarityWeights.addListener((o, oldVal, newVal) -> {

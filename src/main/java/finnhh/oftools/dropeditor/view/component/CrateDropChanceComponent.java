@@ -77,8 +77,9 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         listHBox.setDisable(true);
         setIdDisable(true);
 
+        // TODO: size mismatch with crate types
         idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropChance.class)
-                .ifPresent(this::setObservable);
+                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         crateDropChance.addListener((o, oldVal, newVal) -> {

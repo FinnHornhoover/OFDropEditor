@@ -57,6 +57,14 @@ public class ReferenceListComponent extends VBox {
         referenceTrails.addAll(trailList);
     }
 
+    public void constructView() {
+        referenceTrails.forEach(ReferenceTrailComponent::constructView);
+    }
+
+    public void destroyView() {
+        referenceTrails.forEach(ReferenceTrailComponent::destroyView);
+    }
+
     public Data getOriginData() {
         return originData.get();
     }

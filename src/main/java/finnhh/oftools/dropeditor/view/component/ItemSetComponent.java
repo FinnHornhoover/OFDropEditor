@@ -81,6 +81,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
     private final ChangeListener<Rarity> rarityViewSettingsListener;
     private final ChangeListener<Gender> genderViewSettingsListener;
     private final EventHandler<MouseEvent> addClickHandler;
+    private final List<ChangeListener<ItemReference>> itemReferenceListeners;
     private final List<ChangeListener<Integer>> valueListeners;
     private final List<EventHandler<MouseEvent>> removeClickHandlers;
     private final List<ChangeListener<Rarity>> rarityListeners;
@@ -229,7 +230,9 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             unbindVariables();
             bindVariables();
         };
-        addClickHandler = event -> itemDropAdded();
+        addClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
+                .ifPresent(d -> itemDropAdded(((ItemReference) d).getItemReferenceID()));
+        itemReferenceListeners = new ArrayList<>();
         valueListeners = new ArrayList<>();
         removeClickHandlers = new ArrayList<>();
         rarityListeners = new ArrayList<>();
@@ -239,9 +242,9 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         contentVBox.setDisable(true);
         setIdDisable(true);
 
-        // TODO: does not save
+        // TODO: slow
         idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemSet.class)
-                .ifPresent(this::setObservable);
+                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         itemSet.addListener((o, oldVal, newVal) -> {
@@ -319,6 +322,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             idvb.getPercentageLabel().textProperty().bind(percentExpression.asString(Locale.US, "%.5f%%"));
 
             final int finalIndex = index;
+            itemReferenceListeners.add((o, oldVal, newVal) -> itemDropChanged(finalIndex,
+                    Objects.isNull(newVal) ? -1 : newVal.getItemReferenceID()));
             valueListeners.add((o, oldVal, newVal) -> {
                 Rarity rarity = rarityViewSettingsChoiceBox.getValue();
                 Gender gender = genderViewSettingsChoiceBox.getValue();
@@ -412,6 +417,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                 bindVariables();
             });
 
+            idvb.itemReferenceProperty().addListener(itemReferenceListeners.get(index));
             idvb.getSpinner().valueProperty().addListener(valueListeners.get(index));
             idvb.getRemoveButton().addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
             idvb.getRarityChoiceBox().valueProperty().addListener(rarityListeners.get(index));
@@ -428,6 +434,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             idvb.getPercentageSlider().valueProperty().unbind();
             idvb.getPercentageLabel().textProperty().unbind();
 
+            idvb.itemReferenceProperty().removeListener(itemReferenceListeners.get(index));
             idvb.getSpinner().valueProperty().removeListener(valueListeners.get(index));
             idvb.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
             idvb.getRarityChoiceBox().valueProperty().removeListener(rarityListeners.get(index));
@@ -529,7 +536,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         });
     }
 
-    public void itemDropAdded() {
+    public void itemDropAdded(int newItemReferenceID) {
         Rarity rarity = rarityViewSettingsChoiceBox.getValue();
         Gender gender = genderViewSettingsChoiceBox.getValue();
         double hValue = listScrollPane.getHvalue();
@@ -543,7 +550,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         genderViewSettingsChoiceBox.setValue(gender);
         listScrollPane.setHvalue(hValue);
 
-        itemSet.get().getItemReferenceIDs().add(-1);
+        itemSet.get().getItemReferenceIDs().add(newItemReferenceID);
         itemSet.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
 
         populateListBox();
@@ -565,6 +572,27 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         listScrollPane.setHvalue(hValue);
 
         itemSet.get().getItemReferenceIDs().remove(index);
+
+        populateListBox();
+        bindVariables();
+    }
+
+    public void itemDropChanged(int index, int newItemReferenceID) {
+        Rarity rarity = rarityViewSettingsChoiceBox.getValue();
+        Gender gender = genderViewSettingsChoiceBox.getValue();
+        double hValue = listScrollPane.getHvalue();
+
+        makeEditable(controller.getDrops());
+
+        unbindVariables();
+        originalOrderList.clear();
+
+        rarityViewSettingsChoiceBox.setValue(rarity);
+        genderViewSettingsChoiceBox.setValue(gender);
+        listScrollPane.setHvalue(hValue);
+
+        itemSet.get().getItemReferenceIDs().set(index, newItemReferenceID);
+        itemSet.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
 
         populateListBox();
         bindVariables();
@@ -784,7 +812,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             contentVBox.setDisable(true);
             setIdDisable(true);
 
-            // TODO: runs out of heap space
+            // TODO: slow
+            // observable is listened, it is okay to just set the observable
             idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
                     .ifPresent(this::setObservable);
 

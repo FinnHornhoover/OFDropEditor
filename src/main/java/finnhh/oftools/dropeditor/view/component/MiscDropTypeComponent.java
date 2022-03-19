@@ -111,7 +111,7 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         setIdDisable(true);
 
         idClickHandler = event -> this.controller.showSelectionMenuForResult(MiscDropType.class)
-                .ifPresent(this::setObservable);
+                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         miscDropType.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {

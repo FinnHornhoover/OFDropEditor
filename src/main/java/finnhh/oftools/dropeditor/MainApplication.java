@@ -232,7 +232,7 @@ public class MainApplication extends Application {
         DialogPane dialogPane = alert.getDialogPane();
         dialogPane.setContent(tableView);
         dialogPane.getScene().getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
-        dialogPane.setMinWidth(400.0);
+        dialogPane.setMinWidth(450.0);
 
         return alert.showAndWait()
                 .filter(bt -> bt == ButtonType.OK)

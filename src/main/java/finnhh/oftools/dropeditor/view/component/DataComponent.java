@@ -33,7 +33,7 @@ public interface DataComponent extends ObservableComponent<Data> {
             newObject.registerReferences(drops);
 
             // 5?. if component has a parent, then make the parent editable as well
-            if (!Objects.isNull(parent))
+            if (Objects.nonNull(parent))
                 parent.makeEditable(drops);
 
             // 6. set new object as the new observable of the component
@@ -41,7 +41,7 @@ public interface DataComponent extends ObservableComponent<Data> {
             setObservable(newObject);
 
             // if component has a parent
-            if (!Objects.isNull(parent)) {
+            if (Objects.nonNull(parent)) {
                 // 7?. update fields of parent to reflect new object's new id
                 parent.refreshObservable(drops);
 
@@ -54,6 +54,34 @@ public interface DataComponent extends ObservableComponent<Data> {
                 // 9?. tie the new object in the reference map
                 referencer.registerReferenced(referenceMap, newObject);
             }
+        }
+    }
+
+    default void makeEdit(Drops drops, Data newObject) {
+        Data oldObject = getObservable().get();
+        DataComponent parent = getParentComponent();
+
+        // 1?. if component has a parent, then make the parent editable as well
+        if (drops.getReferenceModeFor(oldObject) == ReferenceMode.MULTIPLE && Objects.nonNull(parent))
+            parent.makeEditable(drops);
+
+        // 2. set new object as the new observable of the component
+        // the listeners on observable will now fire
+        setObservable(newObject);
+
+        // if component has a parent
+        if (Objects.nonNull(parent)) {
+            // 3?. update fields of parent to reflect new object's new id
+            parent.refreshObservable(drops);
+
+            Data referencer = parent.getObservable().get();
+            var referenceMap = drops.getReferenceMap();
+
+            // 4?. remove the reference map ties of old object
+            referencer.unregisterReferenced(referenceMap, oldObject);
+
+            // 5?. tie the new object in the reference map
+            referencer.registerReferenced(referenceMap, newObject);
         }
     }
 

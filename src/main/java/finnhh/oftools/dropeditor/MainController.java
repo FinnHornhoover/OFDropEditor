@@ -136,7 +136,15 @@ public class MainController {
             @Override
             protected void updateItem(ReferenceListComponent referenceListComponent, boolean empty) {
                 super.updateItem(referenceListComponent, empty);
-                setGraphic((!empty && Objects.nonNull(referenceListComponent)) ? referenceListComponent : null);
+
+                Optional.ofNullable(getItem()).ifPresent(ReferenceListComponent::destroyView);
+
+                if (!empty && Objects.nonNull(referenceListComponent)) {
+                    referenceListComponent.constructView();
+                    setGraphic(referenceListComponent);
+                } else {
+                    setGraphic(null);
+                }
             }
         });
 

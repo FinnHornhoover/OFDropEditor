@@ -73,7 +73,7 @@ public class MobDropComponent extends BorderPane implements DataComponent {
         setIdDisable(true);
 
         idClickHandler = event -> this.controller.showSelectionMenuForResult(MobDrop.class)
-                .ifPresent(this::setObservable);
+                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         mobDrop.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {

@@ -139,7 +139,7 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         setIdDisable(true);
 
         idClickHandler = event -> this.controller.showSelectionMenuForResult(MiscDropChance.class)
-                .ifPresent(this::setObservable);
+                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         miscDropChance.addListener((o, oldVal, newVal) -> {
