@@ -24,8 +24,7 @@ public enum ViewMode {
     private final String modeString;
     private final Function<Drops, Collection<? extends Data>> dataGetter;
 
-    ViewMode(String modeString,
-             Function<Drops, Collection<? extends Data>> dataGetter) {
+    ViewMode(String modeString, Function<Drops, Collection<? extends Data>> dataGetter) {
         this.modeString = modeString;
         this.dataGetter = dataGetter;
     }

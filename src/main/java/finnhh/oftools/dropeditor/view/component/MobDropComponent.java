@@ -1,32 +1,31 @@
 package finnhh.oftools.dropeditor.view.component;
 
-import finnhh.oftools.dropeditor.model.ItemInfo;
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.MobDrop;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
-import javafx.util.Pair;
 
-import java.util.Map;
 import java.util.Objects;
 
 public class MobDropComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<MobDrop> mobDrop;
-
-    private final Drops drops;
 
     private final CrateDropChanceComponent crateDropChanceComponent;
     private final CrateDropTypeComponent crateDropTypeComponent;
     private final MiscDropChanceComponent miscDropChanceComponent;
     private final MiscDropTypeComponent miscDropTypeComponent;
 
+    private final MainController controller;
     private final double boxSpacing;
     private final double boxWidth;
     private final DataComponent parent;
@@ -35,31 +34,24 @@ public class MobDropComponent extends BorderPane implements DataComponent {
     private final Group idGroup;
     private final Label idLabel;
 
-    public MobDropComponent(Drops drops,
-                            Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                            Map<String, byte[]> iconMap,
-                            DataComponent parent) {
-        this(60.0, 160.0, drops, itemInfoMap, iconMap, parent);
-    }
+    private final EventHandler<MouseEvent> idClickHandler;
 
     public MobDropComponent(double boxSpacing,
                             double boxWidth,
-                            Drops drops,
-                            Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                            Map<String, byte[]> iconMap,
+                            MainController controller,
                             DataComponent parent) {
 
         mobDrop = new SimpleObjectProperty<>();
 
-        this.drops = drops;
-
+        this.controller = controller;
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
-        crateDropChanceComponent = new CrateDropChanceComponent(boxSpacing, boxWidth, drops, this);
-        crateDropTypeComponent = new CrateDropTypeComponent(boxSpacing, boxWidth, drops, itemInfoMap, iconMap, this);
-        miscDropChanceComponent = new MiscDropChanceComponent(boxSpacing, boxWidth, drops, this);
-        miscDropTypeComponent = new MiscDropTypeComponent(boxSpacing, boxWidth, drops, iconMap, this);
+
+        crateDropChanceComponent = new CrateDropChanceComponent(boxSpacing, boxWidth, controller, this);
+        crateDropTypeComponent = new CrateDropTypeComponent(boxSpacing, boxWidth, controller, this);
+        miscDropChanceComponent = new MiscDropChanceComponent(boxSpacing, boxWidth, controller, this);
+        miscDropTypeComponent = new MiscDropTypeComponent(boxSpacing, boxWidth, controller, this);
 
         contentVBox = new VBox(miscDropChanceComponent,
                 miscDropTypeComponent,
@@ -80,6 +72,9 @@ public class MobDropComponent extends BorderPane implements DataComponent {
         contentVBox.setDisable(true);
         setIdDisable(true);
 
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(MobDrop.class)
+                .ifPresent(this::setObservable);
+
         mobDrop.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
                 idLabel.setText(MobDrop.class.getSimpleName() + ": null");
@@ -95,6 +90,8 @@ public class MobDropComponent extends BorderPane implements DataComponent {
 
     @Override
     public void setObservable(Data data) {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
         mobDrop.set((MobDrop) data);
 
         if (mobDrop.isNull().get()) {
@@ -103,6 +100,8 @@ public class MobDropComponent extends BorderPane implements DataComponent {
             miscDropChanceComponent.setObservable(null);
             miscDropTypeComponent.setObservable(null);
         } else {
+            var drops = controller.getDrops();
+
             crateDropChanceComponent.setObservable(
                     drops.getCrateDropChances().get(mobDrop.get().getCrateDropChanceID()));
             crateDropTypeComponent.setObservable(
@@ -112,6 +111,8 @@ public class MobDropComponent extends BorderPane implements DataComponent {
             miscDropTypeComponent.setObservable(
                     drops.getMiscDropTypes().get(mobDrop.get().getMiscDropTypeID()));
         }
+
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     @Override

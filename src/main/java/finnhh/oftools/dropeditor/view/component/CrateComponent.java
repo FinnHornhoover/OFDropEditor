@@ -1,6 +1,6 @@
 package finnhh.oftools.dropeditor.view.component;
 
-import finnhh.oftools.dropeditor.model.ItemInfo;
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
@@ -14,14 +14,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.util.Pair;
 
-import java.util.Map;
 import java.util.Objects;
 
 public class CrateComponent extends HBox implements RootDataComponent {
     private final ObjectProperty<Crate> crate;
 
-    private final Drops drops;
-    private final Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap;
+    private final MainController controller;
 
     private final CrateInfoComponent crateInfoComponent;
     private final RarityWeightsComponent rarityWeightsComponent;
@@ -29,19 +27,16 @@ public class CrateComponent extends HBox implements RootDataComponent {
     private final Label idLabel;
     private final BorderPane crateBorderPane;
 
-    public CrateComponent(Drops drops,
-                          Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                          Map<String, byte[]> iconMap,
+    public CrateComponent(MainController controller,
                           ListView<Data> listView) {
 
         crate = new SimpleObjectProperty<>();
 
-        this.drops = drops;
-        this.itemInfoMap = itemInfoMap;
+        this.controller = controller;
 
-        crateInfoComponent = new CrateInfoComponent(120.0, iconMap);
-        rarityWeightsComponent = new RarityWeightsComponent(20.0, 120.0, drops, this);
-        itemSetComponent = new ItemSetComponent(120.0, 2.0, drops, itemInfoMap, iconMap, this);
+        crateInfoComponent = new CrateInfoComponent(120.0, controller);
+        rarityWeightsComponent = new RarityWeightsComponent(20.0, 120.0, controller, this);
+        itemSetComponent = new ItemSetComponent(120.0, 2.0, controller, this);
 
         itemSetComponent.prefWidthProperty().bind(listView.widthProperty()
                 .subtract(crateInfoComponent.widthProperty())
@@ -96,9 +91,11 @@ public class CrateComponent extends HBox implements RootDataComponent {
             rarityWeightsComponent.setObservable(null);
             itemSetComponent.setObservable(null);
         } else {
-            crateInfoComponent.setObservable(itemInfoMap.get(new Pair<>(crate.get().getCrateID(), 9)));
-            rarityWeightsComponent.setObservable(drops.getRarityWeights().get(crate.get().getRarityWeightID()));
-            itemSetComponent.setObservable(drops.getItemSets().get(crate.get().getItemSetID()));
+            crateInfoComponent.setObservable(controller.getStaticDataStore().getItemInfoMap().get(
+                    new Pair<>(crate.get().getCrateID(), 9)));
+            rarityWeightsComponent.setObservable(controller.getDrops().getRarityWeights().get(
+                    crate.get().getRarityWeightID()));
+            itemSetComponent.setObservable(controller.getDrops().getItemSets().get(crate.get().getItemSetID()));
         }
     }
 

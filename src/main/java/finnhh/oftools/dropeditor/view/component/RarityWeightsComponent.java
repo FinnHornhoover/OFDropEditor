@@ -1,8 +1,8 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.Rarity;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.RarityWeights;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
@@ -11,15 +11,15 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -32,7 +32,7 @@ import java.util.Objects;
 public class RarityWeightsComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<RarityWeights> rarityWeights;
 
-    private final Drops drops;
+    private final MainController controller;
 
     private final double boxSpacing;
     private final double boxWidth;
@@ -42,14 +42,16 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
     private final Label idLabel;
 
     private final List<ChangeListener<Integer>> valueListeners;
+    private final EventHandler<MouseEvent> idClickHandler;
 
     public RarityWeightsComponent(double boxSpacing,
                                   double boxWidth,
-                                  Drops drops,
+                                  MainController controller,
                                   DataComponent parent) {
-        this.drops = drops;
+
         rarityWeights = new SimpleObjectProperty<>();
 
+        this.controller = controller;
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
@@ -71,6 +73,10 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
         idLabel.setText(RarityWeights.class.getSimpleName() + ": null");
         contentVBox.setDisable(true);
         setIdDisable(true);
+
+        // TODO: slow
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(RarityWeights.class)
+                .ifPresent(this::setObservable);
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         rarityWeights.addListener((o, oldVal, newVal) -> {
@@ -114,7 +120,7 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
             final int finalIndex = index;
             valueListeners.add((o, oldVal, newVal) -> {
-                makeEditable(drops);
+                makeEditable(controller.getDrops());
                 rarityWeights.get().getWeights().set(finalIndex, newVal);
 
                 RarityHBox current = (RarityHBox) contentVBox.getChildren()
@@ -144,6 +150,8 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
     @Override
     public void setObservable(Data data) {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
         rarityWeights.set((RarityWeights) data);
 
         unbindListVariables();
@@ -165,6 +173,8 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
             bindListVariables();
         }
+
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     public double getBoxSpacing() {

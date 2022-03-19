@@ -1,5 +1,6 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.ItemInfo;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.CrateDropType;
@@ -27,17 +28,13 @@ import javafx.util.Pair;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
 public class CrateDropTypeComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<CrateDropType> crateDropType;
 
-    private final Drops drops;
-    private final Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap;
-    private final Map<String, byte[]> iconMap;
-
+    private final MainController controller;
     private final double boxSpacing;
     private final double boxWidth;
     private final MobDropComponent parent;
@@ -57,18 +54,16 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     private final List<EventHandler<MouseDragEvent>> dragEnteredHandlers;
     private final List<EventHandler<MouseDragEvent>> dragExitedHandlers;
     private final List<EventHandler<MouseDragEvent>> dragReleasedHandlers;
+    private final EventHandler<MouseEvent> idClickHandler;
 
     public CrateDropTypeComponent(double boxSpacing,
                                   double boxWidth,
-                                  Drops drops,
-                                  Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                                  Map<String, byte[]> iconMap,
+                                  MainController controller,
                                   MobDropComponent parent) {
-        this.drops = drops;
-        crateDropType = new SimpleObjectProperty<>();
-        this.itemInfoMap = itemInfoMap;
-        this.iconMap = iconMap;
 
+        crateDropType = new SimpleObjectProperty<>();
+
+        this.controller = controller;
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
@@ -106,6 +101,9 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         listHBox.setDisable(true);
         setIdDisable(true);
 
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropType.class)
+                .ifPresent(this::setObservable);
+
         // both makeEditable and setObservable sets the observable, just use a listener here
         crateDropType.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
@@ -128,7 +126,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
             final int finalIndex = index;
             valueListeners.add((o, oldVal, newVal) -> {
-                makeEditable(drops);
+                makeEditable(controller.getDrops());
                 crateDropType.get().getCrateIDs().set(finalIndex, newVal.getCrateID());
 
                 TypeVBox current = (TypeVBox) listHBox.getChildren()
@@ -198,21 +196,21 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
         if (typeVBoxCache.size() < crateIDs.size()) {
             IntStream.range(0, crateIDs.size() - typeVBoxCache.size())
-                    .mapToObj(i -> new TypeVBox(boxWidth, drops, itemInfoMap, iconMap, this))
+                    .mapToObj(i -> new TypeVBox(boxWidth, controller, this))
                     .forEach(typeVBoxCache::add);
         }
 
         IntStream.range(0, crateIDs.size())
                 .mapToObj(i -> {
                     TypeVBox tvb = typeVBoxCache.get(i);
-                    tvb.setObservable(drops.getCrates().get(crateIDs.get(i)));
+                    tvb.setObservable(controller.getDrops().getCrates().get(crateIDs.get(i)));
                     return tvb;
                 })
                 .forEach(listHBox.getChildren()::add);
     }
 
     public void crateDropAdded() {
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindListVariables();
         listHBox.getChildren().clear();
@@ -225,7 +223,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     }
 
     public void crateDropRemoved(int index) {
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindListVariables();
         listHBox.getChildren().clear();
@@ -238,7 +236,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     }
 
     public void crateDropPermuted(List<Integer> indexList) {
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindListVariables();
         listHBox.getChildren().clear();
@@ -258,6 +256,8 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
     @Override
     public void setObservable(Data data) {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
         crateDropType.set((CrateDropType) data);
 
         addButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
@@ -270,6 +270,8 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
             bindListVariables();
             addButton.addEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
         }
+
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     @Override
@@ -338,10 +340,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         private final ObjectProperty<ItemInfo> itemInfo;
         private final ObjectProperty<byte[]> icon;
 
-        private final Drops drops;
-        private final Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap;
-        private final Map<String, byte[]> iconMap;
-
+        private final MainController controller;
         private final DataComponent parent;
 
         private final Label nameLabel;
@@ -355,19 +354,14 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         private final EventHandler<MouseEvent> idClickHandler;
 
         public TypeVBox(double width,
-                        Drops drops,
-                        Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                        Map<String, byte[]> iconMap,
+                        MainController controller,
                         DataComponent parent) {
-
-            this.drops = drops;
-            this.itemInfoMap = itemInfoMap;
-            this.iconMap = iconMap;
 
             crate = new SimpleObjectProperty<>();
             itemInfo = new SimpleObjectProperty<>();
             icon = new SimpleObjectProperty<>();
 
+            this.controller = controller;
             this.parent = parent;
             nameLabel = new Label();
             commentLabel = new Label();
@@ -401,9 +395,8 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
             contentVBox.setDisable(true);
             setIdDisable(true);
 
-            // TODO placeholder
-            // TODO handle editing of null crates -> it swaps the null crate at the crate type, but does not make a copy
-            idClickHandler = event -> setObservable(this.drops.getCrates().get(100));
+            idClickHandler = event -> this.controller.showSelectionMenuForResult(Crate.class)
+                    .ifPresent(this::setObservable);
 
             // both makeEditable and setObservable sets the observable, just use a listener here
             crate.addListener((o, oldVal, newVal) -> {
@@ -430,6 +423,8 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
             crate.set((Crate) data);
 
+            var iconMap = controller.getIconManager().getIconMap();
+            var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
             byte[] defaultIcon = iconMap.get("unknown");
 
             if (crate.isNull().get()) {

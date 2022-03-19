@@ -1,31 +1,31 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.MiscDropType;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 import java.util.Objects;
 
 public class MiscDropTypeComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<MiscDropType> miscDropType;
 
-    private final Drops drops;
-
+    private final MainController controller;
     private final double boxSpacing;
     private final double boxWidth;
     private final DataComponent parent;
@@ -42,19 +42,21 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
     private final ChangeListener<Number> boostListener;
     private final ChangeListener<Number> taroListener;
     private final ChangeListener<Number> fmListener;
+    private final EventHandler<MouseEvent> idClickHandler;
 
     public MiscDropTypeComponent(double boxSpacing,
                                  double boxWidth,
-                                 Drops drops,
-                                 Map<String, byte[]> iconMap,
+                                 MainController controller,
                                  DataComponent parent) {
 
-        this.drops = drops;
         miscDropType = new SimpleObjectProperty<>();
 
+        this.controller = controller;
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
+
+        var iconMap = this.controller.getIconManager().getIconMap();
         potionVBox = new TypeVBox(iconMap.get("potions"), boxWidth);
         boostVBox = new TypeVBox(iconMap.get("boosts"), boxWidth);
         taroVBox = new TypeVBox(iconMap.get("taro"), boxWidth);
@@ -77,28 +79,28 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
 
         potionListener = (o, oldVal, newVal) -> {
             if (miscDropType.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropType.get().setPotionAmount(newVal.intValue());
                 potionVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         boostListener = (o, oldVal, newVal) -> {
             if (miscDropType.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropType.get().setBoostAmount(newVal.intValue());
                 boostVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         taroListener = (o, oldVal, newVal) -> {
             if (miscDropType.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropType.get().setTaroAmount(newVal.intValue());
                 taroVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         fmListener = (o, oldVal, newVal) -> {
             if (miscDropType.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropType.get().setFMAmount(newVal.intValue());
                 fmVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
             }
@@ -107,6 +109,9 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         idLabel.setText(MiscDropType.class.getSimpleName() + ": null");
         contentHBox.setDisable(true);
         setIdDisable(true);
+
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(MiscDropType.class)
+                .ifPresent(this::setObservable);
 
         miscDropType.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
@@ -137,6 +142,8 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
 
     @Override
     public void setObservable(Data data) {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
         miscDropType.set((MiscDropType) data);
 
         unbindVariables();
@@ -154,6 +161,8 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
 
             bindVariables();
         }
+
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     public double getBoxSpacing() {

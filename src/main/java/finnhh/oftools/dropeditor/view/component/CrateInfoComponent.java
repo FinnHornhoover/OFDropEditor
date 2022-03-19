@@ -1,5 +1,6 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.ItemInfo;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -12,24 +13,23 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 import java.util.Objects;
 
 public class CrateInfoComponent extends VBox implements ObservableComponent<ItemInfo> {
     private final ObjectProperty<ItemInfo> crateInfo;
     private final ObjectProperty<byte[]> icon;
 
-    private final Map<String, byte[]> iconMap;
+    private final MainController controller;
 
     private final Label nameLabel;
     private final Label commentLabel;
     private final ImageView iconView;
 
-    public CrateInfoComponent(double width, Map<String, byte[]> iconMap) {
+    public CrateInfoComponent(double width, MainController controller) {
         crateInfo = new SimpleObjectProperty<>();
         icon = new SimpleObjectProperty<>();
 
-        this.iconMap = iconMap;
+        this.controller = controller;
 
         nameLabel = new Label();
         nameLabel.setWrapText(true);
@@ -67,6 +67,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
             commentLabel.setText("<INVALID>");
             iconView.setImage(null);
         } else {
+            var iconMap = controller.getIconManager().getIconMap();
             String name = Objects.isNull(crateInfo.get()) ?
                     "UNKNOWN" :
                     crateInfo.get().name();

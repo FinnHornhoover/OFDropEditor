@@ -122,6 +122,30 @@ public class Drops extends Data {
                 .orElse(ReferenceMode.NONE);
     }
 
+    public Optional<AlternateMapProperty<? extends Data>> getDataMap(Class<? extends Data> dataClass) {
+        var classMapMap = Map.ofEntries(
+                Map.entry(CrateDropChance.class, crateDropChances),
+                Map.entry(CrateDropType.class, crateDropTypes),
+                Map.entry(MiscDropChance.class, miscDropChances),
+                Map.entry(MiscDropType.class, miscDropTypes),
+                Map.entry(MobDrop.class, mobDrops),
+                Map.entry(Event.class, events),
+                Map.entry(Mob.class, mobs),
+                Map.entry(RarityWeights.class, rarityWeights),
+                Map.entry(ItemSet.class, itemSets),
+                Map.entry(Crate.class, crates),
+                Map.entry(ItemReference.class, itemReferences),
+                Map.entry(Racing.class, racing),
+                Map.entry(NanoCapsule.class, nanoCapsules),
+                Map.entry(CodeItem.class, codeItems)
+        );
+
+        return classMapMap.entrySet().stream()
+                .filter(e -> dataClass.isAssignableFrom(e.getKey()))
+                .findFirst()
+                .map(Map.Entry::getValue);
+    }
+
     public Data add(Data data) {
         if (data instanceof CrateDropChance)
             return crateDropChances.add((CrateDropChance) data);
@@ -151,39 +175,6 @@ public class Drops extends Data {
             return nanoCapsules.add((NanoCapsule) data);
         else if (data instanceof CodeItem)
             return codeItems.add((CodeItem) data);
-        else
-            return null;
-    }
-
-    public Data remove(Class<? extends Data> dataClass, int dataKey) {
-        if (dataClass.isAssignableFrom(CrateDropChance.class))
-            return crateDropChances.remove(dataKey);
-        else if (dataClass.isAssignableFrom(CrateDropType.class))
-            return crateDropTypes.remove(dataKey);
-        else if (dataClass.isAssignableFrom(MiscDropChance.class))
-            return miscDropChances.remove(dataKey);
-        else if (dataClass.isAssignableFrom(MiscDropType.class))
-            return miscDropTypes.remove(dataKey);
-        else if (dataClass.isAssignableFrom(MobDrop.class))
-            return mobDrops.remove(dataKey);
-        else if (dataClass.isAssignableFrom(Event.class))
-            return events.remove(dataKey);
-        else if (dataClass.isAssignableFrom(Mob.class))
-            return mobs.remove(dataKey);
-        else if (dataClass.isAssignableFrom(RarityWeights.class))
-            return rarityWeights.remove(dataKey);
-        else if (dataClass.isAssignableFrom(ItemSet.class))
-            return itemSets.remove(dataKey);
-        else if (dataClass.isAssignableFrom(Crate.class))
-            return crates.remove(dataKey);
-        else if (dataClass.isAssignableFrom(ItemReference.class))
-            return itemReferences.remove(dataKey);
-        else if (dataClass.isAssignableFrom(Racing.class))
-            return racing.remove(dataKey);
-        else if (dataClass.isAssignableFrom(NanoCapsule.class))
-            return nanoCapsules.remove(dataKey);
-        else if (dataClass.isAssignableFrom(CodeItem.class))
-            return codeItems.remove(dataKey);
         else
             return null;
     }
@@ -493,7 +484,7 @@ public class Drops extends Data {
                 return false;
 
             String key = keyMap.get(trueKey);
-            return !Objects.isNull(key) && containsKey(key);
+            return Objects.nonNull(key) && containsKey(key);
         }
 
         public void setDefault() {

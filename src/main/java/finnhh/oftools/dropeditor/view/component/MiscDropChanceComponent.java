@@ -1,16 +1,18 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.MiscDropChance;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -21,8 +23,7 @@ import java.util.Objects;
 public class MiscDropChanceComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<MiscDropChance> miscDropChance;
 
-    private final Drops drops;
-
+    private final MainController controller;
     private final double boxSpacing;
     private final double boxWidth;
     private final DataComponent parent;
@@ -43,14 +44,16 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
     private final ChangeListener<Number> taroChanceTotalListener;
     private final ChangeListener<Number> fmChanceListener;
     private final ChangeListener<Number> fmChanceTotalListener;
+    private final EventHandler<MouseEvent> idClickHandler;
 
     public MiscDropChanceComponent(double boxSpacing,
                                    double boxWidth,
-                                   Drops drops,
+                                   MainController controller,
                                    DataComponent parent) {
-        this.drops = drops;
+
         miscDropChance = new SimpleObjectProperty<>();
 
+        this.controller = controller;
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
@@ -76,56 +79,56 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
 
         potionChanceListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setPotionDropChance(newVal.intValue());
                 potionVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         potionChanceTotalListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setPotionDropChanceTotal(newVal.intValue());
                 potionVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         boostChanceListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setBoostDropChance(newVal.intValue());
                 boostVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         boostChanceTotalListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setBoostDropChanceTotal(newVal.intValue());
                 boostVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         taroChanceListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setTaroDropChance(newVal.intValue());
                 taroVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         taroChanceTotalListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setTaroDropChanceTotal(newVal.intValue());
                 taroVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         fmChanceListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setFMDropChance(newVal.intValue());
                 fmVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
             }
         };
         fmChanceTotalListener = (o, oldVal, newVal) -> {
             if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.drops);
+                makeEditable(this.controller.getDrops());
                 miscDropChance.get().setFMDropChanceTotal(newVal.intValue());
                 fmVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
             }
@@ -134,6 +137,9 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         idLabel.setText(MiscDropChance.class.getSimpleName() + ": null");
         contentHBox.setDisable(true);
         setIdDisable(true);
+
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(MiscDropChance.class)
+                .ifPresent(this::setObservable);
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         miscDropChance.addListener((o, oldVal, newVal) -> {
@@ -174,6 +180,8 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
 
     @Override
     public void setObservable(Data data) {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
         miscDropChance.set((MiscDropChance) data);
 
         unbindVariables();
@@ -199,6 +207,8 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
 
             bindVariables();
         }
+
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     public double getBoxSpacing() {

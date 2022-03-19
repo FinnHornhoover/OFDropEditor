@@ -1,7 +1,6 @@
 package finnhh.oftools.dropeditor.view.component;
 
-import finnhh.oftools.dropeditor.model.ItemInfo;
-import finnhh.oftools.dropeditor.model.MobTypeInfo;
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Mob;
@@ -13,35 +12,26 @@ import javafx.scene.control.ListView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.util.Pair;
 
-import java.util.Map;
 import java.util.Objects;
 
 public class MobComponent extends HBox implements RootDataComponent {
     private final ObjectProperty<Mob> mob;
 
-    private final Drops drops;
-    private final Map<Integer, MobTypeInfo> mobTypeInfoMap;
+    private final MainController controller;
 
     private final MobInfoComponent mobInfoComponent;
     private final MobDropComponent mobDropComponent;
     private final Label idLabel;
     private final BorderPane mobBorderPane;
 
-    public MobComponent(Drops drops,
-                        Map<Integer, MobTypeInfo> mobTypeInfoMap,
-                        Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                        Map<String, byte[]> iconMap,
-                        ListView<Data> listView) {
-
+    public MobComponent(MainController controller, ListView<Data> listView) {
         mob = new SimpleObjectProperty<>();
 
-        this.drops = drops;
-        this.mobTypeInfoMap = mobTypeInfoMap;
+        this.controller = controller;
 
-        mobInfoComponent = new MobInfoComponent(iconMap);
-        mobDropComponent = new MobDropComponent(drops, itemInfoMap, iconMap, this);
+        mobInfoComponent = new MobInfoComponent(160.0, controller);
+        mobDropComponent = new MobDropComponent(60.0, 160.0, controller, this);
 
         mobDropComponent.prefWidthProperty().bind(listView.widthProperty()
                 .subtract(mobInfoComponent.widthProperty())
@@ -91,8 +81,8 @@ public class MobComponent extends HBox implements RootDataComponent {
             mobInfoComponent.setObservable(null);
             mobDropComponent.setObservable(null);
         } else {
-            mobInfoComponent.setObservable(mobTypeInfoMap.get(mob.get().getMobID()));
-            mobDropComponent.setObservable(drops.getMobDrops().get(mob.get().getMobDropID()));
+            mobInfoComponent.setObservable(controller.getStaticDataStore().getMobTypeInfoMap().get(mob.get().getMobID()));
+            mobDropComponent.setObservable(controller.getDrops().getMobDrops().get(mob.get().getMobDropID()));
         }
     }
 

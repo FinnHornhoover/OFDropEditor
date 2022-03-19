@@ -28,15 +28,15 @@ public abstract class Data implements BindingConstructor {
     public void unregisterReferences(Drops drops) {
     }
 
-    public void registerReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
+    public final void registerReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
         referenceMap.putIfAbsent(referenced, new HashSet<>());
         referenceMap.get(referenced).add(this);
     }
 
-    public void unregisterReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
+    public final void unregisterReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
         var referenceSet = referenceMap.get(referenced);
 
-        if (!Objects.isNull(referenceSet)) {
+        if (Objects.nonNull(referenceSet)) {
             referenceSet.remove(this);
             if (referenceSet.isEmpty())
                 referenceMap.remove(referenced);
@@ -65,7 +65,7 @@ public abstract class Data implements BindingConstructor {
 
         integerListProperty.stream()
                 .map(observableMap::get)
-                .filter(ip -> !Objects.isNull(ip))
+                .filter(Objects::nonNull)
                 .forEach(ip -> registerReferenced(referenceMap, ip));
 
         integerListProperty.addListener((ListChangeListener<Integer>) change -> {
@@ -73,14 +73,14 @@ public abstract class Data implements BindingConstructor {
                 if (change.wasRemoved()) {
                     change.getRemoved().stream()
                             .map(observableMap::get)
-                            .filter(ip -> !Objects.isNull(ip))
+                            .filter(Objects::nonNull)
                             .forEach(ip -> unregisterReferenced(referenceMap, ip));
                 }
 
                 if (change.wasAdded()) {
                     change.getAddedSubList().stream()
                             .map(observableMap::get)
-                            .filter(ip -> !Objects.isNull(ip))
+                            .filter(Objects::nonNull)
                             .forEach(ip -> registerReferenced(referenceMap, ip));
                 }
             }
@@ -101,7 +101,7 @@ public abstract class Data implements BindingConstructor {
 
         integerListProperty.stream()
                 .map(observableMap::get)
-                .filter(ip -> !Objects.isNull(ip))
+                .filter(Objects::nonNull)
                 .forEach(ip -> unregisterReferenced(referenceMap, ip));
     }
 

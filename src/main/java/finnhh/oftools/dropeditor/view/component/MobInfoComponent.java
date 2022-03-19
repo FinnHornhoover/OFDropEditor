@@ -1,5 +1,6 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.MobTypeInfo;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -12,27 +13,22 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 
 import java.io.ByteArrayInputStream;
-import java.util.Map;
 import java.util.Objects;
 
 public class MobInfoComponent extends VBox implements ObservableComponent<MobTypeInfo> {
     private final ObjectProperty<MobTypeInfo> mobTypeInfo;
     private final ObjectProperty<byte[]> icon;
 
-    private final Map<String, byte[]> iconMap;
+    private final MainController controller;
 
     private final Label mobNameLabel;
     private final ImageView iconView;
 
-    public MobInfoComponent(Map<String, byte[]> iconMap) {
-        this(160.0, iconMap);
-    }
-
-    public MobInfoComponent(double width, Map<String, byte[]> iconMap) {
+    public MobInfoComponent(double width, MainController controller) {
         mobTypeInfo = new SimpleObjectProperty<>();
         icon = new SimpleObjectProperty<>();
 
-        this.iconMap = iconMap;
+        this.controller = controller;
 
         mobNameLabel = new Label();
         mobNameLabel.setWrapText(true);
@@ -65,6 +61,7 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
             mobNameLabel.setText("<INVALID>");
             iconView.setImage(null);
         } else {
+            var iconMap = controller.getIconManager().getIconMap();
             String name = Objects.isNull(mobTypeInfo.get()) ?
                     "Unknown Mob" :
                     mobTypeInfo.get().name();

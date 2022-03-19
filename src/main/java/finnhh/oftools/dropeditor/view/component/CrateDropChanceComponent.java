@@ -1,8 +1,8 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.CrateDropChance;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.DoubleExpression;
@@ -10,10 +10,12 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -27,8 +29,7 @@ import java.util.stream.IntStream;
 public class CrateDropChanceComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<CrateDropChance> crateDropChance;
 
-    private final Drops drops;
-
+    private final MainController controller;
     private final double boxSpacing;
     private final double boxWidth;
     private final DataComponent parent;
@@ -40,14 +41,16 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     private final List<ChanceVBox> chanceVBoxCache;
 
     private final List<ChangeListener<Integer>> valueListeners;
+    private final EventHandler<MouseEvent> idClickHandler;
 
     public CrateDropChanceComponent(double boxSpacing,
                                     double boxWidth,
-                                    Drops drops,
+                                    MainController controller,
                                     DataComponent parent) {
-        this.drops = drops;
+
         crateDropChance = new SimpleObjectProperty<>();
 
+        this.controller = controller;
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
@@ -73,6 +76,9 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         idLabel.setText(CrateDropChance.class.getSimpleName() + ": null");
         listHBox.setDisable(true);
         setIdDisable(true);
+
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropChance.class)
+                .ifPresent(this::setObservable);
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         crateDropChance.addListener((o, oldVal, newVal) -> {
@@ -110,7 +116,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
 
             final int finalIndex = index;
             valueListeners.add((o, oldVal, newVal) -> {
-                makeEditable(drops);
+                makeEditable(controller.getDrops());
                 crateDropChance.get().getCrateTypeDropWeights().set(finalIndex, newVal);
 
                 ChanceVBox current = (ChanceVBox) listHBox.getChildren()
@@ -155,7 +161,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     }
 
     public void crateDropAdded() {
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindListVariables();
         listHBox.getChildren().clear();
@@ -167,7 +173,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     }
 
     public void crateDropRemoved(int index) {
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindListVariables();
         listHBox.getChildren().clear();
@@ -179,7 +185,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     }
 
     public void crateDropPermuted(List<Integer> indexList) {
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindListVariables();
         listHBox.getChildren().clear();
@@ -198,6 +204,8 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
 
     @Override
     public void setObservable(Data data) {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
         crateDropChance.set((CrateDropChance) data);
 
         unbindListVariables();
@@ -207,6 +215,8 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
             populateListBox();
             bindListVariables();
         }
+
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     public double getBoxSpacing() {

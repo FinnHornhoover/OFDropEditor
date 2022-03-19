@@ -1,10 +1,10 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.Gender;
 import finnhh.oftools.dropeditor.model.ItemInfo;
 import finnhh.oftools.dropeditor.model.Rarity;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.ItemReference;
 import finnhh.oftools.dropeditor.model.data.ItemSet;
 import javafx.beans.binding.Bindings;
@@ -40,10 +40,7 @@ import java.util.stream.IntStream;
 public class ItemSetComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<ItemSet> itemSet;
 
-    private final Drops drops;
-    private final Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap;
-    private final Map<String, byte[]> iconMap;
-
+    private final MainController controller;
     private final double listBoxWidth;
     private final double listBoxSpacing;
     private final DataComponent parent;
@@ -88,19 +85,16 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
     private final List<EventHandler<MouseEvent>> removeClickHandlers;
     private final List<ChangeListener<Rarity>> rarityListeners;
     private final List<ChangeListener<Gender>> genderListeners;
+    private final EventHandler<MouseEvent> idClickHandler;
 
     public ItemSetComponent(double listBoxWidth,
                             double listBoxSpacing,
-                            Drops drops,
-                            Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                            Map<String, byte[]> iconMap,
+                            MainController controller,
                             DataComponent parent) {
 
         itemSet = new SimpleObjectProperty<>();
 
-        this.drops = drops;
-        this.itemInfoMap = itemInfoMap;
-        this.iconMap = iconMap;
+        this.controller = controller;
 
         this.listBoxWidth = listBoxWidth;
         this.listBoxSpacing = listBoxSpacing;
@@ -181,7 +175,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             Gender gender = genderViewSettingsChoiceBox.getValue();
             double hValue = listScrollPane.getHvalue();
 
-            makeEditable(this.drops);
+            makeEditable(this.controller.getDrops());
 
             unbindVariables();
 
@@ -197,7 +191,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             Gender gender = genderViewSettingsChoiceBox.getValue();
             double hValue = listScrollPane.getHvalue();
 
-            makeEditable(this.drops);
+            makeEditable(this.controller.getDrops());
 
             unbindVariables();
 
@@ -214,7 +208,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             Rarity rarity = rarityViewSettingsChoiceBox.getValue();
             double hValue = listScrollPane.getHvalue();
 
-            makeEditable(this.drops);
+            makeEditable(this.controller.getDrops());
 
             unbindVariables();
 
@@ -245,6 +239,10 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         contentVBox.setDisable(true);
         setIdDisable(true);
 
+        // TODO: does not save
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemSet.class)
+                .ifPresent(this::setObservable);
+
         // both makeEditable and setObservable sets the observable, just use a listener here
         itemSet.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
@@ -265,7 +263,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         if (Objects.isNull(ir))
             return false;
 
-        ItemInfo itemInfo = itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType()));
+        ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(
+                new Pair<>(ir.getItemID(), ir.getType()));
 
         if (Objects.isNull(itemInfo))
             return false;
@@ -325,7 +324,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                 Gender gender = genderViewSettingsChoiceBox.getValue();
                 double hValue = listScrollPane.getHvalue();
 
-                makeEditable(drops);
+                makeEditable(controller.getDrops());
 
                 unbindVariables();
 
@@ -355,7 +354,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                 Gender gender = genderViewSettingsChoiceBox.getValue();
                 double hValue = listScrollPane.getHvalue();
 
-                makeEditable(drops);
+                makeEditable(controller.getDrops());
 
                 unbindVariables();
 
@@ -364,7 +363,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                         .get(finalIndex);
 
                 ItemReference itemReference = current.getItemReference();
-                ItemInfo itemInfo = itemInfoMap.get(new Pair<>(itemReference.getItemID(), itemReference.getType()));
+                ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(
+                        new Pair<>(itemReference.getItemID(), itemReference.getType()));
 
                 var alterRarityMap = itemSet.get().getAlterRarityMap();
 
@@ -385,7 +385,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                 Gender gender = genderViewSettingsChoiceBox.getValue();
                 double hValue = listScrollPane.getHvalue();
 
-                makeEditable(drops);
+                makeEditable(controller.getDrops());
 
                 unbindVariables();
 
@@ -394,7 +394,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                         .get(finalIndex);
 
                 ItemReference itemReference = current.getItemReference();
-                ItemInfo itemInfo = itemInfoMap.get(new Pair<>(itemReference.getItemID(), itemReference.getType()));
+                ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(
+                        new Pair<>(itemReference.getItemID(), itemReference.getType()));
 
                 var alterGenderMap = itemSet.get().getAlterGenderMap();
 
@@ -467,14 +468,14 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
         if (itemDropVBoxCache.size() < itemReferenceIDs.size()) {
             IntStream.range(0, itemReferenceIDs.size() - itemDropVBoxCache.size())
-                    .mapToObj(i -> new ItemDropVBox(listBoxWidth, listBoxSpacing, itemInfoMap, iconMap, this))
+                    .mapToObj(i -> new ItemDropVBox(listBoxWidth, listBoxSpacing, controller, this))
                     .forEach(itemDropVBoxCache::add);
         }
 
         IntStream.range(0, itemReferenceIDs.size())
                 .mapToObj(i -> {
                     ItemDropVBox idvb = itemDropVBoxCache.get(i);
-                    idvb.setObservable(drops.getItemReferences().get(itemReferenceIDs.get(i)));
+                    idvb.setObservable(controller.getDrops().getItemReferences().get(itemReferenceIDs.get(i)));
                     return idvb;
                 })
                 .forEach(originalOrderList::add);
@@ -486,6 +487,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
         int mode = itemSet.get().getDefaultItemWeight();
         int maxOccurrence = 0;
+        var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
 
         for (Node c : originalOrderList.filtered(c -> c instanceof ItemDropVBox)) {
             ItemDropVBox idvb = (ItemDropVBox) c;
@@ -494,7 +496,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             if (Objects.isNull(uncheckedIR))
                 continue;
 
-            ItemReference ir = drops.getItemReferences().get(uncheckedIR.getItemReferenceID());
+            ItemReference ir = controller.getDrops().getItemReferences().get(uncheckedIR.getItemReferenceID());
 
             if (Objects.isNull(ir) || !itemInfoMap.containsKey(new Pair<>(ir.getItemID(), ir.getType())))
                 continue;
@@ -532,7 +534,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         Gender gender = genderViewSettingsChoiceBox.getValue();
         double hValue = listScrollPane.getHvalue();
 
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindVariables();
         originalOrderList.clear();
@@ -553,7 +555,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         Gender gender = genderViewSettingsChoiceBox.getValue();
         double hValue = listScrollPane.getHvalue();
 
-        makeEditable(drops);
+        makeEditable(controller.getDrops());
 
         unbindVariables();
         originalOrderList.clear();
@@ -575,6 +577,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
     @Override
     public void setObservable(Data data) {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
         itemSet.set((ItemSet) data);
 
         unbindVariables();
@@ -596,6 +600,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
             bindVariables();
         }
+
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     public ItemSet getItemSet() {
@@ -697,8 +703,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         private final ObjectProperty<ItemInfo> itemInfo;
         private final ObjectProperty<byte[]> icon;
 
-        private final Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap;
-        private final Map<String, byte[]> iconMap;
+        private final MainController controller;
         private final ItemSetComponent parent;
 
         private final ImageView iconView;
@@ -713,18 +718,18 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         private final Button removeButton;
         private final HBox idHBox;
 
+        private final EventHandler<MouseEvent> idClickHandler;
+
         public ItemDropVBox(double boxWidth,
                             double boxSpacing,
-                            Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap,
-                            Map<String, byte[]> iconMap,
+                            MainController controller,
                             ItemSetComponent parent) {
 
             itemReference = new SimpleObjectProperty<>();
             itemInfo = new SimpleObjectProperty<>();
             icon = new SimpleObjectProperty<>();
 
-            this.itemInfoMap = itemInfoMap;
-            this.iconMap = iconMap;
+            this.controller = controller;
             this.parent = parent;
 
             iconView = new ImageView();
@@ -779,6 +784,10 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             contentVBox.setDisable(true);
             setIdDisable(true);
 
+            // TODO: runs out of heap space
+            idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
+                    .ifPresent(this::setObservable);
+
             // both makeEditable and setObservable sets the observable, just use a listener here
             itemReference.addListener((o, oldVal, newVal) -> {
                 if (Objects.isNull(newVal)) {
@@ -800,8 +809,11 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
         @Override
         public void setObservable(Data data) {
+            idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+
             itemReference.set((ItemReference) data);
 
+            var iconMap = controller.getIconManager().getIconMap();
             byte[] defaultIcon = iconMap.get("unknown");
 
             nameLabel.setText("<INVALID>");
@@ -809,7 +821,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             contentVBox.setDisable(true);
 
             if (itemReference.isNotNull().get()) {
-                ItemInfo itemInfo = itemInfoMap.get(new Pair<>(
+                ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
                         itemReference.get().getItemID(),
                         itemReference.get().getType()
                 ));
@@ -839,6 +851,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                     contentVBox.setDisable(false);
                 }
             }
+
+            idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
         }
 
         public ItemReference getItemReference() {

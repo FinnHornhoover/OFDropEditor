@@ -1,16 +1,23 @@
 package finnhh.oftools.dropeditor;
 
 import com.google.gson.JsonSyntaxException;
+import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Preferences;
 import finnhh.oftools.dropeditor.model.exception.EditorInitializationException;
+import finnhh.oftools.dropeditor.view.component.ReferenceListComponent;
+import finnhh.oftools.dropeditor.view.component.ReferenceTrailComponent;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
+import javafx.scene.control.TableView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -212,6 +219,25 @@ public class MainApplication extends Application {
                     "Preferences Not Saved",
                     "Your preferences could not be saved. Please delete or move the preference file and relaunch.");
         }
+    }
+
+    public Optional<Data> showSelectionAlert(String title,
+                                             String body,
+                                             TableView<ReferenceListComponent> tableView) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(body);
+        alert.setGraphic(null);
+
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.setContent(tableView);
+        dialogPane.getScene().getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
+        dialogPane.setMinWidth(400.0);
+
+        return alert.showAndWait()
+                .filter(bt -> bt == ButtonType.OK)
+                .map(bt -> tableView.getSelectionModel().getSelectedItem())
+                .map(ReferenceListComponent::getOriginData);
     }
 
     @Override
