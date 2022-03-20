@@ -15,6 +15,7 @@ import javafx.scene.control.*;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public class MainController {
     @FXML
@@ -123,7 +124,8 @@ public class MainController {
         Platform.runLater(mainListView::refresh);
     }
 
-    public TableView<ReferenceListComponent> getReferenceGraphic(Class<? extends Data> dataClass) {
+    public TableView<ReferenceListComponent> getReferenceGraphic(Class<? extends Data> dataClass,
+                                                                 Predicate<Data> filterCondition) {
         TableView<ReferenceListComponent> tableView = new TableView<>();
 
         TableColumn<ReferenceListComponent, ImageSummaryComponent> idColumn = new TableColumn<>("ID");
@@ -153,16 +155,22 @@ public class MainController {
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
         drops.getDataMap(dataClass).ifPresent(dataMap -> tableView.getItems().addAll(dataMap.values().stream()
+                .filter(filterCondition)
                 .map(d -> new ReferenceListComponent(10.0, 64.0, this, d))
                 .toList()));
 
         return tableView;
     }
 
-    public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass) {
-        return application.showSelectionAlert("Selection " + dataClass.getSimpleName(),
+    public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass,
+                                                     Predicate<Data> filterCondition) {
+        return application.showSelectionAlert(dataClass.getSimpleName() + " Selection",
                 "Please select one:",
-                getReferenceGraphic(dataClass));
+                getReferenceGraphic(dataClass, filterCondition));
+    }
+
+    public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass) {
+        return showSelectionMenuForResult(dataClass, d -> true);
     }
 
     public void setJSONManager(JSONManager jsonManager) {

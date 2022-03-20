@@ -61,6 +61,10 @@ public interface DataComponent extends ObservableComponent<Data> {
         Data oldObject = getObservable().get();
         DataComponent parent = getParentComponent();
 
+        // do nothing if the edit is done with the same object
+        if (oldObject.idEquals(newObject))
+            return;
+
         // 1?. if component has a parent, then make the parent editable as well
         if (drops.getReferenceModeFor(oldObject) == ReferenceMode.MULTIPLE && Objects.nonNull(parent))
             parent.makeEditable(drops);
@@ -80,7 +84,11 @@ public interface DataComponent extends ObservableComponent<Data> {
             // 4?. remove the reference map ties of old object
             referencer.unregisterReferenced(referenceMap, oldObject);
 
-            // 5?. tie the new object in the reference map
+            // 5?. if the old object is dangling, free it
+            if (drops.getReferenceModeFor(oldObject) == ReferenceMode.NONE)
+                drops.remove(oldObject);
+
+            // 6?. tie the new object in the reference map
             referencer.registerReferenced(referenceMap, newObject);
         }
     }

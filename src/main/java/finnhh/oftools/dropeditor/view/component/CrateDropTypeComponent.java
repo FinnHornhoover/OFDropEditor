@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 public class CrateDropTypeComponent extends BorderPane implements DataComponent {
@@ -102,8 +103,12 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         listHBox.setDisable(true);
         setIdDisable(true);
 
-        // TODO: size mismatch with crate types
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropType.class)
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropType.class,
+                        d -> ((CrateDropType) d).getCrateIDs().size() == Optional.ofNullable(this.parent)
+                                .map(MobDropComponent::getCrateDropChanceComponent)
+                                .map(CrateDropChanceComponent::getCrateDropChance)
+                                .map(cdc -> cdc.getCrateTypeDropWeights().size())
+                                .orElse(0))
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
@@ -220,7 +225,9 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         crateDropType.get().getCrateIDs().add(newCrateID);
 
         populateListBox();
-        parent.getCrateDropChanceComponent().crateDropAdded();
+        Optional.ofNullable(parent)
+                .map(MobDropComponent::getCrateDropChanceComponent)
+                .ifPresent(CrateDropChanceComponent::crateDropAdded);
         bindListVariables();
     }
 
@@ -233,7 +240,9 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         crateDropType.get().getCrateIDs().remove(index);
 
         populateListBox();
-        parent.getCrateDropChanceComponent().crateDropRemoved(index);
+        Optional.ofNullable(parent)
+                .map(MobDropComponent::getCrateDropChanceComponent)
+                .ifPresent(cdcc -> cdcc.crateDropRemoved(index));
         bindListVariables();
     }
 
@@ -252,7 +261,9 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         crateIDs.addAll(newCrateIDs);
 
         populateListBox();
-        parent.getCrateDropChanceComponent().crateDropPermuted(indexList);
+        Optional.ofNullable(parent)
+                .map(MobDropComponent::getCrateDropChanceComponent)
+                .ifPresent(cdcc -> cdcc.crateDropPermuted(indexList));
         bindListVariables();
     }
 

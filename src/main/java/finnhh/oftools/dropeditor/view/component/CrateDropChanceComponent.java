@@ -20,10 +20,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class CrateDropChanceComponent extends BorderPane implements DataComponent {
@@ -32,7 +29,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     private final MainController controller;
     private final double boxSpacing;
     private final double boxWidth;
-    private final DataComponent parent;
+    private final MobDropComponent parent;
 
     private final HBox listHBox;
     private final ScrollPane contentScrollPane;
@@ -46,7 +43,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     public CrateDropChanceComponent(double boxSpacing,
                                     double boxWidth,
                                     MainController controller,
-                                    DataComponent parent) {
+                                    MobDropComponent parent) {
 
         crateDropChance = new SimpleObjectProperty<>();
 
@@ -77,8 +74,12 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         listHBox.setDisable(true);
         setIdDisable(true);
 
-        // TODO: size mismatch with crate types
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropChance.class)
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropChance.class,
+                        d -> ((CrateDropChance) d).getCrateTypeDropWeights().size() == Optional.ofNullable(this.parent)
+                                .map(MobDropComponent::getCrateDropTypeComponent)
+                                .map(CrateDropTypeComponent::getCrateDropType)
+                                .map(cdt -> cdt.getCrateIDs().size())
+                                .orElse(0))
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
