@@ -8,6 +8,7 @@ import finnhh.oftools.dropeditor.model.exception.EditorInitializationException;
 import finnhh.oftools.dropeditor.view.component.ReferenceListComponent;
 import finnhh.oftools.dropeditor.view.component.ReferenceTrailComponent;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -234,6 +235,7 @@ public class MainApplication extends Application {
         dialogPane.setContent(tableView);
         dialogPane.getScene().getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
         dialogPane.setMinWidth(450.0);
+        Platform.runLater(tableView::requestFocus);
 
         return alert.showAndWait()
                 .filter(bt -> bt == ButtonType.OK)

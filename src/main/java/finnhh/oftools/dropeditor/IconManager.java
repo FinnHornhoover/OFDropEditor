@@ -2,7 +2,6 @@ package finnhh.oftools.dropeditor;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +28,17 @@ public class IconManager {
         for (String name : List.of("unknown", "taro", "fm", "boosts", "potions", "down")) {
             Path path = Paths.get(new File(
                     Objects.requireNonNull(IconManager.class.getResource(name + ".png")).getFile()).getPath());
+            iconMap.put(name, Files.readAllBytes(path));
+        }
+
+        // race IZ icons
+        for (int i = 1; i < 34; i++) {
+            if (i == 6) continue;
+
+            String name = String.format("ep_small_%02d", i);
+            System.out.println(name);
+            Path path = Paths.get(new File(
+                    Objects.requireNonNull(IconManager.class.getResource("ep/" + name + ".png")).getFile()).getPath());
             iconMap.put(name, Files.readAllBytes(path));
         }
     }
