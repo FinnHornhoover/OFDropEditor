@@ -12,6 +12,8 @@ import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.layout.Region;
+import javafx.util.Callback;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -127,6 +129,7 @@ public class MainController {
     public TableView<ReferenceListComponent> getReferenceGraphic(Class<? extends Data> dataClass,
                                                                  Predicate<Data> filterCondition) {
         TableView<ReferenceListComponent> tableView = new TableView<>();
+        tableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 
         TableColumn<ReferenceListComponent, ImageSummaryComponent> idColumn = new TableColumn<>("ID");
         idColumn.setCellValueFactory(cellData -> new SimpleObjectProperty<>(
@@ -138,15 +141,7 @@ public class MainController {
             @Override
             protected void updateItem(ReferenceListComponent referenceListComponent, boolean empty) {
                 super.updateItem(referenceListComponent, empty);
-
-                Optional.ofNullable(getItem()).ifPresent(ReferenceListComponent::destroyView);
-
-                if (!empty && Objects.nonNull(referenceListComponent)) {
-                    referenceListComponent.constructView();
-                    setGraphic(referenceListComponent);
-                } else {
-                    setGraphic(null);
-                }
+                setGraphic((!empty && Objects.nonNull(referenceListComponent)) ? referenceListComponent : null);
             }
         });
 
@@ -154,9 +149,14 @@ public class MainController {
         tableView.getColumns().add(referenceColumn);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
+        idColumn.setMaxWidth(68.0);
+        referenceColumn.prefWidthProperty().bind(tableView.widthProperty()
+                .subtract(idColumn.widthProperty())
+                .subtract(30));
+
         drops.getDataMap(dataClass).ifPresent(dataMap -> tableView.getItems().addAll(dataMap.values().stream()
                 .filter(filterCondition)
-                .map(d -> new ReferenceListComponent(10.0, 64.0, this, d))
+                .map(d -> new ReferenceListComponent(64.0, this, d))
                 .toList()));
 
         return tableView;

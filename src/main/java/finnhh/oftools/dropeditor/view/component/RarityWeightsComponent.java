@@ -74,7 +74,6 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
         contentVBox.setDisable(true);
         setIdDisable(true);
 
-        // TODO: slow
         idClickHandler = event -> this.controller.showSelectionMenuForResult(RarityWeights.class)
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 

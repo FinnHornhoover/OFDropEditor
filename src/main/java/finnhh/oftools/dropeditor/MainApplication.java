@@ -228,6 +228,7 @@ public class MainApplication extends Application {
         alert.setTitle(title);
         alert.setHeaderText(body);
         alert.setGraphic(null);
+        alert.setResizable(true);
 
         DialogPane dialogPane = alert.getDialogPane();
         dialogPane.setContent(tableView);

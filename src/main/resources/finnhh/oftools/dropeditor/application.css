@@ -61,6 +61,10 @@
     -fx-control-inner-background: gainsboro;
 }
 
+.list-cell:empty {
+    -fx-opacity: 0;
+}
+
 .spinner, .spinner:focused, .spinner:contains-focus {
     -fx-background-color: #005289;
 }

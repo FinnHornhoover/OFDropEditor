@@ -242,7 +242,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         contentVBox.setDisable(true);
         setIdDisable(true);
 
-        // TODO: slow
         idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemSet.class)
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
@@ -812,7 +811,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             contentVBox.setDisable(true);
             setIdDisable(true);
 
-            // TODO: slow
             // observable is listened, it is okay to just set the observable
             idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
                     .ifPresent(this::setObservable);

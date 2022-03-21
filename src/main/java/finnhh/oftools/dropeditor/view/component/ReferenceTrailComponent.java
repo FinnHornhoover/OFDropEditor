@@ -8,10 +8,13 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
-import javafx.scene.control.Label;
-import javafx.scene.layout.HBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.VBox;
 
-public class ReferenceTrailComponent extends HBox {
+import java.io.ByteArrayInputStream;
+
+public class ReferenceTrailComponent extends VBox {
     private final ListProperty<Data> dataList;
     private final MainController controller;
     private final double imageWidth;
@@ -23,7 +26,7 @@ public class ReferenceTrailComponent extends HBox {
         this.imageWidth = imageWidth;
 
         setSpacing(2);
-        setAlignment(Pos.CENTER_LEFT);
+        setAlignment(Pos.TOP_CENTER);
     }
 
     public ReferenceTrailComponent(ReferenceTrailComponent other, Data data) {
@@ -34,19 +37,25 @@ public class ReferenceTrailComponent extends HBox {
         this.imageWidth = other.imageWidth;
 
         setSpacing(2);
-        setAlignment(Pos.CENTER_LEFT);
+        setAlignment(Pos.TOP_CENTER);
     }
 
     public void constructView() {
-        for (int i = 1; i < this.dataList.size(); i++) {
-            if (i > 1)
-                getChildren().add(new Label(">"));
-            getChildren().add(new ImageSummaryComponent(this.imageWidth, this.controller, this.dataList.get(i)));
+        for (int i = 1; i < dataList.size(); i++) {
+            if (i > 1) {
+                getChildren().add(new ImageView(new Image(new ByteArrayInputStream(
+                        controller.getIconManager().getIconMap().get("down")))));
+            }
+            getChildren().add(new ImageSummaryComponent(imageWidth, controller, dataList.get(i)));
         }
     }
 
     public void destroyView() {
         getChildren().clear();
+    }
+
+    public double getApproximateHeight() {
+        return imageWidth + Math.max(0, dataList.size() - 2) * (20.0 + imageWidth);
     }
 
     public ObservableList<Data> getDataList() {

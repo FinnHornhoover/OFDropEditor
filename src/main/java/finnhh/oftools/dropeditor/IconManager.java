@@ -26,7 +26,7 @@ public class IconManager {
             iconMap.put(name, Files.readAllBytes(path));
         }
 
-        for (String name : List.of("unknown", "taro", "fm", "boosts", "potions")) {
+        for (String name : List.of("unknown", "taro", "fm", "boosts", "potions", "down")) {
             Path path = Paths.get(new File(
                     Objects.requireNonNull(IconManager.class.getResource(name + ".png")).getFile()).getPath());
             iconMap.put(name, Files.readAllBytes(path));
