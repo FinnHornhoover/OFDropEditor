@@ -16,14 +16,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class ReferenceListComponent extends ListView<ReferenceTrailComponent> {
-    private final ListProperty<ReferenceTrailComponent> referenceTrails;
+public class ReferenceListBox extends ListView<ReferenceTrailBox> {
+    private final ListProperty<ReferenceTrailBox> referenceTrails;
     private final ObjectProperty<Data> originData;
 
     private final MainController controller;
     private final double imageWidth;
 
-    public ReferenceListComponent(double imageWidth, MainController controller, Data data) {
+    public ReferenceListBox(double imageWidth, MainController controller, Data data) {
         referenceTrails = new SimpleListProperty<>(FXCollections.observableArrayList());
         originData = new SimpleObjectProperty<>(data);
 
@@ -41,18 +41,18 @@ public class ReferenceListComponent extends ListView<ReferenceTrailComponent> {
         });
         setSelectionModel(new NoSelectionModel<>());
         setPrefHeight(referenceTrails.stream()
-                .map(ReferenceTrailComponent::getApproximateHeight)
+                .map(ReferenceTrailBox::getApproximateHeight)
                 .reduce(0.0, Double::max) + 22.0);
         setCellFactory(cfData -> new ListCell<>() {
             @Override
-            protected void updateItem(ReferenceTrailComponent referenceTrailComponent, boolean empty) {
-                super.updateItem(referenceTrailComponent, empty);
+            protected void updateItem(ReferenceTrailBox referenceTrailBox, boolean empty) {
+                super.updateItem(referenceTrailBox, empty);
 
-                Optional.ofNullable(getItem()).ifPresent(ReferenceTrailComponent::destroyView);
+                Optional.ofNullable(getItem()).ifPresent(ReferenceTrailBox::destroyView);
 
-                if (!empty && Objects.nonNull(referenceTrailComponent)) {
-                    referenceTrailComponent.constructView();
-                    setGraphic(referenceTrailComponent);
+                if (!empty && Objects.nonNull(referenceTrailBox)) {
+                    referenceTrailBox.constructView();
+                    setGraphic(referenceTrailBox);
                 } else {
                     setGraphic(null);
                 }
@@ -63,7 +63,7 @@ public class ReferenceListComponent extends ListView<ReferenceTrailComponent> {
 
     private void recurseTrails(Data data) {
         int prevSize = 0;
-        var trailList = List.of(new ReferenceTrailComponent(imageWidth, controller, data));
+        var trailList = List.of(new ReferenceTrailBox(imageWidth, controller, data));
         int sum = 1;
 
         while (sum > prevSize) {
@@ -71,7 +71,7 @@ public class ReferenceListComponent extends ListView<ReferenceTrailComponent> {
 
             trailList = trailList.stream()
                     .flatMap(rtc -> Optional.ofNullable(controller.getDrops().getReferenceMap().get(rtc.getLastData()))
-                            .map(s -> s.stream().map(d -> new ReferenceTrailComponent(rtc, d)))
+                            .map(s -> s.stream().map(d -> new ReferenceTrailBox(rtc, d)))
                             .orElse(Stream.of(rtc)))
                     .toList();
 
@@ -91,11 +91,11 @@ public class ReferenceListComponent extends ListView<ReferenceTrailComponent> {
         return originData;
     }
 
-    public ObservableList<ReferenceTrailComponent> getReferenceTrails() {
+    public ObservableList<ReferenceTrailBox> getReferenceTrails() {
         return referenceTrails.get();
     }
 
-    public ReadOnlyListProperty<ReferenceTrailComponent> referenceTrailsProperty() {
+    public ReadOnlyListProperty<ReferenceTrailBox> referenceTrailsProperty() {
         return referenceTrails;
     }
 

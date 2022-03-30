@@ -211,6 +211,15 @@ public class JSONManager {
 
                 int id = itemData.get("m_iItemNumber").getAsInt();
 
+                int requiredLevel = (i == 7 || i == 9) ? 0 : itemData.get("m_iMinReqLev").getAsInt();
+                int contentLevel = requiredLevel;
+                if (i == 9) {
+                    try {
+                        contentLevel = Integer.parseInt(name.split("Lv")[0]);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+
                 ItemInfo itemInfo = new ItemInfo(
                         id,
                         i,
@@ -220,7 +229,8 @@ public class JSONManager {
                         itemData.get("m_iItemSellPrice").getAsInt(),
                         itemData.get("m_iStackNumber").getAsInt(),
                         (i == 7 || i == 9) ? 1 : itemData.get("m_iRarity").getAsInt(),
-                        (i == 7 || i == 9) ? 0 : itemData.get("m_iMinReqLev").getAsInt(),
+                        requiredLevel,
+                        contentLevel,
                         (i == 7 || i == 9) ? 0 : itemData.get("m_iPointRat").getAsInt(),
                         (i == 7 || i == 9) ? 0 : itemData.get("m_iGroupRat").getAsInt(),
                         (i == 7 || i == 9) ? 0 : itemData.get("m_iDelayTime").getAsInt(),

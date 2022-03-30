@@ -134,17 +134,17 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
             }
         };
 
-        idLabel.setText(MiscDropChance.class.getSimpleName() + ": null");
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
         contentHBox.setDisable(true);
         setIdDisable(true);
 
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(MiscDropChance.class)
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         miscDropChance.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(MiscDropChance.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 contentHBox.setDisable(true);
                 setIdDisable(true);
             } else {
@@ -177,6 +177,15 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         fmVBox.getChanceTotalSpinner().valueProperty().removeListener(fmChanceTotalListener);
     }
 
+    @Override
+    public Class<MiscDropChance> getObservableClass() {
+        return MiscDropChance.class;
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<MiscDropChance> getObservable() {
+        return miscDropChance;
+    }
 
     @Override
     public void setObservable(Data data) {
@@ -249,11 +258,6 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
 
     public ScrollPane getContentScrollPane() {
         return contentScrollPane;
-    }
-
-    @Override
-    public ReadOnlyObjectProperty<MiscDropChance> getObservable() {
-        return miscDropChance;
     }
 
     @Override

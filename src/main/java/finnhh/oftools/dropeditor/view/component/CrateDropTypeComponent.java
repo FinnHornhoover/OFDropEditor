@@ -1,6 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
+import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.ItemInfo;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.CrateDropType;
@@ -10,6 +11,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -26,10 +28,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.Pair;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class CrateDropTypeComponent extends BorderPane implements DataComponent {
@@ -99,11 +98,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         dragExitedHandlers = new ArrayList<>();
         dragReleasedHandlers = new ArrayList<>();
 
-        idLabel.setText(CrateDropType.class.getSimpleName() + ": null");
-        listHBox.setDisable(true);
-        setIdDisable(true);
-
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropType.class,
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass(),
                         d -> ((CrateDropType) d).getCrateIDs().size() == Optional.ofNullable(this.parent)
                                 .map(MobDropComponent::getCrateDropChanceComponent)
                                 .map(CrateDropChanceComponent::getCrateDropChance)
@@ -111,10 +106,14 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
                                 .orElse(0))
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
+        listHBox.setDisable(true);
+        setIdDisable(true);
+
         // both makeEditable and setObservable sets the observable, just use a listener here
         crateDropType.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(CrateDropType.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 listHBox.setDisable(true);
                 setIdDisable(true);
             } else {
@@ -268,6 +267,16 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     }
 
     @Override
+    public Class<CrateDropType> getObservableClass() {
+        return CrateDropType.class;
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<CrateDropType> getObservable() {
+        return crateDropType;
+    }
+
+    @Override
     public void setObservable(Data data) {
         idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
 
@@ -301,6 +310,29 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         }
     }
 
+    @Override
+    public Set<FilterChoice> getSearchableValues() {
+        var crateMap = controller.getDrops().getCrates();
+
+        Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
+
+        TypeVBox prototype = typeVBoxCache.isEmpty() ?
+                new TypeVBox(boxWidth, controller, this) :
+                typeVBoxCache.get(0);
+        allValues.addAll(getNestedSearchableValues(
+                prototype.getSearchableValues(),
+                op -> op.map(o -> (CrateDropType) o)
+                        .map(CrateDropType::getCrateIDs)
+                        .orElse(FXCollections.emptyObservableList())
+                        .stream()
+                        .filter(crateMap::containsKey)
+                        .map(crateMap::get)
+                        .toList()
+        ));
+
+        return allValues;
+    }
+
     public double getBoxSpacing() {
         return boxSpacing;
     }
@@ -331,11 +363,6 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
     public HBox getIdHBox() {
         return idHBox;
-    }
-
-    @Override
-    public ReadOnlyObjectProperty<CrateDropType> getObservable() {
-        return crateDropType;
     }
 
     @Override
@@ -404,18 +431,18 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
             setCenter(contentVBox);
             setAlignment(idLabel, Pos.TOP_LEFT);
 
-            idLabel.setText(Crate.class.getSimpleName() + ": null");
+            // observable is listened, it is okay to just set the observable
+            idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
+                    .ifPresent(this::setObservable);
+
+            idLabel.setText(getObservableClass().getSimpleName() + ": null");
             contentVBox.setDisable(true);
             setIdDisable(true);
-
-            // observable is listened, it is okay to just set the observable
-            idClickHandler = event -> this.controller.showSelectionMenuForResult(Crate.class)
-                    .ifPresent(this::setObservable);
 
             // both makeEditable and setObservable sets the observable, just use a listener here
             crate.addListener((o, oldVal, newVal) -> {
                 if (Objects.isNull(newVal)) {
-                    idLabel.setText(Crate.class.getSimpleName() + ": null");
+                    idLabel.setText(getObservableClass().getSimpleName() + ": null");
                     contentVBox.setDisable(true);
                     setIdDisable(true);
                 } else {
@@ -424,6 +451,11 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
                     setIdDisable(newVal.isMalformed());
                 }
             });
+        }
+
+        @Override
+        public Class<Crate> getObservableClass() {
+            return Crate.class;
         }
 
         @Override
@@ -467,6 +499,22 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
             }
 
             idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+        }
+
+        @Override
+        public Set<FilterChoice> getSearchableValues() {
+            var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
+
+            Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(ItemInfo.class),
+                    op -> op.map(o -> (Crate) o)
+                            .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), 9)))
+                            .stream().toList()
+            ));
+
+            return allValues;
         }
 
         public Crate getCrate() {

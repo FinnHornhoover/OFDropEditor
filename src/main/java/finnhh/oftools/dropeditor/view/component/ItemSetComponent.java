@@ -1,6 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
+import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.Gender;
 import finnhh.oftools.dropeditor.model.ItemInfo;
 import finnhh.oftools.dropeditor.model.Rarity;
@@ -238,17 +239,17 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         rarityListeners = new ArrayList<>();
         genderListeners = new ArrayList<>();
 
-        idLabel.setText(ItemSet.class.getSimpleName() + ": null");
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
         contentVBox.setDisable(true);
         setIdDisable(true);
 
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemSet.class)
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         itemSet.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(ItemSet.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 contentVBox.setDisable(true);
                 setIdDisable(true);
             } else {
@@ -598,6 +599,11 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
     }
 
     @Override
+    public Class<ItemSet> getObservableClass() {
+        return ItemSet.class;
+    }
+
+    @Override
     public ReadOnlyObjectProperty<ItemSet> getObservable() {
         return itemSet;
     }
@@ -629,6 +635,29 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         }
 
         idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    }
+
+    @Override
+    public Set<FilterChoice> getSearchableValues() {
+        var itemReferenceMap = controller.getDrops().getItemReferences();
+
+        Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
+
+        ItemDropVBox prototype = itemDropVBoxCache.isEmpty() ?
+                new ItemDropVBox(listBoxWidth, listBoxSpacing, controller, this) :
+                itemDropVBoxCache.get(0);
+        allValues.addAll(getNestedSearchableValues(
+                prototype.getSearchableValues(),
+                op -> op.map(o -> (ItemSet) o)
+                        .map(ItemSet::getItemReferenceIDs)
+                        .orElse(FXCollections.emptyObservableList())
+                        .stream()
+                        .filter(itemReferenceMap::containsKey)
+                        .map(itemReferenceMap::get)
+                        .toList()
+        ));
+
+        return allValues;
     }
 
     public ItemSet getItemSet() {
@@ -807,18 +836,18 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             setSpacing(boxSpacing);
             getChildren().addAll(contentVBox, idHBox);
 
-            idLabel.setText(ItemReference.class.getSimpleName() + ": null");
+            idLabel.setText(getObservableClass().getSimpleName() + ": null");
             contentVBox.setDisable(true);
             setIdDisable(true);
 
             // observable is listened, it is okay to just set the observable
-            idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
+            idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                     .ifPresent(this::setObservable);
 
             // both makeEditable and setObservable sets the observable, just use a listener here
             itemReference.addListener((o, oldVal, newVal) -> {
                 if (Objects.isNull(newVal)) {
-                    idLabel.setText(ItemReference.class.getSimpleName() + ": null");
+                    idLabel.setText(getObservableClass().getSimpleName() + ": null");
                     contentVBox.setDisable(true);
                     setIdDisable(true);
                 } else {
@@ -827,6 +856,11 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                     setIdDisable(newVal.isMalformed());
                 }
             });
+        }
+
+        @Override
+        public Class<ItemReference> getObservableClass() {
+            return ItemReference.class;
         }
 
         @Override
@@ -880,6 +914,22 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             }
 
             idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+        }
+
+        @Override
+        public Set<FilterChoice> getSearchableValues() {
+            var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
+
+            Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(ItemInfo.class),
+                    op -> op.map(o -> (ItemReference) o)
+                            .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .stream().toList()
+            ));
+
+            return allValues;
         }
 
         public ItemReference getItemReference() {

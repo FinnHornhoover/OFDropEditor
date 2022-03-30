@@ -1,6 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
+import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.MobDrop;
@@ -15,7 +16,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class MobDropComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<MobDrop> mobDrop;
@@ -68,16 +71,16 @@ public class MobDropComponent extends BorderPane implements DataComponent {
         setLeft(idGroup);
         setCenter(contentVBox);
 
-        idLabel.setText(MobDrop.class.getSimpleName() + ": null");
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
         contentVBox.setDisable(true);
         setIdDisable(true);
 
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(MobDrop.class)
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         mobDrop.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(MobDrop.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 contentVBox.setDisable(true);
                 setIdDisable(true);
             } else {
@@ -86,6 +89,16 @@ public class MobDropComponent extends BorderPane implements DataComponent {
                 setIdDisable(newVal.isMalformed());
             }
         });
+    }
+
+    @Override
+    public Class<MobDrop> getObservableClass() {
+        return MobDrop.class;
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<MobDrop> getObservable() {
+        return mobDrop;
     }
 
     @Override
@@ -135,6 +148,45 @@ public class MobDropComponent extends BorderPane implements DataComponent {
             mobDrop.get().setMiscDropTypeID(newMiscDropTypeID);
     }
 
+    @Override
+    public Set<FilterChoice> getSearchableValues() {
+        var crateDropChanceMap = controller.getDrops().getCrateDropChances();
+        var crateDropTypeMap = controller.getDrops().getCrateDropTypes();
+        var miscDropChanceMap = controller.getDrops().getMiscDropChances();
+        var miscDropTypeMap = controller.getDrops().getMiscDropTypes();
+
+        Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
+
+        allValues.removeIf(fc -> !fc.valueName().equals("mobDropID"));
+
+        allValues.addAll(getNestedSearchableValues(
+                crateDropChanceComponent.getSearchableValues(),
+                op -> op.map(o -> (MobDrop) o)
+                        .map(md -> crateDropChanceMap.get(md.getCrateDropChanceID()))
+                        .stream().toList()
+        ));
+        allValues.addAll(getNestedSearchableValues(
+                crateDropTypeComponent.getSearchableValues(),
+                op -> op.map(o -> (MobDrop) o)
+                        .map(md -> crateDropTypeMap.get(md.getCrateDropTypeID()))
+                        .stream().toList()
+        ));
+        allValues.addAll(getNestedSearchableValues(
+                miscDropChanceComponent.getSearchableValues(),
+                op -> op.map(o -> (MobDrop) o)
+                        .map(md -> miscDropChanceMap.get(md.getMiscDropChanceID()))
+                        .stream().toList()
+        ));
+        allValues.addAll(getNestedSearchableValues(
+                miscDropTypeComponent.getSearchableValues(),
+                op -> op.map(o -> (MobDrop) o)
+                        .map(md -> miscDropTypeMap.get(md.getMiscDropTypeID()))
+                        .stream().toList()
+        ));
+
+        return allValues;
+    }
+
     public double getBoxSpacing() {
         return boxSpacing;
     }
@@ -173,11 +225,6 @@ public class MobDropComponent extends BorderPane implements DataComponent {
 
     public Group getIdGroup() {
         return idGroup;
-    }
-
-    @Override
-    public ReadOnlyObjectProperty<MobDrop> getObservable() {
-        return mobDrop;
     }
 
     @Override

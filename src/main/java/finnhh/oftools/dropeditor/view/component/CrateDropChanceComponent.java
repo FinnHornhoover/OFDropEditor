@@ -70,11 +70,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
 
         valueListeners = new ArrayList<>();
 
-        idLabel.setText(CrateDropChance.class.getSimpleName() + ": null");
-        listHBox.setDisable(true);
-        setIdDisable(true);
-
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(CrateDropChance.class,
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass(),
                         d -> ((CrateDropChance) d).getCrateTypeDropWeights().size() == Optional.ofNullable(this.parent)
                                 .map(MobDropComponent::getCrateDropTypeComponent)
                                 .map(CrateDropTypeComponent::getCrateDropType)
@@ -82,10 +78,14 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
                                 .orElse(0))
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
+        listHBox.setDisable(true);
+        setIdDisable(true);
+
         // both makeEditable and setObservable sets the observable, just use a listener here
         crateDropChance.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(CrateDropChance.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 listHBox.setDisable(true);
                 setIdDisable(true);
             } else {
@@ -205,6 +205,16 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     }
 
     @Override
+    public Class<CrateDropChance> getObservableClass() {
+        return CrateDropChance.class;
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<CrateDropChance> getObservable() {
+        return crateDropChance;
+    }
+
+    @Override
     public void setObservable(Data data) {
         idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
 
@@ -243,11 +253,6 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
 
     public ScrollPane getContentScrollPane() {
         return contentScrollPane;
-    }
-
-    @Override
-    public ReadOnlyObjectProperty<CrateDropChance> getObservable() {
-        return crateDropChance;
     }
 
     @Override

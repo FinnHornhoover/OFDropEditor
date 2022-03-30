@@ -14,7 +14,7 @@ import javafx.util.Pair;
 import java.io.ByteArrayInputStream;
 import java.util.Objects;
 
-public class ImageSummaryComponent extends StackPane {
+public class ImageSummaryBox extends StackPane {
     private final MainController controller;
     private final double imageWidth;
     private final ImageView iconView;
@@ -22,7 +22,7 @@ public class ImageSummaryComponent extends StackPane {
     private final Label idLabel;
     private final Label extraLabel;
 
-    public ImageSummaryComponent(double imageWidth, MainController controller, Data data) {
+    public ImageSummaryBox(double imageWidth, MainController controller, Data data) {
         this.controller = controller;
         this.imageWidth = imageWidth;
 
@@ -72,7 +72,7 @@ public class ImageSummaryComponent extends StackPane {
             if (Objects.nonNull(itemInfo) && iconMap.containsKey(itemInfo.iconName())) {
                 iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(itemInfo.iconName()))));
                 centerLabel.setText("");
-                setExtra(itemInfo.level() + "Lv");
+                setExtra(itemInfo.requiredLevel() + "Lv");
             }
         } else if (data instanceof Crate cr) {
             ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(cr.getCrateID(), 9));
@@ -80,9 +80,7 @@ public class ImageSummaryComponent extends StackPane {
             if (Objects.nonNull(itemInfo) && iconMap.containsKey(itemInfo.iconName())) {
                 iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(itemInfo.iconName()))));
                 centerLabel.setText("");
-                String extraString = itemInfo.name().split("\\s")[0];
-                if (extraString.endsWith("Lv"))
-                    setExtra(extraString);
+                setExtra(itemInfo.contentLevel() + "Lv");
             }
         } else if (data instanceof Racing r) {
             iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(

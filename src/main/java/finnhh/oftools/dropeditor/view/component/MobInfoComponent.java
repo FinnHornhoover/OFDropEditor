@@ -49,6 +49,11 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
     }
 
     @Override
+    public Class<MobTypeInfo> getObservableClass() {
+        return MobTypeInfo.class;
+    }
+
+    @Override
     public ReadOnlyObjectProperty<MobTypeInfo> getObservable() {
         return mobTypeInfo;
     }

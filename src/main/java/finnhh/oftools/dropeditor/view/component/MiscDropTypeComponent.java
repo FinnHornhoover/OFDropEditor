@@ -106,16 +106,16 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
             }
         };
 
-        idLabel.setText(MiscDropType.class.getSimpleName() + ": null");
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
         contentHBox.setDisable(true);
         setIdDisable(true);
 
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(MiscDropType.class)
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         miscDropType.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(MiscDropType.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 contentHBox.setDisable(true);
                 setIdDisable(true);
             } else {
@@ -138,6 +138,16 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         boostVBox.getAmountSpinner().valueProperty().removeListener(boostListener);
         taroVBox.getAmountSpinner().valueProperty().removeListener(taroListener);
         fmVBox.getAmountSpinner().valueProperty().removeListener(fmListener);
+    }
+
+    @Override
+    public Class<MiscDropType> getObservableClass() {
+        return MiscDropType.class;
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<MiscDropType> getObservable() {
+        return miscDropType;
     }
 
     @Override
@@ -203,11 +213,6 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
 
     public ScrollPane getContentScrollPane() {
         return contentScrollPane;
-    }
-
-    @Override
-    public ReadOnlyObjectProperty<MiscDropType> getObservable() {
-        return miscDropType;
     }
 
     @Override

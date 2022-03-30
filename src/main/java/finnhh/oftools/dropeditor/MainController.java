@@ -1,6 +1,6 @@
 package finnhh.oftools.dropeditor;
 
-import finnhh.oftools.dropeditor.model.EditMode;
+import finnhh.oftools.dropeditor.model.FilterCondition;
 import finnhh.oftools.dropeditor.model.ViewMode;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
@@ -8,13 +8,14 @@ import finnhh.oftools.dropeditor.view.component.*;
 import finnhh.oftools.dropeditor.view.util.NoSelectionModel;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ListChangeListener;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.Region;
-import javafx.util.Callback;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -23,14 +24,13 @@ public class MainController {
     @FXML
     protected ChoiceBox<ViewMode> viewModeChoiceBox;
     @FXML
-    protected TextField searchTextField;
-    @FXML
-    protected ChoiceBox<EditMode> editModeChoiceBox;
+    protected FilterListBox filterListBox;
     @FXML
     protected ListView<Data> mainListView;
     @FXML
     protected Label infoLabel;
 
+    protected Map<ViewMode, ObservableComponent<?>> rootPrototypeMap;
     protected Drops drops;
     protected JSONManager jsonManager;
     protected IconManager iconManager;
@@ -38,18 +38,8 @@ public class MainController {
     protected MainApplication application;
 
     @FXML
-    protected void onViewModeChanged(Event event) {
-        // TODO
-    }
-
-    @FXML
-    protected void onSearchText(Event event) {
-        // TODO
-    }
-
-    @FXML
-    protected void onEditModeChanged(Event event) {
-        // TODO
+    protected void onAddFilter() {
+        showFilterMenuForResult().ifPresent(filterListBox::addFilter);
     }
 
     @FXML
@@ -73,11 +63,12 @@ public class MainController {
     }
 
     public void setup() {
+        rootPrototypeMap = new HashMap<>();
+        for (ViewMode viewMode : ViewMode.values())
+            rootPrototypeMap.put(viewMode, viewMode.getComponentConstructor().apply(this, mainListView));
+
         viewModeChoiceBox.getItems().addAll(ViewMode.values());
         viewModeChoiceBox.setValue(ViewMode.MONSTER);
-        
-        editModeChoiceBox.getItems().addAll(EditMode.values());
-        editModeChoiceBox.setValue(EditMode.ASK);
 
         final MainController controller = this;
         mainListView.setCellFactory(cfData -> new ListCell<>() {
@@ -119,29 +110,44 @@ public class MainController {
         viewModeChoiceBox.valueProperty().addListener((o, oldVal, newVal) -> {
             mainListView.getItems().clear();
             mainListView.getItems().addAll(newVal.getDataGetter().apply(drops));
+            infoLabel.setText(String.format("Showing %1$d items out of %1$d", mainListView.getItems().size()));
+            filterListBox.clearFilters();
+            Platform.runLater(mainListView::refresh);
+        });
+
+        filterListBox.filterConditionListProperty().addListener((ListChangeListener<FilterCondition>) change -> {
+            mainListView.getItems().clear();
+            var dataList = viewModeChoiceBox.getValue().getDataGetter().apply(drops);
+            mainListView.getItems().addAll(dataList.stream()
+                    .filter(d -> change.getList().stream()
+                            .allMatch(fc -> fc.conditionSatisfied(d)))
+                    .toList());
+            infoLabel.setText(String.format("Showing %d items out of %d",
+                    mainListView.getItems().size(), dataList.size()));
             Platform.runLater(mainListView::refresh);
         });
 
         mainListView.getItems().addAll(viewModeChoiceBox.getValue().getDataGetter().apply(drops));
+        infoLabel.setText(String.format("Showing %1$d items out of %1$d", mainListView.getItems().size()));
         Platform.runLater(mainListView::refresh);
     }
 
-    public TableView<ReferenceListComponent> getReferenceGraphic(Class<? extends Data> dataClass,
-                                                                 Predicate<Data> filterCondition) {
-        TableView<ReferenceListComponent> tableView = new TableView<>();
+    public TableView<ReferenceListBox> getReferenceGraphic(Class<? extends Data> dataClass,
+                                                           Predicate<Data> filterCondition) {
+        TableView<ReferenceListBox> tableView = new TableView<>();
         tableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<ReferenceListComponent, ImageSummaryComponent> idColumn = new TableColumn<>("ID");
+        TableColumn<ReferenceListBox, ImageSummaryBox> idColumn = new TableColumn<>("ID");
         idColumn.setCellValueFactory(cellData -> new SimpleObjectProperty<>(
-                new ImageSummaryComponent(64.0, this, cellData.getValue().getOriginData())));
+                new ImageSummaryBox(64.0, this, cellData.getValue().getOriginData())));
 
-        TableColumn<ReferenceListComponent, ReferenceListComponent> referenceColumn = new TableColumn<>("References");
+        TableColumn<ReferenceListBox, ReferenceListBox> referenceColumn = new TableColumn<>("References");
         referenceColumn.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue()));
         referenceColumn.setCellFactory(cfData -> new TableCell<>() {
             @Override
-            protected void updateItem(ReferenceListComponent referenceListComponent, boolean empty) {
-                super.updateItem(referenceListComponent, empty);
-                setGraphic((!empty && Objects.nonNull(referenceListComponent)) ? referenceListComponent : null);
+            protected void updateItem(ReferenceListBox referenceListBox, boolean empty) {
+                super.updateItem(referenceListBox, empty);
+                setGraphic((!empty && Objects.nonNull(referenceListBox)) ? referenceListBox : null);
             }
         });
 
@@ -156,10 +162,15 @@ public class MainController {
 
         drops.getDataMap(dataClass).ifPresent(dataMap -> tableView.getItems().addAll(dataMap.values().stream()
                 .filter(filterCondition)
-                .map(d -> new ReferenceListComponent(64.0, this, d))
+                .map(d -> new ReferenceListBox(64.0, this, d))
                 .toList()));
 
         return tableView;
+    }
+
+    public Optional<FilterCondition> showFilterMenuForResult() {
+        return application.showFilterSelectionAlert("New Filter", "Filter Selection", new FilterSelectionBox(10.0,
+                rootPrototypeMap.get(viewModeChoiceBox.getValue()).getSearchableValues()));
     }
 
     public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass,

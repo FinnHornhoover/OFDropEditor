@@ -1,6 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
+import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Mob;
@@ -13,7 +14,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class MobComponent extends HBox implements RootDataComponent {
     private final ObjectProperty<Mob> mob;
@@ -48,14 +51,14 @@ public class MobComponent extends HBox implements RootDataComponent {
         getChildren().addAll(mobBorderPane, mobDropComponent);
         setHgrow(mobDropComponent, Priority.ALWAYS);
 
-        idLabel.setText(Mob.class.getSimpleName() + ": null");
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
         mobInfoComponent.setDisable(true);
         mobDropComponent.setDisable(true);
         setIdDisable(true);
 
         mob.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(Mob.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 mobInfoComponent.setDisable(true);
                 mobDropComponent.setDisable(true);
                 setIdDisable(true);
@@ -66,6 +69,11 @@ public class MobComponent extends HBox implements RootDataComponent {
                 setIdDisable(newVal.isMalformed());
             }
         });
+    }
+
+    @Override
+    public Class<Mob> getObservableClass() {
+        return Mob.class;
     }
 
     @Override
@@ -94,6 +102,31 @@ public class MobComponent extends HBox implements RootDataComponent {
 
         if (newMobDropID != mob.get().getMobDropID())
             mob.get().setMobDropID(newMobDropID);
+    }
+
+    @Override
+    public Set<FilterChoice> getSearchableValues() {
+        var mobTypeInfoMap = controller.getStaticDataStore().getMobTypeInfoMap();
+        var mobDropMap = controller.getDrops().getMobDrops();
+
+        Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
+
+        allValues.removeIf(fc -> !fc.valueName().equals("mobID"));
+
+        allValues.addAll(getNestedSearchableValues(
+                mobInfoComponent.getSearchableValues(),
+                op -> op.map(o -> (Mob) o)
+                        .map(m -> mobTypeInfoMap.get(m.getMobID()))
+                        .stream().toList()
+        ));
+        allValues.addAll(getNestedSearchableValues(
+                mobDropComponent.getSearchableValues(),
+                op -> op.map(o -> (Mob) o)
+                        .map(m -> mobDropMap.get(m.getMobDropID()))
+                        .stream().toList()
+        ));
+
+        return allValues;
     }
 
     @Override

@@ -1,6 +1,8 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
+import finnhh.oftools.dropeditor.model.FilterChoice;
+import finnhh.oftools.dropeditor.model.FilterType;
 import finnhh.oftools.dropeditor.model.Rarity;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.RarityWeights;
@@ -9,8 +11,10 @@ import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.DoubleExpression;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -24,10 +28,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 public class RarityWeightsComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<RarityWeights> rarityWeights;
@@ -70,17 +71,17 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
         valueListeners = new ArrayList<>();
 
-        idLabel.setText(RarityWeights.class.getSimpleName() + ": null");
+        idLabel.setText(getObservableClass().getSimpleName() + ": null");
         contentVBox.setDisable(true);
         setIdDisable(true);
 
-        idClickHandler = event -> this.controller.showSelectionMenuForResult(RarityWeights.class)
+        idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                 .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
 
         // both makeEditable and setObservable sets the observable, just use a listener here
         rarityWeights.addListener((o, oldVal, newVal) -> {
             if (Objects.isNull(newVal)) {
-                idLabel.setText(RarityWeights.class.getSimpleName() + ": null");
+                idLabel.setText(getObservableClass().getSimpleName() + ": null");
                 contentVBox.setDisable(true);
                 setIdDisable(true);
             } else {
@@ -148,6 +149,16 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
     }
 
     @Override
+    public Class<RarityWeights> getObservableClass() {
+        return RarityWeights.class;
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<RarityWeights> getObservable() {
+        return rarityWeights;
+    }
+
+    @Override
     public void setObservable(Data data) {
         idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
 
@@ -176,6 +187,51 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
         idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
+    @Override
+    public Set<FilterChoice> getSearchableValues() {
+        Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
+
+        String[] rarities = new String[] { "common", "uncommon", "rare", "ultraRare" };
+
+        for (int i = 0; i < rarities.length; i++) {
+            final int index = i;
+
+            allValues.add(new FilterChoice(
+                    FilterType.INTEGER,
+                    op -> op.map(o -> (RarityWeights) o)
+                            .map(rw -> Bindings.integerValueAt(rw.getWeights(), index))
+                            .stream().toList(),
+                    List.of(rarities[index] + "Weight", getObservableClass().getSimpleName())
+            ));
+
+            allValues.add(new FilterChoice(
+                    FilterType.DOUBLE,
+                    op -> op.map(o -> (RarityWeights) o)
+                            .map(rw -> Bindings.integerValueAt(rw.getWeights(), index)
+                                    .multiply(100.0)
+                                    .divide(Bindings.createIntegerBinding(() ->
+                                            rw.getWeights().stream().reduce(0, Integer::sum),
+                                            rw.getWeights())))
+                            .stream().toList(),
+                    List.of(rarities[index] + "Percent", getObservableClass().getSimpleName())
+            ));
+        }
+
+        allValues.add(new FilterChoice(
+                FilterType.LIST,
+                op -> op.map(o -> (RarityWeights) o)
+                        .map(rw -> {
+                            int total = rw.getWeights().stream().reduce(0, Integer::sum);
+                            return new SimpleListProperty<>(FXCollections.observableArrayList(
+                                    rw.getWeights().stream().map(w -> 100.0 * w / total).toList()));
+                        })
+                        .stream().toList(),
+                List.of("percents", getObservableClass().getSimpleName())
+        ));
+
+        return allValues;
+    }
+
     public double getBoxSpacing() {
         return boxSpacing;
     }
@@ -194,11 +250,6 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
     public VBox getContentVBox() {
         return contentVBox;
-    }
-
-    @Override
-    public ReadOnlyObjectProperty<RarityWeights> getObservable() {
-        return rarityWeights;
     }
 
     @Override

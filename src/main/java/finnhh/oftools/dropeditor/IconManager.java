@@ -36,7 +36,6 @@ public class IconManager {
             if (i == 6) continue;
 
             String name = String.format("ep_small_%02d", i);
-            System.out.println(name);
             Path path = Paths.get(new File(
                     Objects.requireNonNull(IconManager.class.getResource("ep/" + name + ".png")).getFile()).getPath());
             iconMap.put(name, Files.readAllBytes(path));

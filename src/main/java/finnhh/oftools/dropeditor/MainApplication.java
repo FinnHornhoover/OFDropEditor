@@ -1,16 +1,16 @@
 package finnhh.oftools.dropeditor;
 
 import com.google.gson.JsonSyntaxException;
+import finnhh.oftools.dropeditor.model.FilterCondition;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Preferences;
 import finnhh.oftools.dropeditor.model.exception.EditorInitializationException;
-import finnhh.oftools.dropeditor.view.component.ReferenceListComponent;
-import finnhh.oftools.dropeditor.view.component.ReferenceTrailComponent;
+import finnhh.oftools.dropeditor.view.component.FilterSelectionBox;
+import finnhh.oftools.dropeditor.view.component.ReferenceListBox;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -18,7 +18,6 @@ import javafx.scene.control.DialogPane;
 import javafx.scene.control.TableView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -224,7 +223,7 @@ public class MainApplication extends Application {
 
     public Optional<Data> showSelectionAlert(String title,
                                              String body,
-                                             TableView<ReferenceListComponent> tableView) {
+                                             TableView<ReferenceListBox> tableView) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle(title);
         alert.setHeaderText(body);
@@ -240,7 +239,26 @@ public class MainApplication extends Application {
         return alert.showAndWait()
                 .filter(bt -> bt == ButtonType.OK)
                 .map(bt -> tableView.getSelectionModel().getSelectedItem())
-                .map(ReferenceListComponent::getOriginData);
+                .map(ReferenceListBox::getOriginData);
+    }
+
+    public Optional<FilterCondition> showFilterSelectionAlert(String title,
+                                                              String body,
+                                                              FilterSelectionBox filterSelectionBox) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(body);
+        alert.setGraphic(null);
+
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.setContent(filterSelectionBox);
+        dialogPane.getScene().getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
+        dialogPane.setMinWidth(450.0);
+
+        return alert.showAndWait()
+                .filter(bt -> bt == ButtonType.OK)
+                .map(bt -> filterSelectionBox.getCondition())
+                .filter(FilterCondition::conditionValid);
     }
 
     @Override
@@ -256,7 +274,7 @@ public class MainApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("main-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1400, 700);
         scene.getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
-        stage.setTitle("Hello!");
+        stage.setTitle("OpenFusion Drop Editor Tool");
         stage.setScene(scene);
 
         try {

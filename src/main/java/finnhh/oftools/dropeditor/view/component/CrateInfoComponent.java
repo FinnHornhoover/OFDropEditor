@@ -54,6 +54,11 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
     }
 
     @Override
+    public Class<ItemInfo> getObservableClass() {
+        return ItemInfo.class;
+    }
+
+    @Override
     public ReadOnlyObjectProperty<ItemInfo> getObservable() {
         return crateInfo;
     }

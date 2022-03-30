@@ -14,12 +14,12 @@ import javafx.scene.layout.VBox;
 
 import java.io.ByteArrayInputStream;
 
-public class ReferenceTrailComponent extends VBox {
+public class ReferenceTrailBox extends VBox {
     private final ListProperty<Data> dataList;
     private final MainController controller;
     private final double imageWidth;
 
-    public ReferenceTrailComponent(double imageWidth, MainController controller, Data data) {
+    public ReferenceTrailBox(double imageWidth, MainController controller, Data data) {
         dataList = new SimpleListProperty<>(FXCollections.observableArrayList(data));
 
         this.controller = controller;
@@ -29,7 +29,7 @@ public class ReferenceTrailComponent extends VBox {
         setAlignment(Pos.TOP_CENTER);
     }
 
-    public ReferenceTrailComponent(ReferenceTrailComponent other, Data data) {
+    public ReferenceTrailBox(ReferenceTrailBox other, Data data) {
         this.dataList = new SimpleListProperty<>(FXCollections.observableArrayList(other.dataList));
         this.dataList.add(data);
 
@@ -46,7 +46,7 @@ public class ReferenceTrailComponent extends VBox {
                 getChildren().add(new ImageView(new Image(new ByteArrayInputStream(
                         controller.getIconManager().getIconMap().get("down")))));
             }
-            getChildren().add(new ImageSummaryComponent(imageWidth, controller, dataList.get(i)));
+            getChildren().add(new ImageSummaryBox(imageWidth, controller, dataList.get(i)));
         }
     }
 
