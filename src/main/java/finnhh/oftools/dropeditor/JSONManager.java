@@ -88,7 +88,6 @@ public class JSONManager {
         patchDirectories = new ArrayList<>();
         standaloneSave = true;
         preferences = new Preferences();
-        preferences.patchDirectories = new ArrayList<>();
     }
 
     private void patch(JsonObject originalObject, JsonObject patchObject) {
@@ -391,17 +390,17 @@ public class JSONManager {
     public void setFromPreferences(Preferences preferences, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException, IOException {
 
-        setDropsDirectory(new File(preferences.dropDirectory));
+        setDropsDirectory(new File(preferences.getDropDirectory()));
 
-        for (String patchName : preferences.patchDirectories)
+        for (String patchName : preferences.getPatchDirectories())
             addPatchPath(new File(patchName));
 
-        setXDT(new File(preferences.xdtFile), staticDataStore);
+        setXDT(new File(preferences.getXDTFile()), staticDataStore);
 
-        setSavePreferences(new File(preferences.saveDirectory), preferences.standaloneSave);
+        setSavePreferences(new File(preferences.getSaveDirectory()), preferences.isStandaloneSave());
 
-        if (preferences.iconDirectory != null)
-            setIconDirectory(new File(preferences.iconDirectory));
+        if (Objects.nonNull(preferences.getIconDirectory()))
+            setIconDirectory(new File(preferences.getIconDirectory()));
 
         this.preferences = preferences;
     }
@@ -419,7 +418,7 @@ public class JSONManager {
             }
         }
 
-        preferences.dropDirectory = dropsDirectory.getAbsolutePath();
+        preferences.setDropDirectory(dropsDirectory.getAbsolutePath());
     }
 
     public void addPatchPath(File patchDirectory) throws IOException {
@@ -437,7 +436,7 @@ public class JSONManager {
 
         if (patchedOnce) {
             patchDirectories.add(patchDirectory);
-            preferences.patchDirectories.add(patchDirectory.getAbsolutePath());
+            preferences.getPatchDirectories().add(patchDirectory.getAbsolutePath());
         } else {
             throw new IOException("No valid patch files present.");
         }
@@ -455,7 +454,7 @@ public class JSONManager {
             readEggData(staticDataStore);
         }
 
-        preferences.xdtFile = xdtFile.getAbsolutePath();
+        preferences.setXDTFile(xdtFile.getAbsolutePath());
     }
 
     public void setSavePreferences(File saveDirectory, boolean standaloneSave) throws IllegalArgumentException {
@@ -465,12 +464,12 @@ public class JSONManager {
         this.saveDirectory = saveDirectory;
         this.standaloneSave = standaloneSave;
 
-        preferences.saveDirectory = saveDirectory.getAbsolutePath();
-        preferences.standaloneSave = standaloneSave;
+        preferences.setSaveDirectory(saveDirectory.getAbsolutePath());
+        preferences.setStandaloneSave(standaloneSave);
     }
 
     public void setIconDirectory(File iconDirectory) {
-        preferences.iconDirectory = iconDirectory.getAbsolutePath();
+        preferences.setIconDirectory(iconDirectory.getAbsolutePath());
     }
 
     public boolean isStandaloneSave() {

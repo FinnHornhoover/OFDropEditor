@@ -7,19 +7,67 @@ import java.util.List;
 
 public class Preferences {
     @Expose
-    public String dropDirectory;
+    private String dropDirectory;
     @Expose
-    public List<String> patchDirectories;
+    private List<String> patchDirectories;
     @Expose
-    public String xdtFile;
+    private String xdtFile;
     @Expose
-    public String saveDirectory;
+    private String saveDirectory;
     @Expose
-    public boolean standaloneSave;
+    private boolean standaloneSave;
     @Expose
-    public String iconDirectory;
+    private String iconDirectory;
 
     public Preferences() {
         patchDirectories = new ArrayList<>();
+    }
+
+    public String getDropDirectory() {
+        return dropDirectory;
+    }
+
+    public void setDropDirectory(String dropDirectory) {
+        this.dropDirectory = dropDirectory;
+    }
+
+    public List<String> getPatchDirectories() {
+        return patchDirectories;
+    }
+
+    public void setPatchDirectories(List<String> patchDirectories) {
+        this.patchDirectories = patchDirectories;
+    }
+
+    public String getXDTFile() {
+        return xdtFile;
+    }
+
+    public void setXDTFile(String xdtFile) {
+        this.xdtFile = xdtFile;
+    }
+
+    public String getSaveDirectory() {
+        return saveDirectory;
+    }
+
+    public void setSaveDirectory(String saveDirectory) {
+        this.saveDirectory = saveDirectory;
+    }
+
+    public boolean isStandaloneSave() {
+        return standaloneSave;
+    }
+
+    public void setStandaloneSave(boolean standaloneSave) {
+        this.standaloneSave = standaloneSave;
+    }
+
+    public String getIconDirectory() {
+        return iconDirectory;
+    }
+
+    public void setIconDirectory(String iconDirectory) {
+        this.iconDirectory = iconDirectory;
     }
 }

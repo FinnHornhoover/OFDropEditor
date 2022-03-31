@@ -65,7 +65,7 @@ public class MainApplication extends Application {
 
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 try {
-                    String iconDirectory = preferences.get().iconDirectory;
+                    String iconDirectory = preferences.get().getIconDirectory();
 
                     if (iconDirectory != null)
                         iconManager.setIconDirectory(new File(iconDirectory));
