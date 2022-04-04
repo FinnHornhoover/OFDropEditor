@@ -74,7 +74,7 @@ public class FilterListBox extends FlowPane {
 
             removeButton = new Button("-");
             removeButton.setMinWidth(USE_COMPUTED_SIZE);
-            removeButton.getStyleClass().add("remove-button");
+            removeButton.getStyleClass().addAll("remove-button", "slim-button");
 
             getChildren().addAll(filterLabel, removeButton);
             setAlignment(Pos.CENTER_LEFT);

@@ -11,7 +11,6 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Spinner;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -226,7 +225,7 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
     }
 
     public static class TypeVBox extends VBox {
-        private final Spinner<Integer> amountSpinner;
+        private final StandardSpinner amountSpinner;
         private final ImageView iconView;
 
         public TypeVBox(byte[] icon, double width) {
@@ -234,16 +233,7 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         }
 
         public TypeVBox(int amountValue, byte[] icon, double width) {
-            amountSpinner = new Spinner<>(0, Integer.MAX_VALUE, amountValue);
-            amountSpinner.setEditable(true);
-            amountSpinner.getEditor().setOnAction(event -> {
-                try {
-                    Integer.parseInt(amountSpinner.getEditor().getText());
-                    amountSpinner.commitValue();
-                } catch (NumberFormatException e) {
-                    amountSpinner.cancelEdit();
-                }
-            });
+            amountSpinner = new StandardSpinner(0, Integer.MAX_VALUE, amountValue);
 
             iconView = new ImageView(new Image(new ByteArrayInputStream(icon)));
             iconView.setFitWidth(64);
@@ -258,7 +248,7 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
             setMaxWidth(width);
         }
 
-        public Spinner<Integer> getAmountSpinner() {
+        public StandardSpinner getAmountSpinner() {
             return amountSpinner;
         }
 

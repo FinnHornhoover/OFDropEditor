@@ -14,7 +14,6 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Spinner;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -266,21 +265,11 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     }
 
     public static class ChanceVBox extends VBox {
-        private final Spinner<Integer> spinner;
+        private final StandardSpinner spinner;
         private final Label percentageLabel;
 
         public ChanceVBox(double width) {
-            spinner = new Spinner<>(0, Integer.MAX_VALUE, 0);
-            spinner.setEditable(true);
-            spinner.getEditor().setOnAction(event -> {
-                try {
-                    Integer.parseInt(spinner.getEditor().getText());
-                    spinner.commitValue();
-                } catch (NumberFormatException e) {
-                    spinner.cancelEdit();
-                }
-            });
-
+            spinner = new StandardSpinner(0, Integer.MAX_VALUE, 0);
             percentageLabel = new Label();
 
             setSpacing(2);
@@ -290,7 +279,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
             setMaxWidth(width);
         }
 
-        public Spinner<Integer> getSpinner() {
+        public StandardSpinner getSpinner() {
             return spinner;
         }
 

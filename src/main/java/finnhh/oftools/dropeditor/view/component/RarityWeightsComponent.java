@@ -22,7 +22,6 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
-import javafx.scene.control.Spinner;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -266,7 +265,7 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
         private final double boxWidth;
         private final double boxSpacing;
         private final Label nameLabel;
-        private final Spinner<Integer> spinner;
+        private final StandardSpinner spinner;
         private final Label percentageLabel;
         private final VBox contentVBox;
         private final Slider percentageSlider;
@@ -276,16 +275,7 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
             this.boxSpacing = boxSpacing;
 
             nameLabel = new Label(name);
-            spinner = new Spinner<>(0, Integer.MAX_VALUE, weight);
-            spinner.setEditable(true);
-            spinner.getEditor().setOnAction(event -> {
-                try {
-                    Integer.parseInt(spinner.getEditor().getText());
-                    spinner.commitValue();
-                } catch (NumberFormatException e) {
-                    spinner.cancelEdit();
-                }
-            });
+            spinner = new StandardSpinner(0, Integer.MAX_VALUE, weight);
 
             percentageLabel = new Label();
             contentVBox = new VBox(boxSpacing, nameLabel, spinner, percentageLabel);
@@ -316,7 +306,7 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
             return nameLabel;
         }
 
-        public Spinner<Integer> getSpinner() {
+        public StandardSpinner getSpinner() {
             return spinner;
         }
 

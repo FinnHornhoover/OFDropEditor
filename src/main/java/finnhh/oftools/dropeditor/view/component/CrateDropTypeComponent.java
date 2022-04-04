@@ -79,7 +79,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         idLabel.getStyleClass().add("id-label");
 
         addButton = new Button("+");
-        addButton.getStyleClass().add("add-button");
+        addButton.getStyleClass().addAll("add-button", "slim-button");
 
         idHBox = new HBox(2, idLabel, addButton);
 
@@ -423,7 +423,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
             removeButton = new Button("-");
             removeButton.setMinWidth(USE_COMPUTED_SIZE);
-            removeButton.getStyleClass().add("remove-button");
+            removeButton.getStyleClass().addAll("remove-button", "slim-button");
 
             idHBox = new HBox(2, idLabel, removeButton);
 

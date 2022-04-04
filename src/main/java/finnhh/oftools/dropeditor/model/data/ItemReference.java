@@ -6,11 +6,11 @@ import javafx.beans.property.SimpleIntegerProperty;
 
 public class ItemReference extends Data {
     @Expose
-    private final IntegerProperty itemReferenceID;
+    protected final IntegerProperty itemReferenceID;
     @Expose
-    private final IntegerProperty itemID;
+    protected final IntegerProperty itemID;
     @Expose
-    private final IntegerProperty type;
+    protected final IntegerProperty type;
 
     public ItemReference() {
         itemReferenceID = new SimpleIntegerProperty(-1);

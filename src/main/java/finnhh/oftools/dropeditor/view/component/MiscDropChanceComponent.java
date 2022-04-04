@@ -271,8 +271,8 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
     }
 
     public static class ChanceVBox extends VBox {
-        private final Spinner<Integer> chanceSpinner;
-        private final Spinner<Integer> chanceTotalSpinner;
+        private final StandardSpinner chanceSpinner;
+        private final StandardSpinner chanceTotalSpinner;
         private final Separator chanceSeparator;
         private final VBox chanceFractionVBox;
         private final Slider chanceSlider;
@@ -285,26 +285,8 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         public ChanceVBox(int chanceValue, int chanceTotalValue, double width) {
             var spinnerValueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(
                     0, chanceTotalValue, chanceValue);
-            chanceSpinner = new Spinner<>(spinnerValueFactory);
-            chanceSpinner.setEditable(true);
-            chanceSpinner.getEditor().setOnAction(event -> {
-                try {
-                    Integer.parseInt(chanceSpinner.getEditor().getText());
-                    chanceSpinner.commitValue();
-                } catch (NumberFormatException e) {
-                    chanceSpinner.cancelEdit();
-                }
-            });
-            chanceTotalSpinner = new Spinner<>(1, Integer.MAX_VALUE, chanceTotalValue);
-            chanceTotalSpinner.setEditable(true);
-            chanceTotalSpinner.getEditor().setOnAction(event -> {
-                try {
-                    Integer.parseInt(chanceTotalSpinner.getEditor().getText());
-                    chanceTotalSpinner.commitValue();
-                } catch (NumberFormatException e) {
-                    chanceTotalSpinner.cancelEdit();
-                }
-            });
+            chanceSpinner = new StandardSpinner(spinnerValueFactory);
+            chanceTotalSpinner = new StandardSpinner(1, Integer.MAX_VALUE, chanceTotalValue);
 
             chanceSeparator = new Separator(Orientation.HORIZONTAL);
 
@@ -340,11 +322,11 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
                     .asString(Locale.US, "%.5f%%"));
         }
 
-        public Spinner<Integer> getChanceSpinner() {
+        public StandardSpinner getChanceSpinner() {
             return chanceSpinner;
         }
 
-        public Spinner<Integer> getChanceTotalSpinner() {
+        public StandardSpinner getChanceTotalSpinner() {
             return chanceTotalSpinner;
         }
 

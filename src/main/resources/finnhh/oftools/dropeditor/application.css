@@ -149,6 +149,10 @@
     -fx-border-color: #cc0000;
 }
 
+.slim-button {
+    -fx-padding: 0 4 0 4;
+}
+
 .drag-entered {
     -fx-background-color: #00ffff;
     -fx-opacity: 0.3;
