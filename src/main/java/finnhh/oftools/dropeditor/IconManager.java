@@ -40,6 +40,16 @@ public class IconManager {
                     Objects.requireNonNull(IconManager.class.getResource("ep/" + name + ".png")).getFile()).getPath());
             iconMap.put(name, Files.readAllBytes(path));
         }
+
+        // minimap icons
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < 16; j++) {
+                String name = String.format("minimap_%d_%d", i, j);
+                Path path = Paths.get(new File(
+                        Objects.requireNonNull(IconManager.class.getResource("minimap/" + name + ".png")).getFile()).getPath());
+                iconMap.put(name, Files.readAllBytes(path));
+            }
+        }
     }
 
     public Map<String, byte[]> getIconMap() {

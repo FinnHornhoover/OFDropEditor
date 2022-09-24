@@ -114,10 +114,8 @@ public class Drops extends Data {
     }
 
     public ReferenceMode getReferenceModeFor(Data data) {
-        if (Objects.isNull(data))
-            return ReferenceMode.NONE;
-
-        return Optional.ofNullable(referenceMap.get(data))
+        return Optional.ofNullable(data)
+                .map(referenceMap::get)
                 .map(set -> ReferenceMode.forSize(set.size()))
                 .orElse(ReferenceMode.NONE);
     }

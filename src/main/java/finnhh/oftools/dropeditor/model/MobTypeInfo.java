@@ -2,7 +2,7 @@ package finnhh.oftools.dropeditor.model;
 
 import java.util.Objects;
 
-public record MobTypeInfo(int type, int level, String name, String iconName) {
+public record MobTypeInfo(int type, int level, String name, String iconName) implements InfoEnum {
     @Override
     public int hashCode() {
         return Objects.hashCode(type);

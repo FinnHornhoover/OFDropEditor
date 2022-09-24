@@ -1,4 +1,4 @@
 package finnhh.oftools.dropeditor.model;
 
-public record EggTypeInfo(int type, int crateID) {
+public record EggTypeInfo(int type, int crateID) implements InfoEnum {
 }
