@@ -15,11 +15,9 @@ import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
 import java.io.ByteArrayInputStream;
-import java.util.Objects;
 
 public class MobInfoComponent extends VBox implements ObservableComponent<MobTypeInfo> {
     private final ObjectProperty<MobTypeInfo> mobTypeInfo;
-    private final ObjectProperty<byte[]> icon;
 
     private final MainController controller;
 
@@ -29,7 +27,6 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     public MobInfoComponent(double width, MainController controller) {
         mobTypeInfo = new SimpleObjectProperty<>();
-        icon = new SimpleObjectProperty<>();
 
         this.controller = controller;
 
@@ -70,27 +67,21 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     @Override
     public void setObservable(MobTypeInfo data) {
+        var iconMap = controller.getIconManager().getIconMap();
+
         mobTypeInfo.set(data);
         mobInfoTooltipComponent.setObservable(data);
 
-        mobNameLabel.setText("<INVALID>");
-        iconView.setImage(null);
+        String name = mobTypeInfo.isNull().get() ?
+                "Unknown Mob" :
+                mobTypeInfo.get().name();
+        byte[] defaultIcon = iconMap.get("unknown");
+        byte[] icon = mobTypeInfo.isNull().get() ?
+                defaultIcon :
+                iconMap.getOrDefault(mobTypeInfo.get().iconName(), defaultIcon);
 
-        if (mobTypeInfo.isNotNull().get()) {
-            var iconMap = controller.getIconManager().getIconMap();
-            String name = Objects.isNull(mobTypeInfo.get()) ?
-                    "Unknown Mob" :
-                    mobTypeInfo.get().name();
-            byte[] defaultIcon = iconMap.get("unknown");
-            byte[] icon = Objects.isNull(mobTypeInfo.get()) ?
-                    defaultIcon :
-                    iconMap.getOrDefault(mobTypeInfo.get().iconName(), defaultIcon);
-
-            this.icon.set(icon);
-
-            mobNameLabel.setText(name);
-            iconView.setImage(new Image(new ByteArrayInputStream(this.icon.get())));
-        }
+        mobNameLabel.setText(name);
+        iconView.setImage(new Image(new ByteArrayInputStream(icon)));
     }
 
     public MobTypeInfo getMobTypeInfo() {
@@ -99,14 +90,6 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     public ReadOnlyObjectProperty<MobTypeInfo> mobTypeInfoProperty() {
         return mobTypeInfo;
-    }
-
-    public byte[] getIcon() {
-        return icon.get();
-    }
-
-    public ReadOnlyObjectProperty<byte[]> iconProperty() {
-        return icon;
     }
 
     public MobInfoTooltipComponent getMobInfoTooltipComponent() {

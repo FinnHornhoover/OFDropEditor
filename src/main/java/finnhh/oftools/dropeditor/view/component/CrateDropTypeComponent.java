@@ -2,7 +2,6 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.ItemInfo;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.CrateDropType;
 import finnhh.oftools.dropeditor.model.data.Data;
@@ -18,16 +17,11 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseDragEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.util.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -45,7 +39,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     private final Button addButton;
     private final HBox idHBox;
 
-    private final List<TypeVBox> typeVBoxCache;
+    private final List<CrateTypeBoxComponent> typeVBoxCache;
 
     private final EventHandler<MouseEvent> addClickHandler;
     private final List<ChangeListener<Crate>> valueListeners;
@@ -125,34 +119,34 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     }
 
     private void bindListVariables() {
-        var children = listHBox.getChildren().filtered(c -> c instanceof TypeVBox);
+        var children = listHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
 
         for (int index = 0; index < children.size(); index++) {
-            TypeVBox tvb = (TypeVBox) children.get(index);
+            CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) children.get(index);
 
             final int finalIndex = index;
             valueListeners.add((o, oldVal, newVal) -> {
                 makeEditable(controller.getDrops());
                 crateDropType.get().getCrateIDs().set(finalIndex, newVal.getCrateID());
 
-                TypeVBox current = (TypeVBox) listHBox.getChildren()
-                        .filtered(c -> c instanceof TypeVBox)
+                CrateTypeBoxComponent current = (CrateTypeBoxComponent) listHBox.getChildren()
+                        .filtered(c -> c instanceof CrateTypeBoxComponent)
                         .get(finalIndex);
                 current.setObservable(newVal);
             });
             removeClickHandlers.add(event -> crateDropRemoved(finalIndex));
-            dragDetectedHandlers.add(event -> tvb.startFullDrag());
+            dragDetectedHandlers.add(event -> ctb.startFullDrag());
             dragEnteredHandlers.add(event -> {
-                tvb.getStyleClass().removeAll("drag-exited", "drag-released");
-                tvb.getStyleClass().add("drag-entered");
+                ctb.getStyleClass().removeAll("drag-exited", "drag-released");
+                ctb.getStyleClass().add("drag-entered");
             });
             dragExitedHandlers.add(event -> {
-                tvb.getStyleClass().removeAll("drag-entered", "drag-released");
-                tvb.getStyleClass().add("drag-exited");
+                ctb.getStyleClass().removeAll("drag-entered", "drag-released");
+                ctb.getStyleClass().add("drag-exited");
             });
             dragReleasedHandlers.add(event -> {
-                tvb.getStyleClass().removeAll("drag-entered", "drag-exited");
-                tvb.getStyleClass().add("drag-released");
+                ctb.getStyleClass().removeAll("drag-entered", "drag-exited");
+                ctb.getStyleClass().add("drag-released");
 
                 int swappedIndex = listHBox.getChildren().indexOf((Node) event.getGestureSource());
 
@@ -167,26 +161,26 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
                 }
             });
 
-            tvb.crateProperty().addListener(valueListeners.get(index));
-            tvb.getRemoveButton().addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
-            tvb.addEventHandler(MouseDragEvent.DRAG_DETECTED, dragDetectedHandlers.get(index));
-            tvb.addEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, dragEnteredHandlers.get(index));
-            tvb.addEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, dragExitedHandlers.get(index));
-            tvb.addEventHandler(MouseDragEvent.MOUSE_DRAG_RELEASED, dragReleasedHandlers.get(index));
+            ctb.crateProperty().addListener(valueListeners.get(index));
+            ctb.getRemoveButton().addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
+            ctb.addEventHandler(MouseDragEvent.DRAG_DETECTED, dragDetectedHandlers.get(index));
+            ctb.addEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, dragEnteredHandlers.get(index));
+            ctb.addEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, dragExitedHandlers.get(index));
+            ctb.addEventHandler(MouseDragEvent.MOUSE_DRAG_RELEASED, dragReleasedHandlers.get(index));
         }
     }
 
     private void unbindListVariables() {
-        var children = listHBox.getChildren().filtered(c -> c instanceof TypeVBox);
+        var children = listHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
 
         for (int index = 0; index < children.size(); index++) {
-            TypeVBox tvb = (TypeVBox) children.get(index);
-            tvb.crateProperty().removeListener(valueListeners.get(index));
-            tvb.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
-            tvb.removeEventHandler(MouseDragEvent.DRAG_DETECTED, dragDetectedHandlers.get(index));
-            tvb.removeEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, dragEnteredHandlers.get(index));
-            tvb.removeEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, dragExitedHandlers.get(index));
-            tvb.removeEventHandler(MouseDragEvent.MOUSE_DRAG_RELEASED, dragReleasedHandlers.get(index));
+            CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) children.get(index);
+            ctb.crateProperty().removeListener(valueListeners.get(index));
+            ctb.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
+            ctb.removeEventHandler(MouseDragEvent.DRAG_DETECTED, dragDetectedHandlers.get(index));
+            ctb.removeEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, dragEnteredHandlers.get(index));
+            ctb.removeEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, dragExitedHandlers.get(index));
+            ctb.removeEventHandler(MouseDragEvent.MOUSE_DRAG_RELEASED, dragReleasedHandlers.get(index));
         }
 
         valueListeners.clear();
@@ -202,15 +196,15 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
         if (typeVBoxCache.size() < crateIDs.size()) {
             IntStream.range(0, crateIDs.size() - typeVBoxCache.size())
-                    .mapToObj(i -> new TypeVBox(boxWidth, controller, this))
+                    .mapToObj(i -> new CrateTypeBoxComponent(boxWidth, controller, this))
                     .forEach(typeVBoxCache::add);
         }
 
         IntStream.range(0, crateIDs.size())
                 .mapToObj(i -> {
-                    TypeVBox tvb = typeVBoxCache.get(i);
-                    tvb.setObservable(controller.getDrops().getCrates().get(crateIDs.get(i)));
-                    return tvb;
+                    CrateTypeBoxComponent ctb = typeVBoxCache.get(i);
+                    ctb.setObservable(controller.getDrops().getCrates().get(crateIDs.get(i)));
+                    return ctb;
                 })
                 .forEach(listHBox.getChildren()::add);
     }
@@ -300,10 +294,10 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     public void refreshObservable(Drops drops) {
         makeEditable(drops);
 
-        var children = listHBox.getChildren().filtered(c -> c instanceof TypeVBox);
+        var children = listHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
 
         for (int index = 0; index < children.size(); index++) {
-            int crateID = ((TypeVBox) children.get(index)).getCrate().getCrateID();
+            int crateID = ((CrateTypeBoxComponent) children.get(index)).getCrate().getCrateID();
 
             if (crateID != crateDropType.get().getCrateIDs().get(index))
                 crateDropType.get().getCrateIDs().set(index, crateID);
@@ -316,8 +310,8 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
         Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
 
-        TypeVBox prototype = typeVBoxCache.isEmpty() ?
-                new TypeVBox(boxWidth, controller, this) :
+        CrateTypeBoxComponent prototype = typeVBoxCache.isEmpty() ?
+                new CrateTypeBoxComponent(boxWidth, controller, this) :
                 typeVBoxCache.get(0);
         allValues.addAll(getNestedSearchableValues(
                 prototype.getSearchableValues(),
@@ -373,206 +367,5 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     @Override
     public DataComponent getParentComponent() {
         return parent;
-    }
-
-    public static class TypeVBox extends BorderPane implements DataComponent {
-        private final ObjectProperty<Crate> crate;
-        private final ObjectProperty<ItemInfo> itemInfo;
-        private final ObjectProperty<byte[]> icon;
-
-        private final MainController controller;
-        private final DataComponent parent;
-
-        private final Label nameLabel;
-        private final Label commentLabel;
-        private final ImageView iconView;
-        private final VBox contentVBox;
-        private final Label idLabel;
-        private final Button removeButton;
-        private final HBox idHBox;
-
-        private final EventHandler<MouseEvent> idClickHandler;
-
-        public TypeVBox(double width,
-                        MainController controller,
-                        DataComponent parent) {
-
-            crate = new SimpleObjectProperty<>();
-            itemInfo = new SimpleObjectProperty<>();
-            icon = new SimpleObjectProperty<>();
-
-            this.controller = controller;
-            this.parent = parent;
-            nameLabel = new Label();
-            commentLabel = new Label();
-
-            iconView = new ImageView();
-            iconView.setFitWidth(64);
-            iconView.setFitHeight(64);
-            iconView.setPreserveRatio(true);
-            iconView.setCache(true);
-
-            contentVBox = new VBox(2, nameLabel, commentLabel, iconView);
-            contentVBox.setAlignment(Pos.CENTER);
-            contentVBox.setMinWidth(width);
-            contentVBox.setMaxWidth(width);
-            contentVBox.getStyleClass().add("bordered-pane");
-
-            idLabel = new Label();
-            idLabel.getStyleClass().add("id-label");
-
-            removeButton = new Button("-");
-            removeButton.setMinWidth(USE_COMPUTED_SIZE);
-            removeButton.getStyleClass().addAll("remove-button", "slim-button");
-
-            idHBox = new HBox(2, idLabel, removeButton);
-
-            setTop(idHBox);
-            setCenter(contentVBox);
-            setAlignment(idLabel, Pos.TOP_LEFT);
-
-            // observable is listened, it is okay to just set the observable
-            idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
-                    .ifPresent(this::setObservable);
-
-            idLabel.setText(getObservableClass().getSimpleName() + ": null");
-            contentVBox.setDisable(true);
-            setIdDisable(true);
-
-            // both makeEditable and setObservable sets the observable, just use a listener here
-            crate.addListener((o, oldVal, newVal) -> {
-                if (Objects.isNull(newVal)) {
-                    idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                    contentVBox.setDisable(true);
-                    setIdDisable(true);
-                } else {
-                    idLabel.setText(newVal.getIdBinding().getValueSafe());
-                    contentVBox.setDisable(false);
-                    setIdDisable(newVal.isMalformed());
-                }
-            });
-        }
-
-        @Override
-        public Class<Crate> getObservableClass() {
-            return Crate.class;
-        }
-
-        @Override
-        public ReadOnlyObjectProperty<Crate> getObservable() {
-            return crate;
-        }
-
-        @Override
-        public void setObservable(Data data) {
-            idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-
-            crate.set((Crate) data);
-
-            var iconMap = controller.getIconManager().getIconMap();
-            var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
-            byte[] defaultIcon = iconMap.get("unknown");
-
-            if (crate.isNull().get()) {
-                nameLabel.setText("<INVALID>");
-                commentLabel.setText("<INVALID>");
-                iconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
-
-                contentVBox.setDisable(true);
-            } else {
-                ItemInfo itemInfo = itemInfoMap.get(new Pair<>(crate.get().getCrateID(), 9));
-
-                String name = Objects.isNull(itemInfo) ? "<INVALID>" : itemInfo.name();
-                String comment = Objects.isNull(itemInfo) ? "<INVALID>" :  itemInfo.comment();
-                byte[] icon = Objects.isNull(itemInfo) ?
-                        defaultIcon :
-                        iconMap.getOrDefault(itemInfo.iconName(), defaultIcon);
-
-                this.itemInfo.set(itemInfo);
-                this.icon.set(icon);
-
-                nameLabel.setText(name);
-                commentLabel.setText(comment);
-                iconView.setImage(new Image(new ByteArrayInputStream(icon)));
-
-                contentVBox.setDisable(Objects.isNull(itemInfo));
-            }
-
-            idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-        }
-
-        @Override
-        public Set<FilterChoice> getSearchableValues() {
-            var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
-
-            Set<FilterChoice> allValues = new HashSet<>(getSearchableValuesForObservable());
-
-            allValues.addAll(getNestedSearchableValues(
-                    ObservableComponent.getSearchableValuesFor(ItemInfo.class),
-                    op -> op.map(o -> (Crate) o)
-                            .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), 9)))
-                            .stream().toList()
-            ));
-
-            return allValues;
-        }
-
-        public Crate getCrate() {
-            return crate.get();
-        }
-
-        public ReadOnlyObjectProperty<Crate> crateProperty() {
-            return crate;
-        }
-
-        public ItemInfo getItemInfo() {
-            return itemInfo.get();
-        }
-
-        public ReadOnlyObjectProperty<ItemInfo> itemInfoProperty() {
-            return itemInfo;
-        }
-
-        public byte[] getIcon() {
-            return icon.get();
-        }
-
-        public ReadOnlyObjectProperty<byte[]> iconProperty() {
-            return icon;
-        }
-
-        public Label getNameLabel() {
-            return nameLabel;
-        }
-
-        public Label getCommentLabel() {
-            return commentLabel;
-        }
-
-        public ImageView getIconView() {
-            return iconView;
-        }
-
-        public VBox getContentVBox() {
-            return contentVBox;
-        }
-
-        public Button getRemoveButton() {
-            return removeButton;
-        }
-
-        public HBox getIdHBox() {
-            return idHBox;
-        }
-
-        @Override
-        public Label getIdLabel() {
-            return idLabel;
-        }
-
-        @Override
-        public DataComponent getParentComponent() {
-            return parent;
-        }
     }
 }

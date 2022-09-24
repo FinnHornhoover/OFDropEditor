@@ -729,7 +729,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
     public static class ItemDropVBox extends VBox implements DataComponent {
         private final ObjectProperty<ItemDrop> itemDrop;
         private final ObjectProperty<ItemInfo> itemInfo;
-        private final ObjectProperty<byte[]> icon;
 
         private final MainController controller;
         private final ItemSetComponent parent;
@@ -755,7 +754,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
             itemDrop = new SimpleObjectProperty<>();
             itemInfo = new SimpleObjectProperty<>();
-            icon = new SimpleObjectProperty<>();
 
             this.controller = controller;
             this.parent = parent;
@@ -860,7 +858,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                     byte[] icon = iconMap.getOrDefault(itemInfo.iconName(), defaultIcon);
 
                     this.itemInfo.set(itemInfo);
-                    this.icon.set(icon);
 
                     nameLabel.setText(name);
                     iconView.setImage(new Image(new ByteArrayInputStream(icon)));
@@ -905,14 +902,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
         public ReadOnlyObjectProperty<ItemInfo> itemInfoProperty() {
             return itemInfo;
-        }
-
-        public byte[] getIcon() {
-            return icon.get();
-        }
-
-        public ReadOnlyObjectProperty<byte[]> iconProperty() {
-            return icon;
         }
 
         public ImageView getIconView() {

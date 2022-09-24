@@ -1,13 +1,11 @@
 package finnhh.oftools.dropeditor.model;
 
 import finnhh.oftools.dropeditor.MainController;
-import finnhh.oftools.dropeditor.model.data.Crate;
-import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
-import finnhh.oftools.dropeditor.model.data.Mob;
+import finnhh.oftools.dropeditor.model.data.*;
 import finnhh.oftools.dropeditor.view.component.CrateComponent;
 import finnhh.oftools.dropeditor.view.component.MobComponent;
 import finnhh.oftools.dropeditor.view.component.ObservableComponent;
+import finnhh.oftools.dropeditor.view.component.RacingComponent;
 import javafx.scene.control.ListView;
 
 import java.util.Collection;
@@ -27,6 +25,12 @@ public enum ViewMode {
             drops -> drops.getCrates()
                     .values().stream()
                     .sorted(Comparator.comparingInt(Crate::getCrateID))
+                    .toList()),
+    RACING("Racing",
+            RacingComponent::new,
+            drops -> drops.getRacing()
+                    .values().stream()
+                    .sorted(Comparator.comparingInt(Racing::getEPID))
                     .toList());
 
     private final String modeString;

@@ -74,10 +74,12 @@ public class MainController {
         mainListView.setCellFactory(cfData -> new ListCell<>() {
             private final MobComponent mobComponent;
             private final CrateComponent crateComponent;
+            private final RacingComponent racingComponent;
 
             {
                 mobComponent = new MobComponent(controller, mainListView);
                 crateComponent = new CrateComponent(controller, mainListView);
+                racingComponent = new RacingComponent(controller, mainListView);
             }
 
             @Override
@@ -95,6 +97,10 @@ public class MainController {
                         case CRATE -> {
                             crateComponent.setObservable(data);
                             graphic = crateComponent;
+                        }
+                        case RACING -> {
+                            racingComponent.setObservable(data);
+                            graphic = racingComponent;
                         }
                     }
                 }

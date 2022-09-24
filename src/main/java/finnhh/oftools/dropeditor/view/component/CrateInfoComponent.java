@@ -15,11 +15,9 @@ import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
 import java.io.ByteArrayInputStream;
-import java.util.Objects;
 
 public class CrateInfoComponent extends VBox implements ObservableComponent<ItemInfo> {
     private final ObjectProperty<ItemInfo> crateInfo;
-    private final ObjectProperty<byte[]> icon;
 
     private final MainController controller;
 
@@ -30,7 +28,6 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     public CrateInfoComponent(double width, MainController controller) {
         crateInfo = new SimpleObjectProperty<>();
-        icon = new SimpleObjectProperty<>();
 
         this.controller = controller;
 
@@ -76,32 +73,25 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     @Override
     public void setObservable(ItemInfo data) {
+        var iconMap = controller.getIconManager().getIconMap();
+
         crateInfo.set(data);
         crateInfoTooltipComponent.setObservable(data);
 
-        nameLabel.setText("<INVALID>");
-        commentLabel.setText("<INVALID>");
-        iconView.setImage(null);
+        String name = crateInfo.isNull().get() ?
+                "UNKNOWN" :
+                crateInfo.get().name();
+        String comment = crateInfo.isNull().get() ?
+                "Unknown Crate" :
+                crateInfo.get().comment();
+        byte[] defaultIcon = iconMap.get("unknown");
+        byte[] icon = crateInfo.isNull().get() ?
+                defaultIcon :
+                iconMap.getOrDefault(crateInfo.get().iconName(), defaultIcon);
 
-        if (crateInfo.isNotNull().get()) {
-            var iconMap = controller.getIconManager().getIconMap();
-            String name = Objects.isNull(crateInfo.get()) ?
-                    "UNKNOWN" :
-                    crateInfo.get().name();
-            String comment = Objects.isNull(crateInfo.get()) ?
-                    "Unknown Crate" :
-                    crateInfo.get().comment();
-            byte[] defaultIcon = iconMap.get("unknown");
-            byte[] icon = Objects.isNull(crateInfo.get()) ?
-                    defaultIcon :
-                    iconMap.getOrDefault(crateInfo.get().iconName(), defaultIcon);
-
-            this.icon.set(icon);
-
-            nameLabel.setText(name);
-            commentLabel.setText(comment);
-            iconView.setImage(new Image(new ByteArrayInputStream(this.icon.get())));
-        }
+        nameLabel.setText(name);
+        commentLabel.setText(comment);
+        iconView.setImage(new Image(new ByteArrayInputStream(icon)));
     }
 
     public ItemInfo getCrateInfo() {
@@ -110,14 +100,6 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     public ReadOnlyObjectProperty<ItemInfo> crateInfoProperty() {
         return crateInfo;
-    }
-
-    public byte[] getIcon() {
-        return icon.get();
-    }
-
-    public ReadOnlyObjectProperty<byte[]> iconProperty() {
-        return icon;
     }
 
     public CrateInfoTooltipComponent getCrateInfoTooltipComponent() {
