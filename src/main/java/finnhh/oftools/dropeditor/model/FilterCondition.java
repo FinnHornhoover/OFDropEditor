@@ -21,12 +21,20 @@ public record FilterCondition(FilterChoice filterChoice,
                 && filterChoice.filterType().valueValid(filterValue);
     }
 
-    @Override
-    public String toString() {
+    public String toShortString() {
         return String.format("%s %s %s %s",
                 filterChoice.valueName(),
                 operator.getShortString(),
                 filterValue,
-                allowNulls ? " | null" : "");
+                allowNulls ? "| null" : "");
+    }
+
+    @Override
+    public String toString() {
+        return String.format("(%s) %s %s %s",
+                filterChoice,
+                operator,
+                filterValue,
+                allowNulls ? "or null" : "");
     }
 }

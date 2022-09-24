@@ -7,10 +7,12 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
 
 import java.io.ByteArrayInputStream;
 import java.util.Objects;
@@ -21,6 +23,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     private final MainController controller;
 
+    private final CrateInfoTooltipComponent crateInfoTooltipComponent;
     private final Label nameLabel;
     private final Label commentLabel;
     private final ImageView iconView;
@@ -31,19 +34,27 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
         this.controller = controller;
 
+        crateInfoTooltipComponent = new CrateInfoTooltipComponent(controller);
+        Tooltip tooltip = new Tooltip();
+        tooltip.setShowDelay(Duration.ZERO);
+        tooltip.setGraphic(crateInfoTooltipComponent);
+
         nameLabel = new Label();
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
+        nameLabel.setTooltip(tooltip);
 
         commentLabel = new Label();
         commentLabel.setWrapText(true);
         commentLabel.setTextAlignment(TextAlignment.CENTER);
+        commentLabel.setTooltip(tooltip);
 
         iconView = new ImageView();
         iconView.setFitWidth(64);
         iconView.setFitHeight(64);
         iconView.setPreserveRatio(true);
         iconView.setCache(true);
+        Tooltip.install(iconView, tooltip);
 
         setSpacing(2);
         setAlignment(Pos.CENTER);
@@ -66,12 +77,13 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
     @Override
     public void setObservable(ItemInfo data) {
         crateInfo.set(data);
+        crateInfoTooltipComponent.setObservable(data);
 
-        if (crateInfo.isNull().get()) {
-            nameLabel.setText("<INVALID>");
-            commentLabel.setText("<INVALID>");
-            iconView.setImage(null);
-        } else {
+        nameLabel.setText("<INVALID>");
+        commentLabel.setText("<INVALID>");
+        iconView.setImage(null);
+
+        if (crateInfo.isNotNull().get()) {
             var iconMap = controller.getIconManager().getIconMap();
             String name = Objects.isNull(crateInfo.get()) ?
                     "UNKNOWN" :

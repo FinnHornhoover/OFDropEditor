@@ -12,8 +12,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class JSONManager {
@@ -24,6 +29,9 @@ public class JSONManager {
             "mobs",
             "eggs",
             "paths",
+    };
+    public static final String[] CONSTANT_NAMES = new String[] {
+            "areas",
     };
     public static final String[] ITEM_TYPES = new String[] {
             "m_pWeaponItemTable",
@@ -51,7 +59,7 @@ public class JSONManager {
             "generalitemicon",
             "vehicle",
     };
-    public static final String[] MOB_ICON_NAMES = new String[] {
+    public static final String[] NPC_ICON_NAMES = new String[] {
             "error",
             "error",
             "error",
@@ -63,6 +71,12 @@ public class JSONManager {
             "mobicon",
             "error",
             "hnpcicon",
+    };
+    public static final String[] MISSION_TASK_NAMES = {
+            "Mission",
+            "Guide Mission",
+            "Nano Mission",
+            "World Mission"
     };
 
     private final Gson gson;
@@ -246,16 +260,45 @@ public class JSONManager {
         }
     }
 
-    private void readMobData(JsonObject xdt, StaticDataStore staticDataStore)
+    private void readNPCMobData(JsonObject xdt, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
 
+        Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap = staticDataStore.getItemInfoMap();
+        Map<Integer, NPCTypeInfo> npcTypeInfoMap = staticDataStore.getNpcTypeInfoMap();
+        Map<Integer, List<NPCInfo>> npcInfoMap = staticDataStore.getNpcInfoMap();
         Map<Integer, MobTypeInfo> mobTypeInfoMap = staticDataStore.getMobTypeInfoMap();
         Map<Integer, List<MobInfo>> mobInfoMap = staticDataStore.getMobInfoMap();
+
+        JsonObject vendorTableObject = xdt.getAsJsonObject("m_pVendorTable");
+        JsonArray vendorItemArray = vendorTableObject.getAsJsonArray("m_pItemData");
 
         JsonObject npcTableObject = xdt.getAsJsonObject("m_pNpcTable");
         JsonArray npcDataArray = npcTableObject.getAsJsonArray("m_pNpcData");
         JsonArray npcStringArray = npcTableObject.getAsJsonArray("m_pNpcStringData");
         JsonArray npcIconArray = npcTableObject.getAsJsonArray("m_pNpcIconData");
+
+        Map<Integer, List<VendorItemInfo>> vendorItemMap = new HashMap<>();
+
+        for (JsonElement vendorItemElement : vendorItemArray) {
+            JsonObject vendorItemObject = vendorItemElement.getAsJsonObject();
+
+            int npcType = vendorItemObject.get("m_iNpcNumber").getAsInt();
+            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(
+                    vendorItemObject.get("m_iitemID").getAsInt(),
+                    vendorItemObject.get("m_iItemType").getAsInt()
+            ));
+
+            vendorItemMap.putIfAbsent(npcType, new ArrayList<>());
+
+            if (Objects.nonNull(itemInfo)) {
+                vendorItemMap.get(npcType).add(new VendorItemInfo(
+                        itemInfo,
+                        npcType,
+                        vendorItemObject.get("m_iSortNumber").getAsInt(),
+                        itemInfo.buyPrice()
+                ));
+            }
+        }
 
         for (int type = 1; type < npcDataArray.size(); type++) {
             JsonObject npcData = npcDataArray.get(type).getAsJsonObject();
@@ -269,9 +312,18 @@ public class JSONManager {
             JsonObject mobIconObject = npcIconArray
                     .get(npcData.get("m_iIcon1").getAsInt())
                     .getAsJsonObject();
-            int mobIconType = Math.max(0, mobIconObject.get("m_iIconType").getAsInt()) % MOB_ICON_NAMES.length;
-            int mobIconNumber = mobIconObject.get("m_iIconNumber").getAsInt();
-            String iconName = MOB_ICON_NAMES[mobIconType] + "_" + String.format("%02d", mobIconNumber);
+            int npcIconType = Math.max(0, mobIconObject.get("m_iIconType").getAsInt()) % NPC_ICON_NAMES.length;
+            int npcIconNumber = mobIconObject.get("m_iIconNumber").getAsInt();
+            String iconName = npcIconType != 4 && npcIconType != 8 && npcIconType != 10 ?
+                    "unknown" :
+                    String.format("%s_%02d", NPC_ICON_NAMES[npcIconType], npcIconNumber);
+
+            NPCTypeInfo npcTypeInfo = new NPCTypeInfo(
+                    type,
+                    name,
+                    iconName,
+                    Optional.ofNullable(vendorItemMap.get(type)).orElse(List.of())
+            );
 
             MobTypeInfo mobTypeInfo = new MobTypeInfo(
                     type,
@@ -280,8 +332,35 @@ public class JSONManager {
                     iconName
             );
 
+            npcTypeInfoMap.put(type, npcTypeInfo);
+            npcInfoMap.put(type, new ArrayList<>());
             mobTypeInfoMap.put(type, mobTypeInfo);
             mobInfoMap.put(type, new ArrayList<>());
+        }
+
+        JsonObject npcDataObject = getPatchedObject("NPCs", JsonObject.class);
+        List<JsonObject> npcObjectList = npcDataObject
+                .getAsJsonObject("NPCs")
+                .entrySet().stream()
+                .map(e -> e.getValue().getAsJsonObject())
+                .toList();
+
+        for (JsonObject npcObject : npcObjectList) {
+            int type = npcObject.get("iNPCType").getAsInt();
+
+            if (!npcTypeInfoMap.containsKey(type))
+                continue;
+
+            NPCTypeInfo npcTypeInfo = npcTypeInfoMap.get(type);
+
+            NPCInfo npcInfo = new NPCInfo(
+                    npcTypeInfo,
+                    npcObject.get("iX").getAsInt(),
+                    npcObject.get("iY").getAsInt(),
+                    !npcObject.has("iMapNum") ? 0 : npcObject.get("iMapNum").getAsInt()
+            );
+
+            npcInfoMap.get(type).add(npcInfo);
         }
 
         JsonObject mobDataObject = getPatchedObject("mobs", JsonObject.class);
@@ -332,6 +411,11 @@ public class JSONManager {
             }
         }
 
+        // remove npc types that did not appear in the NPCs object
+        List<Integer> nonNPCKeys = npcTypeInfoMap.keySet().stream()
+                .filter(key -> !npcInfoMap.containsKey(key))
+                .toList();
+        nonNPCKeys.forEach(npcTypeInfoMap::remove);
         // remove npc types that did not appear in the mobs object
         List<Integer> nonMobKeys = mobTypeInfoMap.keySet().stream()
                 .filter(key -> !mobInfoMap.containsKey(key))
@@ -343,7 +427,7 @@ public class JSONManager {
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
 
         Map<Integer, EggTypeInfo> eggTypeInfoMap = staticDataStore.getEggTypeInfoMap();
-        Map<Integer, EggInfo> eggInfoMap = staticDataStore.getEggInfoMap();
+        Map<Integer, List<EggInfo>> eggInfoMap = staticDataStore.getEggInfoMap();
 
         JsonObject eggDataObject = getPatchedObject("eggs", JsonObject.class);
         JsonObject eggTypeData = eggDataObject.getAsJsonObject("EggTypes");
@@ -356,6 +440,7 @@ public class JSONManager {
             EggTypeInfo eggTypeInfo = new EggTypeInfo(type, eggTypeObject.get("DropCrateId").getAsInt());
 
             eggTypeInfoMap.put(type, eggTypeInfo);
+            eggInfoMap.put(type, new ArrayList<>());
         }
 
         for (var eggEntry : eggData.entrySet()) {
@@ -373,7 +458,158 @@ public class JSONManager {
                     !eggObject.has("iMapNum") ? 0 : eggObject.get("iMapNum").getAsInt()
             );
 
-            eggInfoMap.put(type, eggInfo);
+            eggInfoMap.get(type).add(eggInfo);
+        }
+    }
+
+    private void readMissionData(JsonObject xdt, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
+
+        Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap = staticDataStore.getItemInfoMap();
+        Map<Integer, MissionTaskInfo> missionTaskInfoMap = staticDataStore.getMissionTaskInfoMap();
+        Map<Integer, MissionInfo> missionInfoMap = staticDataStore.getMissionInfoMap();
+
+        JsonObject missionTableObject = xdt.getAsJsonObject("m_pMissionTable");
+        JsonArray missionDataArray = missionTableObject.getAsJsonArray("m_pMissionData");
+        JsonArray missionStringDataArray = missionTableObject.getAsJsonArray("m_pMissionStringData");
+        JsonArray rewardDataArray = missionTableObject.getAsJsonArray("m_pRewardData");
+
+        Map<Integer, Set<MissionTaskInfo>> taskMap = new HashMap<>();
+
+        for (int i = 1; i < missionDataArray.size(); i++) {
+            JsonObject missionDataObject = missionDataArray.get(i).getAsJsonObject();
+
+            int missionID = missionDataObject.get("m_iHMissionID").getAsInt();
+            int taskID = missionDataObject.get("m_iHTaskID").getAsInt();
+            String missionName = missionStringDataArray
+                    .get(missionDataObject.get("m_iHMissionName").getAsInt())
+                    .getAsJsonObject()
+                    .get("m_pstrNameString")
+                    .getAsString();
+
+            JsonObject rewardDataObject = rewardDataArray
+                    .get(missionDataObject.get("m_iSUReward").getAsInt())
+                    .getAsJsonObject();
+            JsonArray rewardItemIDs = rewardDataObject.get("m_iMissionRewardItemID").getAsJsonArray();
+            // spelled with a typo in the actual XDT file
+            JsonArray rewardItemTypes = rewardDataObject.get("m_iMissionRewarItemType").getAsJsonArray();
+            Set<ItemInfo> itemRewards = IntStream.range(0, 4)
+                    .filter(idx -> rewardItemTypes.get(idx).getAsInt() > 0 || rewardItemIDs.get(idx).getAsInt() > 0)
+                    .mapToObj(idx -> itemInfoMap.get(
+                            new Pair<>(rewardItemIDs.get(idx).getAsInt(), rewardItemTypes.get(idx).getAsInt())))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            int missionType = Math.max(0, missionDataObject.get("m_iHMissionType").getAsInt()) % MISSION_TASK_NAMES.length;
+
+            MissionTaskInfo missionTaskInfo = new MissionTaskInfo(
+                    taskID,
+                    missionDataObject.get("m_iHTaskType").getAsInt(),
+                    missionID,
+                    missionType,
+                    missionDataObject.get("m_iHJournalNPCID").getAsInt(),
+                    missionName,
+                    MISSION_TASK_NAMES[missionType],
+                    rewardDataObject.get("m_iCash").getAsInt(),
+                    rewardDataObject.get("m_iFusionMatter").getAsInt(),
+                    itemRewards
+            );
+
+            missionTaskInfoMap.put(taskID, missionTaskInfo);
+
+            if (!taskMap.containsKey(missionID))
+                taskMap.put(missionID, new HashSet<>());
+
+            taskMap.get(missionID).add(missionTaskInfo);
+        }
+
+        taskMap.forEach((missionID, taskSet) -> taskSet.stream()
+                .max(Comparator.comparingInt(mto -> mto.itemRewards().size()))
+                .ifPresent(mto -> missionInfoMap.put(missionID, new MissionInfo(
+                        missionID,
+                        mto.missionType(),
+                        mto.npc(),
+                        mto.missionName(),
+                        mto.missionTypeName(),
+                        taskSet,
+                        mto.taroReward(),
+                        mto.fmReward(),
+                        mto.itemRewards()
+                ))));
+    }
+
+    private void readInstanceData(JsonObject xdt, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
+
+        Map<Integer, MissionTaskInfo> missionTaskInfoMap = staticDataStore.getMissionTaskInfoMap();
+        Map<Integer, WarpInfo> warpInfoMap = staticDataStore.getWarpInfoMap();
+        Map<Long, InstanceInfo> instanceInfoMap = staticDataStore.getInstanceInfoMap();
+
+        JsonObject instanceTableObject = xdt.getAsJsonObject("m_pInstanceTable");
+        JsonArray instanceDataArray = instanceTableObject.getAsJsonArray("m_pInstanceData");
+        JsonArray warpDataArray = instanceTableObject.getAsJsonArray("m_pWarpData");
+        JsonArray warpNameDataArray = instanceTableObject.getAsJsonArray("m_pWarpNameData");
+
+        for (int i = 1; i < warpDataArray.size(); i++) {
+            JsonObject warpDataObject = warpDataArray.get(i).getAsJsonObject();
+            int warpID = warpDataObject.get("m_iWarpNumber").getAsInt();
+
+            warpInfoMap.put(warpID, new WarpInfo(
+                    warpID,
+                    warpDataObject.get("m_iToMapNum").getAsLong(),
+                    warpDataObject.get("m_iToX").getAsInt(),
+                    warpDataObject.get("m_iToY").getAsInt(),
+                    warpDataObject.get("m_iNpcNumber").getAsInt(),
+                    Optional.ofNullable(missionTaskInfoMap.get(warpDataObject.get("m_iLimit_TaskID").getAsInt()))
+            ));
+        }
+
+        for (int i = 1; i < instanceDataArray.size(); i++) {
+            JsonObject instanceDataObject = instanceDataArray.get(i).getAsJsonObject();
+            long instanceID = i;
+            String name = warpNameDataArray
+                    .get(instanceDataObject.get("m_iInstanceNameID").getAsInt())
+                    .getAsJsonObject()
+                    .get("m_pstrNameString")
+                    .getAsString();
+            Set<WarpInfo> warpSet = warpInfoMap.values().stream()
+                    .filter(wi -> wi.toInstanceID() == instanceID)
+                    .collect(Collectors.toSet());
+            Optional<MissionTaskInfo> entryTask = warpSet.stream()
+                    .reduce((wi1, wi2) -> wi1.requiredTask().isPresent() ? wi1 : wi2)
+                    .flatMap(WarpInfo::requiredTask);
+
+            instanceInfoMap.put(instanceID, new InstanceInfo(
+                    instanceID,
+                    instanceDataObject.get("m_iZoneX").getAsInt(),
+                    instanceDataObject.get("m_iZoneY").getAsInt(),
+                    instanceDataObject.get("m_iIsEP").getAsInt(),
+                    name,
+                    warpSet,
+                    entryTask
+            ));
+        }
+    }
+
+    private void readMapRegionData(JsonObject mapXDT, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
+
+        List<MapRegionInfo> mapRegionInfoList = staticDataStore.getMapRegionInfoList();
+        JsonArray mapRegionsArray = mapXDT.getAsJsonArray("MapRegions");
+
+        for (JsonElement mapRegionElement : mapRegionsArray) {
+            JsonObject mapRegionObject = mapRegionElement.getAsJsonObject();
+
+            int x = mapRegionObject.get("X").getAsInt();
+            int y = mapRegionObject.get("Y").getAsInt();
+            mapRegionInfoList.add(new MapRegionInfo(
+                    x,
+                    y,
+                    mapRegionObject.get("Width").getAsInt(),
+                    mapRegionObject.get("Height").getAsInt(),
+                    mapRegionObject.get("AreaName").getAsString(),
+                    mapRegionObject.get("ZoneName").getAsString(),
+                    String.format("minimap_%d_%d", MapRegionInfo.xToTile(x), MapRegionInfo.yToTile(y))
+            ));
         }
     }
 
@@ -388,7 +624,8 @@ public class JSONManager {
     }
 
     public void setFromPreferences(Preferences preferences, StaticDataStore staticDataStore)
-            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException, IOException {
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException,
+            URISyntaxException, IOException {
 
         setDropsDirectory(new File(preferences.getDropDirectory()));
 
@@ -397,7 +634,11 @@ public class JSONManager {
 
         setXDT(new File(preferences.getXDTFile()), staticDataStore);
 
-        setSavePreferences(new File(preferences.getSaveDirectory()), preferences.isStandaloneSave());
+        File saveDirectory = new File(preferences.getSaveDirectory());
+        setSavePreferences(saveDirectory, preferences.isStandaloneSave());
+        setConstantDataDirectory(saveDirectory, staticDataStore);
+
+        fillDerivativeMaps(staticDataStore);
 
         if (Objects.nonNull(preferences.getIconDirectory()))
             setIconDirectory(new File(preferences.getIconDirectory()));
@@ -449,9 +690,12 @@ public class JSONManager {
             JsonObject xdt = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                     "Invalid XDT file.");
 
+            // order matters
             readItemData(xdt, staticDataStore);
-            readMobData(xdt, staticDataStore);
+            readNPCMobData(xdt, staticDataStore);
             readEggData(staticDataStore);
+            readMissionData(xdt, staticDataStore);
+            readInstanceData(xdt, staticDataStore);
         }
 
         preferences.setXDTFile(xdtFile.getAbsolutePath());
@@ -466,6 +710,136 @@ public class JSONManager {
 
         preferences.setSaveDirectory(saveDirectory.getAbsolutePath());
         preferences.setStandaloneSave(standaloneSave);
+    }
+
+    public void setConstantDataDirectory(File constantDataDirectory, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException,
+            URISyntaxException, IOException {
+
+        Map<String, JsonObject> constantDataMap = new HashMap<>();
+
+        for (String constantName : CONSTANT_NAMES) {
+            Path constantDataFilePath = Paths.get(constantDataDirectory.getPath(), constantName + ".json");
+            File constantDataFile = constantDataFilePath.toFile();
+
+            if (!constantDataFile.isFile()) {
+                Files.copy(Paths.get(Objects.requireNonNull(JSONManager.class.getResource(constantName + ".json")).toURI()),
+                        constantDataFilePath);
+            }
+
+            try (FileReader fileReader = new FileReader(constantDataFile)) {
+                constantDataMap.put(constantName,
+                        Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
+                                "Could not read a file which was supposed to be provided by the program."));
+            }
+        }
+
+        readMapRegionData(constantDataMap.get(CONSTANT_NAMES[0]), staticDataStore);
+    }
+
+    public void fillDerivativeMaps(StaticDataStore staticDataStore) {
+        var npcTypeInfoMap = staticDataStore.getNpcTypeInfoMap();
+        var missionInfoMap = staticDataStore.getMissionInfoMap();
+        var eggInfoMap = staticDataStore.getEggInfoMap();
+        var mapRegionInfoList = staticDataStore.getMapRegionInfoList();
+        var npcInfoMap = staticDataStore.getNpcInfoMap();
+        var mobInfoMap = staticDataStore.getMobInfoMap();
+        var instanceInfoMap = staticDataStore.getInstanceInfoMap();
+
+        var vendorItemMap = staticDataStore.getVendorItemMap();
+        var rewardMissionMap = staticDataStore.getRewardMissionMap();
+        var epInstanceMap = staticDataStore.getEPInstanceMap();
+        var eggInstanceRegionGroupedMap = staticDataStore.getEggInstanceRegionGroupedMap();
+        var npcInstanceRegionGroupedMap = staticDataStore.getNPCInstanceRegionGroupedMap();
+        var mobInstanceRegionGroupedMap = staticDataStore.getMobInstanceRegionGroupedMap();
+
+        npcTypeInfoMap.values().stream()
+                .flatMap(npcTypeInfo -> npcTypeInfo.vendorItems().stream())
+                .forEach(vii -> {
+                    ItemInfo ii = vii.itemInfo();
+                    var key = new Pair<>(ii.id(), ii.type());
+                    vendorItemMap.putIfAbsent(key, new ArrayList<>());
+                    vendorItemMap.get(key).add(vii);
+                });
+
+        missionInfoMap.values()
+                .forEach(missionInfo -> missionInfo.itemRewards()
+                        .forEach(ii -> {
+                            var key = new Pair<>(ii.id(), ii.type());
+                            rewardMissionMap.putIfAbsent(key, new ArrayList<>());
+                            rewardMissionMap.get(key).add(missionInfo);
+                        }));
+
+        instanceInfoMap.values()
+                .stream()
+                .filter(instanceInfo -> instanceInfo.EPID() > 0)
+                .forEach(instanceInfo -> epInstanceMap.put(instanceInfo.EPID(), instanceInfo));
+
+        eggInfoMap.values().stream()
+                .flatMap(List::stream)
+                .forEach(eggInfo -> {
+                    int crateID = eggInfo.eggTypeInfo().crateID();
+
+                    eggInstanceRegionGroupedMap.putIfAbsent(crateID, new HashMap<>());
+                    var eggGroupedMap = eggInstanceRegionGroupedMap.get(crateID);
+                    eggGroupedMap.putIfAbsent(eggInfo.instanceID(), new HashMap<>());
+                    var eggRegionMap = eggGroupedMap.get(eggInfo.instanceID());
+
+                    MapRegionInfo mapRegionInfo = eggRegionMap.keySet().stream()
+                            .filter(mri -> mri.coordinatesIncluded(eggInfo.x(), eggInfo.y()))
+                            .findFirst()
+                            .or(() -> mapRegionInfoList.stream()
+                                    .filter(mri -> mri.coordinatesIncluded(eggInfo.x(), eggInfo.y()))
+                                    .findFirst())
+                            .orElse(MapRegionInfo.UNKNOWN);
+
+                    eggRegionMap.putIfAbsent(mapRegionInfo, new ArrayList<>());
+                    eggRegionMap.get(mapRegionInfo).add(eggInfo);
+                });
+
+        npcInfoMap.forEach((npcType, npcs) -> {
+            Map<Long, Map<MapRegionInfo, List<NPCInfo>>> npcGroupedMap = new HashMap<>();
+
+            for (NPCInfo npcInfo : npcs) {
+                MapRegionInfo npcRegionInfo = Optional.ofNullable(npcGroupedMap.get(npcInfo.instanceID()))
+                        .flatMap(npcgm -> npcgm.keySet().stream()
+                                .filter(mri -> mri.coordinatesIncluded(npcInfo.x(), npcInfo.y()))
+                                .findFirst())
+                        .or(() -> mapRegionInfoList.stream()
+                                .filter(mri -> mri.coordinatesIncluded(npcInfo.x(), npcInfo.y()))
+                                .findFirst())
+                        .orElse(MapRegionInfo.UNKNOWN);
+
+                npcGroupedMap.putIfAbsent(npcInfo.instanceID(), new HashMap<>());
+                var withinInstanceNPCs = npcGroupedMap.get(npcInfo.instanceID());
+                withinInstanceNPCs.putIfAbsent(npcRegionInfo, new ArrayList<>());
+                withinInstanceNPCs.get(npcRegionInfo).add(npcInfo);
+            }
+
+            npcInstanceRegionGroupedMap.put(npcType, npcGroupedMap);
+        });
+
+        mobInfoMap.forEach((mobType, mobs) -> {
+            Map<Long, Map<MapRegionInfo, List<MobInfo>>> mobGroupedMap = new HashMap<>();
+
+            for (MobInfo mobInfo : mobs) {
+                MapRegionInfo mapRegionInfo = Optional.ofNullable(mobGroupedMap.get(mobInfo.instanceID()))
+                        .flatMap(mgm -> mgm.keySet().stream()
+                                .filter(mri -> mri.coordinatesIncluded(mobInfo.x(), mobInfo.y()))
+                                .findFirst())
+                        .or(() -> mapRegionInfoList.stream()
+                                .filter(mri -> mri.coordinatesIncluded(mobInfo.x(), mobInfo.y()))
+                                .findFirst())
+                        .orElse(MapRegionInfo.UNKNOWN);
+
+                mobGroupedMap.putIfAbsent(mobInfo.instanceID(), new HashMap<>());
+                var withinInstanceMobs = mobGroupedMap.get(mobInfo.instanceID());
+                withinInstanceMobs.putIfAbsent(mapRegionInfo, new ArrayList<>());
+                withinInstanceMobs.get(mapRegionInfo).add(mobInfo);
+            }
+
+            mobInstanceRegionGroupedMap.put(mobType, mobGroupedMap);
+        });
     }
 
     public void setIconDirectory(File iconDirectory) {

@@ -22,6 +22,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -54,6 +55,7 @@ public class MainApplication extends Application {
         return Optional.ofNullable(chooser.showDialog(stage));
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     private void userSetup(Stage stage) throws EditorInitializationException {
         // step 0: prompt for previous program preferences
         Optional<Preferences> preferences = jsonManager.readPreferences();
@@ -79,6 +81,7 @@ public class MainApplication extends Application {
                         | ClassCastException
                         | JsonSyntaxException
                         | NumberFormatException
+                        | URISyntaxException
                         | IOException e) {
                     throw new EditorInitializationException(e,
                             "Corrupted Preference File",
@@ -188,6 +191,22 @@ public class MainApplication extends Application {
                     "Invalid Save Directory",
                     "Save directory is invalid. Keep in mind that you cannot save your progress in a patch file " +
                             "you loaded, unless it is the last one loaded.");
+        }
+
+        // step 4.3: select save directory as the directory to transport the constant data json files, and build derivative maps
+        try {
+            jsonManager.setConstantDataDirectory(saveDirectory.get(), staticDataStore);
+            jsonManager.fillDerivativeMaps(staticDataStore);
+        } catch (NullPointerException |
+                IllegalStateException |
+                ClassCastException |
+                JsonSyntaxException |
+                URISyntaxException |
+                IOException e) {
+            throw new EditorInitializationException(e,
+                    "Invalid Save Directory",
+                    "Save directory is invalid. The files previously copied in the save directory by the program " +
+                            "appear to be corrupted. Please remove these files from the save directory, and relaunch.");
         }
 
         // step 5: prompt for custom icon directory

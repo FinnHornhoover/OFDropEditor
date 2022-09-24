@@ -8,9 +8,11 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,12 +72,16 @@ public class FilterListBox extends FlowPane {
         public FilterBox(FilterCondition filterCondition) {
             this.filterCondition = new SimpleObjectProperty<>(filterCondition);
 
-            filterLabel = new Label(filterCondition.toString());
+            filterLabel = new Label(filterCondition.toShortString());
+            Tooltip tooltip = new Tooltip(filterCondition.toString());
+            tooltip.setShowDelay(Duration.ZERO);
+            filterLabel.setTooltip(tooltip);
 
             removeButton = new Button("-");
             removeButton.setMinWidth(USE_COMPUTED_SIZE);
             removeButton.getStyleClass().addAll("remove-button", "slim-button");
 
+            setSpacing(2);
             getChildren().addAll(filterLabel, removeButton);
             setAlignment(Pos.CENTER_LEFT);
         }

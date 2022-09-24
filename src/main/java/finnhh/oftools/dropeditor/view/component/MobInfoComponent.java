@@ -7,10 +7,12 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
 
 import java.io.ByteArrayInputStream;
 import java.util.Objects;
@@ -21,6 +23,7 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     private final MainController controller;
 
+    private final MobInfoTooltipComponent mobInfoTooltipComponent;
     private final Label mobNameLabel;
     private final ImageView iconView;
 
@@ -30,15 +33,22 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
         this.controller = controller;
 
+        mobInfoTooltipComponent = new MobInfoTooltipComponent(controller);
+        Tooltip tooltip = new Tooltip();
+        tooltip.setShowDelay(Duration.ZERO);
+        tooltip.setGraphic(mobInfoTooltipComponent);
+
         mobNameLabel = new Label();
         mobNameLabel.setWrapText(true);
         mobNameLabel.setTextAlignment(TextAlignment.CENTER);
+        mobNameLabel.setTooltip(tooltip);
 
         iconView = new ImageView();
         iconView.setFitWidth(64);
         iconView.setFitHeight(64);
         iconView.setPreserveRatio(true);
         iconView.setCache(true);
+        Tooltip.install(iconView, tooltip);
 
         setSpacing(2);
         setAlignment(Pos.CENTER);
@@ -61,11 +71,12 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
     @Override
     public void setObservable(MobTypeInfo data) {
         mobTypeInfo.set(data);
+        mobInfoTooltipComponent.setObservable(data);
 
-        if (mobTypeInfo.isNull().get()) {
-            mobNameLabel.setText("<INVALID>");
-            iconView.setImage(null);
-        } else {
+        mobNameLabel.setText("<INVALID>");
+        iconView.setImage(null);
+
+        if (mobTypeInfo.isNotNull().get()) {
             var iconMap = controller.getIconManager().getIconMap();
             String name = Objects.isNull(mobTypeInfo.get()) ?
                     "Unknown Mob" :
@@ -104,5 +115,9 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     public ImageView getIconView() {
         return iconView;
+    }
+
+    public MobInfoTooltipComponent getMobInfoTooltipComponent() {
+        return mobInfoTooltipComponent;
     }
 }

@@ -129,6 +129,10 @@
     -fx-text-fill: orange;
 }
 
+.big-label {
+    -fx-font-size: 30px;
+}
+
 .add-button {
     -fx-background-color: #00cc00;
     -fx-border-color: #00ff00;
