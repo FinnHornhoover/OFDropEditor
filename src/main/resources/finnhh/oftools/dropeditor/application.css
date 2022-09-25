@@ -133,6 +133,14 @@
     -fx-font-size: 30px;
 }
 
+.code-text-field {
+    -fx-background-color: #005289;
+    -fx-border-color: #00ffff;
+    -fx-text-fill: white;
+    -fx-background-radius: 3, 2;
+    -fx-border-radius: 3, 2;
+}
+
 .add-button {
     -fx-background-color: #00cc00;
     -fx-border-color: #00ff00;

@@ -56,9 +56,11 @@ public class ImageSummaryBox extends StackPane {
 
     private void setIconAndExtra(Data data) {
         var iconMap = controller.getIconManager().getIconMap();
+        var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
+        var mobTypeInfoMap = controller.getStaticDataStore().getMobTypeInfoMap();
 
         if (data instanceof Mob m) {
-            MobTypeInfo mobTypeInfo = controller.getStaticDataStore().getMobTypeInfoMap().get(m.getMobID());
+            MobTypeInfo mobTypeInfo = mobTypeInfoMap.get(m.getMobID());
 
             if (Objects.nonNull(mobTypeInfo) && iconMap.containsKey(mobTypeInfo.iconName())) {
                 iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(mobTypeInfo.iconName()))));
@@ -66,8 +68,7 @@ public class ImageSummaryBox extends StackPane {
                 setExtra(mobTypeInfo.level() + "Lv");
             }
         } else if (data instanceof ItemReference ir) {
-            ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
-                    ir.getItemID(), ir.getType()));
+            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType()));
 
             if (Objects.nonNull(itemInfo) && iconMap.containsKey(itemInfo.iconName())) {
                 iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(itemInfo.iconName()))));
@@ -75,7 +76,7 @@ public class ImageSummaryBox extends StackPane {
                 setExtra(itemInfo.requiredLevel() + "Lv");
             }
         } else if (data instanceof Crate cr) {
-            ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(cr.getCrateID(), 9));
+            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(cr.getCrateID(), 9));
 
             if (Objects.nonNull(itemInfo) && iconMap.containsKey(itemInfo.iconName())) {
                 iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(itemInfo.iconName()))));
@@ -86,6 +87,8 @@ public class ImageSummaryBox extends StackPane {
             iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(
                     String.format("ep_small_%02d", r.getEPID())))));
             centerLabel.setText("");
+        } else if (data instanceof CodeItem ci) {
+            idLabel.setText(ci.getCode());
         }
     }
 

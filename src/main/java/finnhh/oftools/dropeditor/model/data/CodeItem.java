@@ -37,8 +37,7 @@ public class CodeItem extends Data {
         codeID.set(Objects.hashCode(code.get()) - 1);
         code.addListener((o, oldVal, newVal) -> codeID.set(Objects.hashCode(newVal) - 1));
 
-        malformed.bind(codeID.lessThan(0)
-                .or(code.isNull())
+        malformed.bind(code.isNull()
                 .or(itemReferenceIDs.isNull())
                 .or(itemReferenceIDs.emptyProperty()));
 

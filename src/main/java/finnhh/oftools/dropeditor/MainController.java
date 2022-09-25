@@ -75,11 +75,13 @@ public class MainController {
             private final MobComponent mobComponent;
             private final CrateComponent crateComponent;
             private final RacingComponent racingComponent;
+            private final CodeItemComponent codeItemComponent;
 
             {
                 mobComponent = new MobComponent(controller, mainListView);
                 crateComponent = new CrateComponent(controller, mainListView);
                 racingComponent = new RacingComponent(controller, mainListView);
+                codeItemComponent = new CodeItemComponent(controller, mainListView);
             }
 
             @Override
@@ -101,6 +103,10 @@ public class MainController {
                         case RACING -> {
                             racingComponent.setObservable(data);
                             graphic = racingComponent;
+                        }
+                        case CODE_ITEM -> {
+                            codeItemComponent.setObservable(data);
+                            graphic = codeItemComponent;
                         }
                     }
                 }
