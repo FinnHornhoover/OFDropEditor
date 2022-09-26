@@ -297,10 +297,10 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         var children = listHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
 
         for (int index = 0; index < children.size(); index++) {
-            int crateID = ((CrateTypeBoxComponent) children.get(index)).getCrate().getCrateID();
+            Crate crate = ((CrateTypeBoxComponent) children.get(index)).getCrate();
 
-            if (crateID != crateDropType.get().getCrateIDs().get(index))
-                crateDropType.get().getCrateIDs().set(index, crateID);
+            if (Objects.nonNull(crate) && crate.getCrateID() != crateDropType.get().getCrateIDs().get(index))
+                crateDropType.get().getCrateIDs().set(index, crate.getCrateID());
         }
     }
 

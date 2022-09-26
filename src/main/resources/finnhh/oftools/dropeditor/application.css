@@ -65,6 +65,10 @@
     -fx-opacity: 0;
 }
 
+.table-view .table-column {
+    -fx-alignment: center;
+}
+
 .spinner, .spinner:focused, .spinner:contains-focus {
     -fx-background-color: #005289;
 }

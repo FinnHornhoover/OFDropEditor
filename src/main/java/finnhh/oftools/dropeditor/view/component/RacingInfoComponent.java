@@ -2,6 +2,7 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.InstanceInfo;
+import finnhh.oftools.dropeditor.model.MapRegionInfo;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -13,6 +14,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 
 import java.io.ByteArrayInputStream;
+import java.util.Optional;
 
 public class RacingInfoComponent extends VBox implements ObservableComponent<InstanceInfo> {
     private final ObjectProperty<InstanceInfo> instanceInfo;
@@ -21,6 +23,7 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
 
     private final Label izNameLabel;
     private final ImageView iconView;
+    private final Label entryLabel;
 
     public RacingInfoComponent(double width, MainController controller) {
         instanceInfo = new SimpleObjectProperty<>();
@@ -37,11 +40,15 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
         iconView.setPreserveRatio(true);
         iconView.setCache(true);
 
+        entryLabel = new Label();
+        entryLabel.setWrapText(true);
+        entryLabel.setTextAlignment(TextAlignment.CENTER);
+
         setSpacing(2);
         setAlignment(Pos.CENTER);
         setMinWidth(width);
         setMaxWidth(width);
-        getChildren().addAll(izNameLabel, iconView);
+        getChildren().addAll(izNameLabel, iconView, entryLabel);
         getStyleClass().add("bordered-pane");
     }
 
@@ -58,6 +65,8 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
     @Override
     public void setObservable(InstanceInfo data) {
         var iconMap = controller.getIconManager().getIconMap();
+        var npcInfoMap = controller.getStaticDataStore().getNpcInfoMap();
+        var mapRegionList = controller.getStaticDataStore().getMapRegionInfoList();
 
         instanceInfo.set(data);
 
@@ -68,9 +77,15 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
         byte[] icon = instanceInfo.isNull().get() ?
                 defaultIcon :
                 iconMap.getOrDefault(String.format("ep_small_%02d", instanceInfo.get().EPID()), defaultIcon);
+        MapRegionInfo entryRegion = Optional.ofNullable(instanceInfo.get())
+                .flatMap(ii -> InstanceInfo.getOverworldNPCLocations(mapRegionList, ii.getEntryWarpNPCs(npcInfoMap))
+                        .stream().findFirst())
+                .orElse(MapRegionInfo.UNKNOWN);
+        String entry = entryRegion.areaName() + " - " + entryRegion.zoneName();
 
         izNameLabel.setText(name);
         iconView.setImage(new Image(new ByteArrayInputStream(icon)));
+        entryLabel.setText(entry);
     }
 
     public InstanceInfo getInstanceInfo() {
@@ -87,5 +102,9 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
 
     public ImageView getIconView() {
         return iconView;
+    }
+
+    public Label getEntryLabel() {
+        return entryLabel;
     }
 }

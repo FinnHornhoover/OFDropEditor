@@ -10,8 +10,7 @@
         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
     </padding>
     <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="5.0">
-        <Button onAction="#onNewButtonPressed" mnemonicParsing="false" text="New" styleClass="add-button"/>
-        <Button onAction="#onDeleteButtonPressed" mnemonicParsing="false" text="Delete" styleClass="remove-button"/>
+        <Button onAction="#onNewButtonPressed" mnemonicParsing="false" text="Add Object" styleClass="add-button"/>
         <ChoiceBox fx:id="viewModeChoiceBox" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
         <Separator orientation="VERTICAL"/>
         <Button onAction="#onAddFilter" mnemonicParsing="false" text="Add Filter" styleClass="add-button"/>

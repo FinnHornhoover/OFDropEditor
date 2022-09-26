@@ -2,9 +2,7 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
-import finnhh.oftools.dropeditor.model.data.MobDrop;
+import finnhh.oftools.dropeditor.model.data.*;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -130,22 +128,26 @@ public class MobDropComponent extends BorderPane implements DataComponent {
 
     @Override
     public void refreshObservable(Drops drops) {
-        int newCrateDropChanceID = crateDropChanceComponent.getCrateDropChance().getCrateDropChanceID();
-        int newCrateDropTypeID = crateDropTypeComponent.getCrateDropType().getCrateDropTypeID();
-        int newMiscDropChanceID = miscDropChanceComponent.getMiscDropChance().getMiscDropChanceID();
-        int newMiscDropTypeID = miscDropTypeComponent.getMiscDropType().getMiscDropTypeID();
+        CrateDropChance newCrateDropChance = crateDropChanceComponent.getCrateDropChance();
+        CrateDropType newCrateDropType = crateDropTypeComponent.getCrateDropType();
+        MiscDropChance newMiscDropChance = miscDropChanceComponent.getMiscDropChance();
+        MiscDropType newMiscDropType = miscDropTypeComponent.getMiscDropType();
 
-        if (newCrateDropChanceID != mobDrop.get().getCrateDropChanceID())
-            mobDrop.get().setCrateDropChanceID(newCrateDropChanceID);
+        if (Objects.nonNull(newCrateDropChance)
+                && newCrateDropChance.getCrateDropChanceID() != mobDrop.get().getCrateDropChanceID())
+            mobDrop.get().setCrateDropChanceID(newCrateDropChance.getCrateDropChanceID());
 
-        if (newCrateDropTypeID != mobDrop.get().getCrateDropTypeID())
-            mobDrop.get().setCrateDropTypeID(newCrateDropTypeID);
+        if (Objects.nonNull(newCrateDropType)
+                && newCrateDropType.getCrateDropTypeID() != mobDrop.get().getCrateDropTypeID())
+            mobDrop.get().setCrateDropTypeID(newCrateDropType.getCrateDropTypeID());
 
-        if (newMiscDropChanceID != mobDrop.get().getMiscDropChanceID())
-            mobDrop.get().setMiscDropChanceID(newMiscDropChanceID);
+        if (Objects.nonNull(newMiscDropChance)
+                && newMiscDropChance.getMiscDropChanceID() != mobDrop.get().getMiscDropChanceID())
+            mobDrop.get().setMiscDropChanceID(newMiscDropChance.getMiscDropChanceID());
 
-        if (newMiscDropTypeID != mobDrop.get().getMiscDropTypeID())
-            mobDrop.get().setMiscDropTypeID(newMiscDropTypeID);
+        if (Objects.nonNull(newMiscDropType)
+                && newMiscDropType.getMiscDropTypeID() != mobDrop.get().getMiscDropTypeID())
+            mobDrop.get().setMiscDropTypeID(newMiscDropType.getMiscDropTypeID());
     }
 
     @Override

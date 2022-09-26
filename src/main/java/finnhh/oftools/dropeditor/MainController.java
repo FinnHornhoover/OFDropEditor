@@ -1,9 +1,7 @@
 package finnhh.oftools.dropeditor;
 
-import finnhh.oftools.dropeditor.model.FilterCondition;
-import finnhh.oftools.dropeditor.model.ViewMode;
-import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
+import finnhh.oftools.dropeditor.model.*;
+import finnhh.oftools.dropeditor.model.data.*;
 import finnhh.oftools.dropeditor.view.component.*;
 import finnhh.oftools.dropeditor.view.util.NoSelectionModel;
 import javafx.application.Platform;
@@ -13,12 +11,14 @@ import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.io.ByteArrayInputStream;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class MainController {
     @FXML
@@ -44,12 +44,11 @@ public class MainController {
 
     @FXML
     protected void onNewButtonPressed(Event event) {
-        // TODO
-    }
-
-    @FXML
-    protected void onDeleteButtonPressed(Event event) {
-        // TODO
+        viewModeChoiceBox.getValue().getNewDataAdder().apply(this).ifPresent(data -> {
+            drops.add(data);
+            refreshList();
+            mainListView.scrollTo(data);
+        });
     }
 
     @FXML
@@ -120,64 +119,163 @@ public class MainController {
         mainListView.setSelectionModel(new NoSelectionModel<>());
 
         viewModeChoiceBox.valueProperty().addListener((o, oldVal, newVal) -> {
-            mainListView.getItems().clear();
-            mainListView.getItems().addAll(newVal.getDataGetter().apply(drops));
-            infoLabel.setText(String.format("Showing %1$d items out of %1$d", mainListView.getItems().size()));
             filterListBox.clearFilters();
-            Platform.runLater(mainListView::refresh);
+            refreshList();
         });
 
-        filterListBox.filterConditionListProperty().addListener((ListChangeListener<FilterCondition>) change -> {
-            mainListView.getItems().clear();
-            var dataList = viewModeChoiceBox.getValue().getDataGetter().apply(drops);
-            mainListView.getItems().addAll(dataList.stream()
-                    .filter(d -> change.getList().stream()
-                            .allMatch(fc -> fc.conditionSatisfied(d)))
-                    .toList());
-            infoLabel.setText(String.format("Showing %d items out of %d",
-                    mainListView.getItems().size(), dataList.size()));
-            Platform.runLater(mainListView::refresh);
-        });
+        filterListBox.filterConditionListProperty().addListener((ListChangeListener<FilterCondition>) change -> refreshList());
 
-        mainListView.getItems().addAll(viewModeChoiceBox.getValue().getDataGetter().apply(drops));
-        infoLabel.setText(String.format("Showing %1$d items out of %1$d", mainListView.getItems().size()));
+        refreshList();
+    }
+
+    public void refreshList() {
+        mainListView.getItems().clear();
+        var dataList = viewModeChoiceBox.getValue().getDataGetter().apply(drops);
+        mainListView.getItems().addAll(dataList.stream()
+                .filter(d -> filterListBox.getFilterConditionList().stream()
+                        .allMatch(fc -> fc.conditionSatisfied(d)))
+                .toList());
+        infoLabel.setText(String.format("Showing %d items out of %d",
+                mainListView.getItems().size(), dataList.size()));
+        mainListView.scrollTo(0);
         Platform.runLater(mainListView::refresh);
+    }
+
+    public final <T, V> TableColumn<T, V> getTableColumn(String name, double fixedWidth, Function<T, V> valueGetter) {
+        TableColumn<T, V> column = new TableColumn<>(name);
+
+        column.setCellValueFactory(cellData -> new SimpleObjectProperty<>(valueGetter.apply(cellData.getValue())));
+        if (fixedWidth > 0) {
+            column.setMinWidth(fixedWidth);
+            column.setMaxWidth(fixedWidth);
+        }
+
+        return column;
+    }
+
+    public <T> TableColumn<T, String> getIconColumn(Function<T, String> iconNameGetter) {
+        var iconMap = iconManager.getIconMap();
+
+        TableColumn<T, String> iconColumn = getTableColumn("Icon", 68.0, iconNameGetter);
+
+        iconColumn.setCellFactory(cfData -> new TableCell<>() {
+            private final ImageView iconView;
+
+            {
+                iconView = new ImageView();
+                iconView.setFitWidth(64);
+                iconView.setFitHeight(64);
+                iconView.setPreserveRatio(true);
+                iconView.setCache(true);
+            }
+
+            @Override
+            protected void updateItem(String iconName, boolean empty) {
+                super.updateItem(iconName, empty);
+
+                if (!empty) {
+                    iconView.setImage(new Image(new ByteArrayInputStream(
+                            iconMap.getOrDefault(iconName, iconMap.get("unknown")))));
+                    setGraphic(iconView);
+                } else {
+                    setGraphic(null);
+                }
+            }
+        });
+
+        return iconColumn;
+    }
+
+    @SafeVarargs
+    public final <T> TableView<T> getTableGraphic(Supplier<List<T>> dataGetter,
+                                                  Supplier<TableColumn<T, ?>>... columnMakers) {
+        TableView<T> tableView = new TableView<>();
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+
+        for (var columnMaker : columnMakers)
+            tableView.getColumns().add(columnMaker.get());
+
+        tableView.getItems().addAll(dataGetter.get());
+
+        return tableView;
     }
 
     public TableView<ReferenceListBox> getReferenceGraphic(Class<? extends Data> dataClass,
                                                            Predicate<Data> filterCondition) {
-        TableView<ReferenceListBox> tableView = new TableView<>();
-        tableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        return getTableGraphic(
+                () -> drops.getDataMap(dataClass).stream()
+                        .flatMap(dataMap -> dataMap.values().stream())
+                        .filter(filterCondition)
+                        .map(d -> new ReferenceListBox(64.0, this, d))
+                        .toList(),
+                () -> getTableColumn("ID", 68.0,
+                        rlb -> new ImageSummaryBox(64.0, this, rlb.getOriginData())),
+                () -> {
+                    TableColumn<ReferenceListBox, ReferenceListBox> referenceColumn = getTableColumn(
+                            "References", -1.0, Function.identity());
 
-        TableColumn<ReferenceListBox, ImageSummaryBox> idColumn = new TableColumn<>("ID");
-        idColumn.setCellValueFactory(cellData -> new SimpleObjectProperty<>(
-                new ImageSummaryBox(64.0, this, cellData.getValue().getOriginData())));
+                    referenceColumn.setCellFactory(cfData -> new TableCell<>() {
+                        @Override
+                        protected void updateItem(ReferenceListBox referenceListBox, boolean empty) {
+                            super.updateItem(referenceListBox, empty);
+                            setGraphic((!empty && Objects.nonNull(referenceListBox)) ? referenceListBox : null);
+                        }
+                    });
 
-        TableColumn<ReferenceListBox, ReferenceListBox> referenceColumn = new TableColumn<>("References");
-        referenceColumn.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue()));
-        referenceColumn.setCellFactory(cfData -> new TableCell<>() {
-            @Override
-            protected void updateItem(ReferenceListBox referenceListBox, boolean empty) {
-                super.updateItem(referenceListBox, empty);
-                setGraphic((!empty && Objects.nonNull(referenceListBox)) ? referenceListBox : null);
-            }
-        });
+                    return referenceColumn;
+                }
+        );
+    }
 
-        tableView.getColumns().add(idColumn);
-        tableView.getColumns().add(referenceColumn);
-        tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+    public TableView<MobTypeInfo> getMobAdditionGraphic() {
+        return getTableGraphic(
+                () -> staticDataStore.getMobTypeInfoMap().values().stream()
+                        .filter(mti -> !drops.mobsProperty().containsKey(mti.type()))
+                        .toList(),
+                () -> getIconColumn(MobTypeInfo::iconName),
+                () -> getTableColumn("Type ID", 68.0, MobTypeInfo::type),
+                () -> getTableColumn("Level", 68.0, MobTypeInfo::level),
+                () -> getTableColumn("Name", -1.0, MobTypeInfo::name)
+        );
+    }
 
-        idColumn.setMaxWidth(68.0);
-        referenceColumn.prefWidthProperty().bind(tableView.widthProperty()
-                .subtract(idColumn.widthProperty())
-                .subtract(30));
+    public TableView<ItemInfo> getCrateAdditionGraphic() {
+        return getTableGraphic(
+                () -> staticDataStore.getItemInfoMap().values().stream()
+                        .filter(ii -> ii.type() == 9 && !drops.cratesProperty().containsKey(ii.id()))
+                        .toList(),
+                () -> getIconColumn(ItemInfo::iconName),
+                () -> getTableColumn("ID", 68.0, ItemInfo::id),
+                () -> getTableColumn("Level", 68.0, ItemInfo::contentLevel),
+                () -> getTableColumn("Name", -1.0, ItemInfo::name),
+                () -> getTableColumn("Comment", -1.0, ItemInfo::comment)
+        );
+    }
 
-        drops.getDataMap(dataClass).ifPresent(dataMap -> tableView.getItems().addAll(dataMap.values().stream()
-                .filter(filterCondition)
-                .map(d -> new ReferenceListBox(64.0, this, d))
-                .toList()));
+    public TableView<InstanceInfo> getRacingAdditionGraphic() {
+        return getTableGraphic(
+                () -> staticDataStore.getEPInstanceMap().values().stream()
+                        .filter(ii -> !drops.racingProperty().containsKey(ii.EPID()))
+                        .toList(),
+                () -> getIconColumn(ii -> String.format("ep_small_%02d", ii.EPID())),
+                () -> getTableColumn("EPID", 68.0, InstanceInfo::EPID),
+                () -> getTableColumn("Name", -1.0, InstanceInfo::name),
+                () -> getTableColumn("Entry", -1.0, ii -> {
+                    MapRegionInfo mapRegionInfo = InstanceInfo.getOverworldNPCLocations(
+                            staticDataStore.getMapRegionInfoList(), ii.getEntryWarpNPCs(staticDataStore.getNpcInfoMap()))
+                            .stream()
+                            .findFirst()
+                            .orElse(MapRegionInfo.UNKNOWN);
+                    return mapRegionInfo.areaName() + " - " + mapRegionInfo.zoneName();
+                })
+        );
+    }
 
-        return tableView;
+    public TextField getCodeItemAdditionGraphic() {
+        TextField textField = new TextField();
+        textField.getStyleClass().add("code-text-field");
+        return textField;
     }
 
     public Optional<FilterCondition> showFilterMenuForResult() {
@@ -187,13 +285,70 @@ public class MainController {
 
     public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass,
                                                      Predicate<Data> filterCondition) {
-        return application.showSelectionAlert(dataClass.getSimpleName() + " Selection",
+        return application.showSelectionAlert(
+                dataClass.getSimpleName() + " Selection",
                 "Please select one:",
-                getReferenceGraphic(dataClass, filterCondition));
+                getReferenceGraphic(dataClass, filterCondition),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(ReferenceListBox::getOriginData));
     }
 
     public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass) {
         return showSelectionMenuForResult(dataClass, d -> true);
+    }
+
+    public Optional<Data> showAddMobMenuForResult() {
+        return application.showSelectionAlert(
+                "Add New Mob",
+                "Please select one to add:",
+                getMobAdditionGraphic(),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(mti -> {
+                            Mob mob = new Mob();
+                            mob.setMobID(mti.type());
+                            return mob;
+                        }));
+    }
+
+    public Optional<Data> showAddCrateMenuForResult() {
+        return application.showSelectionAlert(
+                "Add New Crate",
+                "Please select one to add:",
+                getCrateAdditionGraphic(),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(ii -> {
+                            Crate crate = new Crate();
+                            crate.setCrateID(ii.id());
+                            return crate;
+                        }));
+    }
+
+    public Optional<Data> showAddRacingMenuForResult() {
+        return application.showSelectionAlert(
+                "Add New Racing Object",
+                "Please select one to add:",
+                getRacingAdditionGraphic(),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(ii -> {
+                            Racing racing = new Racing();
+                            racing.setEPID(ii.EPID());
+                            return racing;
+                        }));
+    }
+
+    public Optional<Data> showAddCodeItemMenuForResult() {
+        return application.showSelectionAlert(
+                "Add New Code Item",
+                "Please type the new code:",
+                getCodeItemAdditionGraphic(),
+                textField -> Optional.ofNullable(textField.getText())
+                        .filter(text -> !text.isBlank() && drops.getCodeItems().values().stream().noneMatch(ci ->
+                                ci.getCode().toLowerCase(Locale.ENGLISH).equals(text.toLowerCase(Locale.ENGLISH))))
+                        .map(text -> {
+                            CodeItem codeItem = new CodeItem();
+                            codeItem.setCode(text.replaceAll("[^A-Za-z0-9]+", "").toLowerCase(Locale.ENGLISH));
+                            return codeItem;
+                        }));
     }
 
     public void setJSONManager(JSONManager jsonManager) {

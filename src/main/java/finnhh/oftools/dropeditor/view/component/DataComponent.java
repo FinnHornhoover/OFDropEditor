@@ -62,7 +62,7 @@ public interface DataComponent extends ObservableComponent<Data> {
         DataComponent parent = getParentComponent();
 
         // do nothing if the edit is done with the same object
-        if (oldObject.idEquals(newObject))
+        if (Objects.nonNull(oldObject) && oldObject.idEquals(newObject))
             return;
 
         // 1?. if component has a parent, then make the parent editable as well

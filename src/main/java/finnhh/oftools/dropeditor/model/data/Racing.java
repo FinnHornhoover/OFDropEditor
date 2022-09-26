@@ -22,8 +22,8 @@ public class Racing extends Data {
 
     public Racing() {
         EPID = new SimpleIntegerProperty(-1);
-        rankScores = new SimpleListProperty<>(FXCollections.observableArrayList());
-        rewards = new SimpleListProperty<>(FXCollections.observableArrayList());
+        rankScores = new SimpleListProperty<>(FXCollections.observableArrayList(0, 0, 0, 0, 0));
+        rewards = new SimpleListProperty<>(FXCollections.observableArrayList(0, 0, 0, 0, 0));
         timeLimit = new SimpleIntegerProperty(0);
     }
 
@@ -43,12 +43,11 @@ public class Racing extends Data {
     public void constructBindings() {
         malformed.bind(EPID.lessThan(0)
                 .or(rankScores.isNull())
-                .or(rankScores.emptyProperty())
+                .or(rankScores.sizeProperty().lessThan(5))
                 .or(rankScores.sizeProperty().greaterThan(5))
                 .or(rewards.isNull())
-                .or(rewards.emptyProperty())
+                .or(rewards.sizeProperty().lessThan(5))
                 .or(rewards.sizeProperty().greaterThan(5))
-                .or(rewards.sizeProperty().isNotEqualTo(rankScores.sizeProperty()))
                 .or(timeLimit.lessThan(0)));
 
         id.set(String.valueOf(EPID.get()));

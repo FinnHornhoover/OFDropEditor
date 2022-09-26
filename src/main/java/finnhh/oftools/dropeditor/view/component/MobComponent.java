@@ -5,11 +5,15 @@ import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Mob;
+import finnhh.oftools.dropeditor.model.data.MobDrop;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.EventHandler;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -26,7 +30,11 @@ public class MobComponent extends HBox implements RootDataComponent {
     private final MobInfoComponent mobInfoComponent;
     private final MobDropComponent mobDropComponent;
     private final Label idLabel;
+    private final Button removeButton;
+    private final HBox idHBox;
     private final BorderPane mobBorderPane;
+
+    private final EventHandler<MouseEvent> removeClickHandler;
 
     public MobComponent(MainController controller, ListView<Data> listView) {
         mob = new SimpleObjectProperty<>();
@@ -44,12 +52,24 @@ public class MobComponent extends HBox implements RootDataComponent {
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
+        removeButton = new Button("-");
+        removeButton.setMinWidth(USE_COMPUTED_SIZE);
+        removeButton.getStyleClass().addAll("remove-button", "slim-button");
+
+        idHBox = new HBox(idLabel, removeButton);
+
         mobBorderPane = new BorderPane();
-        mobBorderPane.setTop(idLabel);
+        mobBorderPane.setTop(idHBox);
         mobBorderPane.setCenter(mobInfoComponent);
 
         getChildren().addAll(mobBorderPane, mobDropComponent);
         setHgrow(mobDropComponent, Priority.ALWAYS);
+
+        removeClickHandler = event -> {
+            this.controller.getDrops().remove(mob.get());
+            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(mob.get()));
+            listView.getItems().remove(mob.get());
+        };
 
         idLabel.setText(getObservableClass().getSimpleName() + ": null");
         mobInfoComponent.setDisable(true);
@@ -83,6 +103,8 @@ public class MobComponent extends HBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+
         mob.set((Mob) data);
 
         if (mob.isNull().get()) {
@@ -92,16 +114,18 @@ public class MobComponent extends HBox implements RootDataComponent {
             mobInfoComponent.setObservable(controller.getStaticDataStore().getMobTypeInfoMap().get(mob.get().getMobID()));
             mobDropComponent.setObservable(controller.getDrops().getMobDrops().get(mob.get().getMobDropID()));
         }
+
+        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     @Override
     public void refreshObservable(Drops drops) {
         makeEditable(drops);
 
-        int newMobDropID = mobDropComponent.getMobDrop().getMobDropID();
+        MobDrop newMobDrop = mobDropComponent.getMobDrop();
 
-        if (newMobDropID != mob.get().getMobDropID())
-            mob.get().setMobDropID(newMobDropID);
+        if (Objects.nonNull(newMobDrop) && newMobDrop.getMobDropID() != mob.get().getMobDropID())
+            mob.get().setMobDropID(newMobDrop.getMobDropID());
     }
 
     @Override
@@ -134,6 +158,11 @@ public class MobComponent extends HBox implements RootDataComponent {
         return idLabel;
     }
 
+    @Override
+    public Button getRemoveButton() {
+        return removeButton;
+    }
+
     public Mob getMob() {
         return mob.get();
     }
@@ -148,6 +177,10 @@ public class MobComponent extends HBox implements RootDataComponent {
 
     public MobDropComponent getMobDropComponent() {
         return mobDropComponent;
+    }
+
+    public HBox getIdHBox() {
+        return idHBox;
     }
 
     public BorderPane getMobBorderPane() {

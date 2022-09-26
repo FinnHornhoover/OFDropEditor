@@ -7,15 +7,14 @@ import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Preferences;
 import finnhh.oftools.dropeditor.model.exception.EditorInitializationException;
 import finnhh.oftools.dropeditor.view.component.FilterSelectionBox;
-import finnhh.oftools.dropeditor.view.component.ReferenceListBox;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
-import javafx.scene.control.TableView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -26,6 +25,7 @@ import java.net.URISyntaxException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class MainApplication extends Application {
     private StaticDataStore staticDataStore;
@@ -240,9 +240,10 @@ public class MainApplication extends Application {
         }
     }
 
-    public Optional<Data> showSelectionAlert(String title,
-                                             String body,
-                                             TableView<ReferenceListBox> tableView) {
+    public <T extends Node> Optional<Data> showSelectionAlert(String title,
+                                                              String body,
+                                                              T form,
+                                                              Function<T, Optional<Data>> dataExtractor) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle(title);
         alert.setHeaderText(body);
@@ -250,15 +251,14 @@ public class MainApplication extends Application {
         alert.setResizable(true);
 
         DialogPane dialogPane = alert.getDialogPane();
-        dialogPane.setContent(tableView);
+        dialogPane.setContent(form);
         dialogPane.getScene().getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
         dialogPane.setMinWidth(450.0);
-        Platform.runLater(tableView::requestFocus);
+        Platform.runLater(form::requestFocus);
 
         return alert.showAndWait()
                 .filter(bt -> bt == ButtonType.OK)
-                .map(bt -> tableView.getSelectionModel().getSelectedItem())
-                .map(ReferenceListBox::getOriginData);
+                .flatMap(bt -> dataExtractor.apply(form));
     }
 
     public Optional<FilterCondition> showFilterSelectionAlert(String title,

@@ -41,9 +41,12 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
     private final ListView<ItemReference> itemListView;
     private final VBox contentVBox;
     private final Label idLabel;
+    private final Button removeButton;
+    private final HBox idHBox;
 
     private final EventHandler<MouseEvent> addClickHandler;
     private final EventHandler<ActionEvent> textFieldActionHandler;
+    private final EventHandler<MouseEvent> removeClickHandler;
 
     public CodeItemComponent(MainController controller, ListView<Data> listView) {
         codeItem = new SimpleObjectProperty<>();
@@ -109,13 +112,18 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
+        removeButton = new Button("-");
+        removeButton.setMinWidth(USE_COMPUTED_SIZE);
+        removeButton.getStyleClass().addAll("remove-button", "slim-button");
+
+        idHBox = new HBox(idLabel, removeButton);
+
         setSpacing(2);
         setAlignment(Pos.CENTER_LEFT);
-        getChildren().addAll(idLabel, contentVBox);
+        getChildren().addAll(idHBox, contentVBox);
 
         addClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
                 .ifPresent(d -> itemDropAdded(((ItemReference) d).getItemReferenceID()));
-
         textFieldActionHandler = event -> {
             unbindVariables();
 
@@ -124,6 +132,11 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
             idLabel.setText(codeItem.get().getIdBinding().getValueSafe());
 
             bindVariables();
+        };
+        removeClickHandler = event -> {
+            this.controller.getDrops().remove(codeItem.get());
+            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(codeItem.get()));
+            listView.getItems().remove(codeItem.get());
         };
 
         idLabel.setText(getObservableClass().getSimpleName() + ": null");
@@ -147,9 +160,11 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
     private void bindVariables() {
         addButton.addEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
         codeTextField.addEventHandler(ActionEvent.ACTION, textFieldActionHandler);
+        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     private void unbindVariables() {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
         codeTextField.removeEventHandler(ActionEvent.ACTION, textFieldActionHandler);
         addButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
     }
@@ -256,6 +271,11 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
         return idLabel;
     }
 
+    @Override
+    public Button getRemoveButton() {
+        return removeButton;
+    }
+
     public CodeItem getCodeItem() {
         return codeItem.get();
     }
@@ -278,6 +298,14 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
 
     public ListView<ItemReference> getItemListView() {
         return itemListView;
+    }
+
+    public VBox getContentVBox() {
+        return contentVBox;
+    }
+
+    public HBox getIdHBox() {
+        return idHBox;
     }
 
     public static class ItemReferenceVBox extends VBox implements DataComponent {

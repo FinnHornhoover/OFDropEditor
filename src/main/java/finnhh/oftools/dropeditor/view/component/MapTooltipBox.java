@@ -16,7 +16,6 @@ import javafx.scene.text.TextAlignment;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
-import java.util.Objects;
 
 public class MapTooltipBox extends VBox {
     public static final int TOOLTIP_TILE_PIXEL_SIZE = 256;
@@ -99,20 +98,10 @@ public class MapTooltipBox extends VBox {
                     .map(mto -> "Required: " + mto.missionTypeName() + " - " + mto.missionName())
                     .ifPresent(this::addLabel);
 
-            List<NPCInfo> entryNPCs = ii.entryWarps().stream()
-                    .map(wi -> npcInfoMap.get(wi.warpNPC()))
-                    .filter(Objects::nonNull)
-                    .flatMap(List::stream)
-                    .toList();
-
-            List<String> worldEntryStrings = entryNPCs.stream()
-                    .filter(npcInfo -> npcInfo.instanceID() == InstanceInfo.OVERWORLD_INSTANCE_ID)
-                    .flatMap(npcInfo -> mapRegionList.stream()
-                            .filter(mri2 -> mri2.coordinatesIncluded(npcInfo.x(), npcInfo.y()))
-                            .findFirst()
-                            .stream())
+            List<NPCInfo> entryNPCs = ii.getEntryWarpNPCs(npcInfoMap);
+            List<String> worldEntryStrings = InstanceInfo.getOverworldNPCLocations(mapRegionList, entryNPCs)
+                    .stream()
                     .map(mapRegionInfo -> "Entry: " + mapRegionInfo.areaName() + " - " + mapRegionInfo.zoneName())
-                    .distinct()
                     .toList();
 
             worldEntryStrings.forEach(this::addLabel);

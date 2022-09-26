@@ -12,6 +12,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
@@ -42,15 +43,19 @@ public class RacingComponent extends HBox implements RootDataComponent {
     private final VBox racingDataVBox;
     private final ScrollPane contentScrollPane;
     private final Label idLabel;
+    private final Button removeButton;
+    private final HBox idHBox;
     private final BorderPane racingBorderPane;
 
     private final List<ScoreVBox> scoreVBoxCache;
     private final List<CrateTypeBoxComponent> crateTypeBoxCache;
 
     private final ChangeListener<Integer> timeLimitListener;
+    private final EventHandler<MouseEvent> racingRemoveClickHandler;
     private final List<ChangeListener<Integer>> spinnerValueListeners;
     private final List<ChangeListener<Crate>> crateValueListeners;
     private final List<EventHandler<MouseEvent>> removeClickHandlers;
+
     public RacingComponent(MainController controller, ListView<Data> listView) {
         racing = new SimpleObjectProperty<>();
 
@@ -62,7 +67,7 @@ public class RacingComponent extends HBox implements RootDataComponent {
 
         timeLimitLabel = new Label("Time Limit");
         timeLimitSpinner = new StandardSpinner(0, Integer.MAX_VALUE, 0);
-        timeLimitHBox = new HBox(boxSpacing, timeLimitLabel, timeLimitSpinner);
+        timeLimitHBox = new HBox(20.0, timeLimitLabel, timeLimitSpinner);
         timeLimitHBox.setAlignment(Pos.CENTER_LEFT);
         timeLimitHBox.getStyleClass().add("bordered-pane");
 
@@ -81,8 +86,14 @@ public class RacingComponent extends HBox implements RootDataComponent {
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
+        removeButton = new Button("-");
+        removeButton.setMinWidth(USE_COMPUTED_SIZE);
+        removeButton.getStyleClass().addAll("remove-button", "slim-button");
+
+        idHBox = new HBox(idLabel, removeButton);
+
         racingBorderPane = new BorderPane();
-        racingBorderPane.setTop(idLabel);
+        racingBorderPane.setTop(idHBox);
         racingBorderPane.setCenter(racingInfoComponent);
 
         getChildren().addAll(racingBorderPane, contentScrollPane);
@@ -105,6 +116,11 @@ public class RacingComponent extends HBox implements RootDataComponent {
             timeLimitSpinner.getValueFactory().setValue(newVal);
 
             bindListVariables();
+        };
+        racingRemoveClickHandler = event -> {
+            this.controller.getDrops().remove(racing.get());
+            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(racing.get()));
+            listView.getItems().remove(racing.get());
         };
 
         spinnerValueListeners = new ArrayList<>();
@@ -238,23 +254,27 @@ public class RacingComponent extends HBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, racingRemoveClickHandler);
         timeLimitSpinner.valueProperty().removeListener(timeLimitListener);
 
         racing.set((Racing) data);
 
         unbindListVariables();
-        racingInfoComponent.setObservable(null);
-        timeLimitSpinner.getValueFactory().setValue(0);
         scoreHBox.getChildren().clear();
         rewardHBox.getChildren().clear();
 
-        if (racing.isNotNull().get()) {
+        if (racing.isNull().get()) {
+            racingInfoComponent.setObservable(null);
+            timeLimitSpinner.getValueFactory().setValue(0);
+        } else {
             racingInfoComponent.setObservable(controller.getStaticDataStore().getEPInstanceMap().get(racing.get().getEPID()));
             timeLimitSpinner.getValueFactory().setValue(racing.get().getTimeLimit());
             populateListBoxes();
             bindListVariables();
             timeLimitSpinner.valueProperty().addListener(timeLimitListener);
         }
+
+        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, racingRemoveClickHandler);
     }
 
     @Override
@@ -293,6 +313,11 @@ public class RacingComponent extends HBox implements RootDataComponent {
     @Override
     public Label getIdLabel() {
         return idLabel;
+    }
+
+    @Override
+    public Button getRemoveButton() {
+        return removeButton;
     }
 
     public Racing getRacing() {
@@ -335,21 +360,31 @@ public class RacingComponent extends HBox implements RootDataComponent {
         return contentScrollPane;
     }
 
+    public HBox getIdHBox() {
+        return idHBox;
+    }
+
     public BorderPane getRacingBorderPane() {
         return racingBorderPane;
     }
 
     public static class ScoreVBox extends VBox {
+        private final Label scoreLabel;
         private final StandardSpinner spinner;
 
         public ScoreVBox(double width) {
+            scoreLabel = new Label("Score");
             spinner = new StandardSpinner(0, Integer.MAX_VALUE, 0);
 
             setSpacing(2);
-            getChildren().add(spinner);
+            getChildren().addAll(scoreLabel, spinner);
             setAlignment(Pos.CENTER);
             setMinWidth(width);
             setMaxWidth(width);
+        }
+
+        public Label getScoreLabel() {
+            return scoreLabel;
         }
 
         public StandardSpinner getSpinner() {

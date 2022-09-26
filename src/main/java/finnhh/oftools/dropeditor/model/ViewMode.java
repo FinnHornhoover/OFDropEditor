@@ -7,44 +7,52 @@ import javafx.scene.control.ListView;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public enum ViewMode {
     MONSTER("Monsters",
             MobComponent::new,
+            MainController::showAddMobMenuForResult,
             drops -> drops.getMobs()
                     .values().stream()
                     .sorted(Comparator.comparingInt(Mob::getMobID))
                     .toList()),
     CRATE("Crates",
             CrateComponent::new,
+            MainController::showAddCrateMenuForResult,
             drops -> drops.getCrates()
                     .values().stream()
                     .sorted(Comparator.comparingInt(Crate::getCrateID))
                     .toList()),
     RACING("Racing",
             RacingComponent::new,
+            MainController::showAddRacingMenuForResult,
             drops -> drops.getRacing()
                     .values().stream()
                     .sorted(Comparator.comparingInt(Racing::getEPID))
                     .toList()),
     CODE_ITEM("Code Items",
             CodeItemComponent::new,
+            MainController::showAddCodeItemMenuForResult,
             drops -> drops.getCodeItems()
                     .values().stream()
-                    .sorted(Comparator.comparingInt(CodeItem::getCodeID))
+                    .sorted(Comparator.comparing(CodeItem::getCode))
                     .toList());
 
     private final String modeString;
     private final BiFunction<MainController, ListView<Data>, ObservableComponent<?>> componentConstructor;
+    private final Function<MainController, Optional<Data>> newDataAdder;
     private final Function<Drops, Collection<? extends Data>> dataGetter;
 
     ViewMode(String modeString,
              BiFunction<MainController, ListView<Data>, ObservableComponent<?>> componentConstructor,
+             Function<MainController, Optional<Data>> newDataAdder,
              Function<Drops, Collection<? extends Data>> dataGetter) {
         this.modeString = modeString;
         this.componentConstructor = componentConstructor;
+        this.newDataAdder = newDataAdder;
         this.dataGetter = dataGetter;
     }
 
@@ -54,6 +62,10 @@ public enum ViewMode {
 
     public BiFunction<MainController, ListView<Data>, ObservableComponent<?>> getComponentConstructor() {
         return componentConstructor;
+    }
+
+    public Function<MainController, Optional<Data>> getNewDataAdder() {
+        return newDataAdder;
     }
 
     public Function<Drops, Collection<? extends Data>> getDataGetter() {

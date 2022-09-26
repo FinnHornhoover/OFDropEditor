@@ -2,14 +2,15 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.data.Crate;
-import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
+import finnhh.oftools.dropeditor.model.data.*;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.EventHandler;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -28,7 +29,11 @@ public class CrateComponent extends HBox implements RootDataComponent {
     private final RarityWeightsComponent rarityWeightsComponent;
     private final ItemSetComponent itemSetComponent;
     private final Label idLabel;
+    private final Button removeButton;
+    private final HBox idHBox;
     private final BorderPane crateBorderPane;
+
+    private final EventHandler<MouseEvent> removeClickHandler;
 
     public CrateComponent(MainController controller, ListView<Data> listView) {
         crate = new SimpleObjectProperty<>();
@@ -48,12 +53,24 @@ public class CrateComponent extends HBox implements RootDataComponent {
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
+        removeButton = new Button("-");
+        removeButton.setMinWidth(USE_COMPUTED_SIZE);
+        removeButton.getStyleClass().addAll("remove-button", "slim-button");
+
+        idHBox = new HBox(idLabel, removeButton);
+
         crateBorderPane = new BorderPane();
-        crateBorderPane.setTop(idLabel);
+        crateBorderPane.setTop(idHBox);
         crateBorderPane.setCenter(crateInfoComponent);
 
         getChildren().addAll(crateBorderPane, rarityWeightsComponent, itemSetComponent);
         setHgrow(itemSetComponent, Priority.ALWAYS);
+
+        removeClickHandler = event -> {
+            this.controller.getDrops().remove(crate.get());
+            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(crate.get()));
+            listView.getItems().remove(crate.get());
+        };
 
         idLabel.setText(getObservableClass().getSimpleName() + ": null");
         crateInfoComponent.setDisable(true);
@@ -90,6 +107,8 @@ public class CrateComponent extends HBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+
         crate.set((Crate) data);
 
         if (crate.isNull().get()) {
@@ -103,6 +122,8 @@ public class CrateComponent extends HBox implements RootDataComponent {
                     crate.get().getRarityWeightID()));
             itemSetComponent.setObservable(controller.getDrops().getItemSets().get(crate.get().getItemSetID()));
         }
+
+        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     @Override
@@ -141,18 +162,23 @@ public class CrateComponent extends HBox implements RootDataComponent {
     public void refreshObservable(Drops drops) {
         makeEditable(drops);
 
-        int newRarityWeightsID = rarityWeightsComponent.getRarityWeights().getRarityWeightID();
-        int newItemSetID = itemSetComponent.getItemSet().getItemSetID();
+        RarityWeights newRarityWeights = rarityWeightsComponent.getRarityWeights();
+        ItemSet newItemSet = itemSetComponent.getItemSet();
 
-        if (newRarityWeightsID != crate.get().getRarityWeightID())
-            crate.get().setRarityWeightID(newRarityWeightsID);
-        if (newItemSetID != crate.get().getItemSetID())
-            crate.get().setItemSetID(newItemSetID);
+        if (Objects.nonNull(newRarityWeights) && newRarityWeights.getRarityWeightID() != crate.get().getRarityWeightID())
+            crate.get().setRarityWeightID(newRarityWeights.getRarityWeightID());
+        if (Objects.nonNull(newItemSet) && newItemSet.getItemSetID() != crate.get().getItemSetID())
+            crate.get().setItemSetID(newItemSet.getItemSetID());
     }
 
     @Override
     public Label getIdLabel() {
         return idLabel;
+    }
+
+    @Override
+    public Button getRemoveButton() {
+        return removeButton;
     }
 
     public Crate getCrate() {
@@ -173,6 +199,10 @@ public class CrateComponent extends HBox implements RootDataComponent {
 
     public ItemSetComponent getItemSetComponent() {
         return itemSetComponent;
+    }
+
+    public HBox getIdHBox() {
+        return idHBox;
     }
 
     public BorderPane getCrateBorderPane() {
