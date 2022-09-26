@@ -27,7 +27,7 @@ public class ItemSet extends Data {
     private final ListProperty<Integer> itemReferenceIDs;
 
     public ItemSet() {
-        itemSetID = new SimpleIntegerProperty(-1);
+        itemSetID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         ignoreRarity = new SimpleBooleanProperty(false);
         ignoreGender = new SimpleBooleanProperty(false);
         defaultItemWeight = new SimpleIntegerProperty(1);

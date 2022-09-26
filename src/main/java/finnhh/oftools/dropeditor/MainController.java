@@ -13,6 +13,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.util.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.util.*;
@@ -75,12 +76,14 @@ public class MainController {
             private final CrateComponent crateComponent;
             private final RacingComponent racingComponent;
             private final CodeItemComponent codeItemComponent;
+            private final ItemReferenceComponent itemReferenceComponent;
 
             {
                 mobComponent = new MobComponent(controller, mainListView);
                 crateComponent = new CrateComponent(controller, mainListView);
                 racingComponent = new RacingComponent(controller, mainListView);
                 codeItemComponent = new CodeItemComponent(controller, mainListView);
+                itemReferenceComponent = new ItemReferenceComponent(controller, mainListView);
             }
 
             @Override
@@ -106,6 +109,10 @@ public class MainController {
                         case CODE_ITEM -> {
                             codeItemComponent.setObservable(data);
                             graphic = codeItemComponent;
+                        }
+                        case ITEM_REFERENCE -> {
+                            itemReferenceComponent.setObservable(data);
+                            graphic = itemReferenceComponent;
                         }
                     }
                 }
@@ -272,6 +279,28 @@ public class MainController {
         );
     }
 
+    public TableView<ItemInfo> getItemReferenceAdditionGraphic() {
+        return getTableGraphic(
+                () -> {
+                    Set<ItemInfo> itemInfoSet = new HashSet<>(staticDataStore.getItemInfoMap().values());
+
+                    drops.getItemReferences().values().stream()
+                            .flatMap(ir -> Optional.ofNullable(staticDataStore.getItemInfoMap()
+                                    .get(new Pair<>(ir.getItemID(), ir.getType()))).stream())
+                            .forEach(itemInfoSet::remove);
+
+                    return new ArrayList<>(itemInfoSet);
+                },
+                () -> getIconColumn(ItemInfo::iconName),
+                () -> getTableColumn("ID", 68.0, ItemInfo::id),
+                () -> getTableColumn("Type", 68.0, ItemInfo::type),
+                () -> getTableColumn("Level", 68.0, ItemInfo::requiredLevel),
+                () -> getTableColumn("Content Level", 132.0, ItemInfo::contentLevel),
+                () -> getTableColumn("Name", -1.0, ItemInfo::name),
+                () -> getTableColumn("Comment", -1.0, ItemInfo::comment)
+        );
+    }
+
     public TextField getCodeItemAdditionGraphic() {
         TextField textField = new TextField();
         textField.getStyleClass().add("code-text-field");
@@ -306,6 +335,7 @@ public class MainController {
                         .map(mti -> {
                             Mob mob = new Mob();
                             mob.setMobID(mti.type());
+                            mob.constructBindings();
                             return mob;
                         }));
     }
@@ -319,6 +349,7 @@ public class MainController {
                         .map(ii -> {
                             Crate crate = new Crate();
                             crate.setCrateID(ii.id());
+                            crate.constructBindings();
                             return crate;
                         }));
     }
@@ -332,6 +363,7 @@ public class MainController {
                         .map(ii -> {
                             Racing racing = new Racing();
                             racing.setEPID(ii.EPID());
+                            racing.constructBindings();
                             return racing;
                         }));
     }
@@ -347,7 +379,23 @@ public class MainController {
                         .map(text -> {
                             CodeItem codeItem = new CodeItem();
                             codeItem.setCode(text.replaceAll("[^A-Za-z0-9]+", "").toLowerCase(Locale.ENGLISH));
+                            codeItem.constructBindings();
                             return codeItem;
+                        }));
+    }
+
+    public Optional<Data> showAddItemReferenceMenuForResult() {
+        return application.showSelectionAlert(
+                "Add New Item Reference",
+                "Please select one to add:",
+                getItemReferenceAdditionGraphic(),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(ii -> {
+                            ItemReference itemReference = new ItemReference();
+                            itemReference.setItemID(ii.id());
+                            itemReference.setType(ii.type());
+                            itemReference.constructBindings();
+                            return itemReference;
                         }));
     }
 

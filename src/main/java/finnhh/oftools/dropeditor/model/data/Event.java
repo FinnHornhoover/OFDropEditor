@@ -11,8 +11,8 @@ public class Event extends Data {
     private final IntegerProperty mobDropID;
 
     public Event() {
-        eventID = new SimpleIntegerProperty(-1);
-        mobDropID = new SimpleIntegerProperty(-1);
+        eventID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        mobDropID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
     }
 
     public Event(Event other) {

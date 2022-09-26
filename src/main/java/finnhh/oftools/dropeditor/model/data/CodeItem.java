@@ -15,13 +15,13 @@ public class CodeItem extends Data {
     private final ListProperty<Integer> itemReferenceIDs;
 
     public CodeItem() {
-        codeID = new SimpleIntegerProperty(-1);
+        codeID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         code = new SimpleStringProperty(null);
         itemReferenceIDs = new SimpleListProperty<>(FXCollections.observableArrayList());
     }
 
     public CodeItem(CodeItem other) {
-        this.codeID = new SimpleIntegerProperty(-1);
+        this.codeID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         this.code = new SimpleStringProperty(other.code.get());
         this.itemReferenceIDs = new SimpleListProperty<>(
                 FXCollections.observableArrayList(other.itemReferenceIDs.get()));

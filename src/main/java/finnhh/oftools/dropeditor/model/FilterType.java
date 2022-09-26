@@ -77,9 +77,9 @@ public enum FilterType {
     }
 
     public static FilterType getFilterTypeFor(Class<?> valueClass) {
-        if (IntegerExpression.class.isAssignableFrom(valueClass) || Integer.class.isAssignableFrom(valueClass))
+        if (IntegerExpression.class.isAssignableFrom(valueClass) || Integer.class.isAssignableFrom(valueClass) || int.class.isAssignableFrom(valueClass))
             return INTEGER;
-        else if (DoubleExpression.class.isAssignableFrom(valueClass) || Double.class.isAssignableFrom(valueClass))
+        else if (DoubleExpression.class.isAssignableFrom(valueClass) || Double.class.isAssignableFrom(valueClass) || double.class.isAssignableFrom(valueClass))
             return DOUBLE;
         else if (StringExpression.class.isAssignableFrom(valueClass) || String.class.isAssignableFrom(valueClass))
             return STRING;

@@ -13,9 +13,9 @@ public class ItemReference extends Data {
     protected final IntegerProperty type;
 
     public ItemReference() {
-        itemReferenceID = new SimpleIntegerProperty(-1);
-        itemID = new SimpleIntegerProperty(-1);
-        type = new SimpleIntegerProperty(-1);
+        itemReferenceID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        itemID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        type = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
     }
 
     public ItemReference(ItemReference other) {

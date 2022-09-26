@@ -28,7 +28,7 @@ public class MiscDropChance extends Data {
     private final IntegerProperty fmDropChanceTotal;
 
     public MiscDropChance() {
-        miscDropChanceID = new SimpleIntegerProperty(-1);
+        miscDropChanceID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         potionDropChance = new SimpleIntegerProperty(0);
         potionDropChanceTotal = new SimpleIntegerProperty(1);
         boostDropChance = new SimpleIntegerProperty(0);

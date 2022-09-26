@@ -15,7 +15,7 @@ public class RarityWeights extends Data {
     private final ListProperty<Integer> weights;
 
     public RarityWeights() {
-        rarityWeightID = new SimpleIntegerProperty(-1);
+        rarityWeightID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         weights = new SimpleListProperty<>(FXCollections.observableArrayList());
     }
 

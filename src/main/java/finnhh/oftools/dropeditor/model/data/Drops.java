@@ -419,7 +419,7 @@ public class Drops extends Data {
         }
 
         public int getNextTrueID() {
-            return trueMap.keySet().stream().reduce(-1, Math::max) + 1;
+            return trueMap.keySet().stream().reduce(INT_PLACEHOLDER_ID, Math::max) + 1;
         }
 
         public String getNextID() {
@@ -428,10 +428,10 @@ public class Drops extends Data {
                         try {
                             return Integer.parseInt(s);
                         } catch (NumberFormatException e) {
-                            return -1;
+                            return INT_PLACEHOLDER_ID;
                         }
                     })
-                    .reduce(-1, Math::max) + 1);
+                    .reduce(INT_PLACEHOLDER_ID, Math::max) + 1);
         }
 
         public V add(V data) {
@@ -444,7 +444,9 @@ public class Drops extends Data {
                 return null;
 
             String key = getNextID();
-            data.setId(String.valueOf(intKey));
+            String id = data.getId();
+            if (id.equals(PLACEHOLDER_ID) || id.equals(UNSET_ID))
+                data.setId(String.valueOf(intKey));
 
             trueMap.put(intKey, data);
             keyMap.put(intKey, key);

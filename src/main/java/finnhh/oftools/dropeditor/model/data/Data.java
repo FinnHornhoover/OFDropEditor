@@ -12,12 +12,16 @@ import java.util.Optional;
 import java.util.Set;
 
 public abstract class Data implements BindingConstructor {
+    public final static String UNSET_ID = "<Data>";
+    public final static String PLACEHOLDER_ID = "-1";
+    public static final int INT_PLACEHOLDER_ID = -1;
+
     protected final BooleanProperty malformed;
     protected final StringProperty id;
 
     protected Data() {
         malformed = new SimpleBooleanProperty(false);
-        id = new SimpleStringProperty("<Data>");
+        id = new SimpleStringProperty(UNSET_ID);
     }
 
     public abstract Data getEditableClone();

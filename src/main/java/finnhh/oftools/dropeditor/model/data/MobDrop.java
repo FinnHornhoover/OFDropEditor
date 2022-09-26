@@ -17,11 +17,11 @@ public class MobDrop extends Data {
     private final IntegerProperty miscDropTypeID;
 
     public MobDrop() {
-        mobDropID = new SimpleIntegerProperty(-1);
-        crateDropChanceID = new SimpleIntegerProperty(-1);
-        crateDropTypeID = new SimpleIntegerProperty(-1);
-        miscDropChanceID = new SimpleIntegerProperty(-1);
-        miscDropTypeID = new SimpleIntegerProperty(-1);
+        mobDropID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        crateDropChanceID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        crateDropTypeID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        miscDropChanceID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        miscDropTypeID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
     }
 
     public MobDrop(MobDrop other) {

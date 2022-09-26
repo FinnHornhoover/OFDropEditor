@@ -15,7 +15,7 @@ public class CrateDropType extends Data {
     private final ListProperty<Integer> crateIDs;
 
     public CrateDropType()  {
-        crateDropTypeID = new SimpleIntegerProperty(-1);
+        crateDropTypeID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         crateIDs = new SimpleListProperty<>(FXCollections.observableArrayList());
     }
 

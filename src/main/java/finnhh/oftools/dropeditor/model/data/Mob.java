@@ -11,8 +11,8 @@ public class Mob extends Data {
     private final IntegerProperty mobDropID;
 
     public Mob() {
-        mobID = new SimpleIntegerProperty(-1);
-        mobDropID = new SimpleIntegerProperty(-1);
+        mobID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        mobDropID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
     }
 
     public Mob(Mob other) {

@@ -19,7 +19,7 @@ public class CrateDropChance extends Data {
     private final ListProperty<Integer> crateTypeDropWeights;
 
     public CrateDropChance() {
-        crateDropChanceID = new SimpleIntegerProperty(-1);
+        crateDropChanceID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         dropChance = new SimpleIntegerProperty(0);
         dropChanceTotal = new SimpleIntegerProperty(1);
         crateTypeDropWeights = new SimpleListProperty<>(FXCollections.observableArrayList());

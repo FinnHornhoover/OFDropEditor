@@ -13,9 +13,9 @@ public class Crate extends Data {
     private final IntegerProperty rarityWeightID;
 
     public Crate() {
-        crateID = new SimpleIntegerProperty(-1);
-        itemSetID = new SimpleIntegerProperty(-1);
-        rarityWeightID = new SimpleIntegerProperty(-1);
+        crateID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        itemSetID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        rarityWeightID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
     }
 
     public Crate(Crate other) {

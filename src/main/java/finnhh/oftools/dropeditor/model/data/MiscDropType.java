@@ -19,7 +19,7 @@ public class MiscDropType extends Data {
     private final IntegerProperty fmAmount;
 
     public MiscDropType() {
-        miscDropTypeID = new SimpleIntegerProperty(-1);
+        miscDropTypeID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         potionAmount = new SimpleIntegerProperty(0);
         boostAmount = new SimpleIntegerProperty(0);
         taroAmount = new SimpleIntegerProperty(0);

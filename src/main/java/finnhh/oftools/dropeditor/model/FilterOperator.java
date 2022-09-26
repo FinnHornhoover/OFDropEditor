@@ -5,6 +5,7 @@ import javafx.beans.binding.IntegerExpression;
 import javafx.beans.binding.ListExpression;
 import javafx.beans.binding.StringExpression;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -71,16 +72,16 @@ public enum FilterOperator {
     }),
     LIST_CONTAINS("Contains", "<-", (oVal, fVal) -> {
         if (oVal instanceof ListExpression<?> oValList && fVal instanceof List<?> fValList) {
-            return oValList.stream()
+            return new HashSet<>(oValList.stream()
                     .map(Object::toString)
-                    .toList()
+                    .toList())
                     .containsAll(fValList.stream()
                             .map(Object::toString)
                             .toList());
         } else if (oVal instanceof List<?> oValList && fVal instanceof List<?> fValList) {
-            return oValList.stream()
+            return new HashSet<>(oValList.stream()
                     .map(Object::toString)
-                    .toList()
+                    .toList())
                     .containsAll(fValList.stream()
                             .map(Object::toString)
                             .toList());

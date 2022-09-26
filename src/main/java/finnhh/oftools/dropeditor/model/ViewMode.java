@@ -39,6 +39,13 @@ public enum ViewMode {
             drops -> drops.getCodeItems()
                     .values().stream()
                     .sorted(Comparator.comparing(CodeItem::getCode))
+                    .toList()),
+    ITEM_REFERENCE("Item References",
+            ItemReferenceComponent::new,
+            MainController::showAddItemReferenceMenuForResult,
+            drops -> drops.getItemReferences()
+                    .values().stream()
+                    .sorted(Comparator.comparingInt(ItemReference::getItemReferenceID))
                     .toList());
 
     private final String modeString;
