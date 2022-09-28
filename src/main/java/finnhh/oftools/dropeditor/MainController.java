@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class MainController {
     @FXML
@@ -77,6 +78,7 @@ public class MainController {
             private final RacingComponent racingComponent;
             private final CodeItemComponent codeItemComponent;
             private final ItemReferenceComponent itemReferenceComponent;
+            private final NanoCapsuleComponent nanoCapsuleComponent;
 
             {
                 mobComponent = new MobComponent(controller, mainListView);
@@ -84,6 +86,7 @@ public class MainController {
                 racingComponent = new RacingComponent(controller, mainListView);
                 codeItemComponent = new CodeItemComponent(controller, mainListView);
                 itemReferenceComponent = new ItemReferenceComponent(controller, mainListView);
+                nanoCapsuleComponent = new NanoCapsuleComponent(controller, mainListView);
             }
 
             @Override
@@ -113,6 +116,10 @@ public class MainController {
                         case ITEM_REFERENCE -> {
                             itemReferenceComponent.setObservable(data);
                             graphic = itemReferenceComponent;
+                        }
+                        case NANO_CAPSULE -> {
+                            nanoCapsuleComponent.setObservable(data);
+                            graphic = nanoCapsuleComponent;
                         }
                     }
                 }
@@ -301,6 +308,43 @@ public class MainController {
         );
     }
 
+    public TableView<ItemInfo> getCapsuleSelectionGraphic() {
+        return getTableGraphic(
+                () -> {
+                    Set<Integer> crateIDSet = drops.getNanoCapsules().values().stream()
+                            .map(NanoCapsule::getCrateID)
+                            .collect(Collectors.toSet());
+                    return staticDataStore.getItemInfoMap().values().stream()
+                            .filter(ii -> ii.type() == 9 && ii.name().contains("Nano") && ii.name().contains("Capsule")
+                                    && !crateIDSet.contains(ii.id()))
+                            .toList();
+                },
+                () -> getIconColumn(ItemInfo::iconName),
+                () -> getTableColumn("ID", 68.0, ItemInfo::id),
+                () -> getTableColumn("Name", -1.0, ItemInfo::name),
+                () -> getTableColumn("Comment", -1.0, ItemInfo::comment)
+        );
+    }
+
+    public TableView<NanoInfo> getNanoCapsuleAdditionGraphic() {
+        return getTableGraphic(
+                () -> {
+                    Set<Integer> nanoIDSet = drops.getNanoCapsules().values().stream()
+                            .map(NanoCapsule::getNano)
+                            .collect(Collectors.toSet());
+                    return staticDataStore.getNanoInfoMap().values().stream()
+                            .filter(ni -> !nanoIDSet.contains(ni.id()))
+                            .toList();
+                },
+                () -> getIconColumn(NanoInfo::iconName),
+                () -> getTableColumn("Name", -1.0, NanoInfo::name),
+                () -> getTableColumn("Type", -1.0, NanoInfo::type),
+                () -> getTableColumn("Powers", -1.0, ni -> ni.powers().stream()
+                        .map(NanoPowerInfo::type)
+                        .collect(Collectors.joining(", ")))
+        );
+    }
+
     public TextField getCodeItemAdditionGraphic() {
         TextField textField = new TextField();
         textField.getStyleClass().add("code-text-field");
@@ -396,6 +440,35 @@ public class MainController {
                             itemReference.setType(ii.type());
                             itemReference.constructBindings();
                             return itemReference;
+                        }));
+    }
+
+    public Optional<Data> showSelectCapsuleMenuForResult() {
+        return application.showSelectionAlert(
+                "Capsule Selection",
+                "Please select one:",
+                getCapsuleSelectionGraphic(),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(ii -> {
+                            NanoCapsule nanoCapsule = new NanoCapsule();
+                            nanoCapsule.setCrateID(ii.id());
+                            nanoCapsule.constructBindings();
+                            return nanoCapsule;
+                        })
+        );
+    }
+
+    public Optional<Data> showAddNanoCapsuleMenuForResult() {
+        return application.showSelectionAlert(
+                "Add New Nano Capsule",
+                "Please select Nano to add a Capsule for:",
+                getNanoCapsuleAdditionGraphic(),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(ni -> {
+                            NanoCapsule nanoCapsule = new NanoCapsule();
+                            nanoCapsule.setNano(ni.id());
+                            nanoCapsule.constructBindings();
+                            return nanoCapsule;
                         }));
     }
 

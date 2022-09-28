@@ -20,6 +20,8 @@ public class StaticDataStore {
     private final Map<Integer, MissionInfo> missionInfoMap;
     private final Map<Integer, WarpInfo> warpInfoMap;
     private final Map<Long, InstanceInfo> instanceInfoMap;
+    private final Map<Integer, NanoPowerInfo> nanoPowerInfoMap;
+    private final Map<Integer, NanoInfo> nanoInfoMap;
     private final List<MapRegionInfo> mapRegionInfoList;
 
     private final Map<Pair<Integer, Integer>, List<VendorItemInfo>> vendorItemMap;
@@ -41,6 +43,8 @@ public class StaticDataStore {
         missionInfoMap = new HashMap<>();
         warpInfoMap = new HashMap<>();
         instanceInfoMap = new HashMap<>();
+        nanoPowerInfoMap = new HashMap<>();
+        nanoInfoMap = new HashMap<>();
         mapRegionInfoList = new ArrayList<>();
 
         vendorItemMap = new HashMap<>();
@@ -95,6 +99,14 @@ public class StaticDataStore {
         return instanceInfoMap;
     }
 
+    public Map<Integer, NanoPowerInfo> getNanoPowerInfoMap() {
+        return nanoPowerInfoMap;
+    }
+
+    public Map<Integer, NanoInfo> getNanoInfoMap() {
+        return nanoInfoMap;
+    }
+
     public List<MapRegionInfo> getMapRegionInfoList() {
         return mapRegionInfoList;
     }
@@ -107,6 +119,10 @@ public class StaticDataStore {
         return rewardMissionMap;
     }
 
+    public Map<Integer, InstanceInfo> getEPInstanceMap() {
+        return epInstanceMap;
+    }
+
     public InstanceRegionGroupedMap<Integer, EggInfo> getEggInstanceRegionGroupedMap() {
         return eggInstanceRegionGroupedMap;
     }
@@ -117,10 +133,6 @@ public class StaticDataStore {
 
     public InstanceRegionGroupedMap<Integer, MobInfo> getMobInstanceRegionGroupedMap() {
         return mobInstanceRegionGroupedMap;
-    }
-
-    public Map<Integer, InstanceInfo> getEPInstanceMap() {
-        return epInstanceMap;
     }
 
     public static class InstanceRegionGroupedMap<K, V extends InfoEnum>

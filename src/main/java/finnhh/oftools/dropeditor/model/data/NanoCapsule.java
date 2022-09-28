@@ -12,7 +12,7 @@ public class NanoCapsule extends Data {
 
     public NanoCapsule() {
         nano = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
-        crateID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
+        crateID = new SimpleIntegerProperty(Crate.INT_CRATE_PLACEHOLDER_ID);
     }
 
     public NanoCapsule(NanoCapsule other) {

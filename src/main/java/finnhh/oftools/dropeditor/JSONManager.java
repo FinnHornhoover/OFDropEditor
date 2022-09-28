@@ -590,6 +590,71 @@ public class JSONManager {
         }
     }
 
+    private void readNanoData(JsonObject xdt, StaticDataStore staticDataStore)
+            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
+
+        Map<Integer, NanoPowerInfo> nanoPowerInfoMap = staticDataStore.getNanoPowerInfoMap();
+        Map<Integer, NanoInfo> nanoInfoMap = staticDataStore.getNanoInfoMap();
+
+        JsonObject nanoObject = xdt.getAsJsonObject("m_pNanoTable");
+        JsonArray nanoDataArray = nanoObject.getAsJsonArray("m_pNanoData");
+        JsonArray nanoStringArray = nanoObject.getAsJsonArray("m_pNanoStringData");
+        JsonArray nanoIconArray = nanoObject.getAsJsonArray("m_pNanoIconData");
+        JsonArray nanoPowerDataArray = nanoObject.getAsJsonArray("m_pNanoTuneData");
+        JsonArray nanoPowerStringArray = nanoObject.getAsJsonArray("m_pNanoTuneStringData");
+
+        JsonObject skillObject = xdt.getAsJsonObject("m_pSkillTable");
+        JsonArray skillDataArray = skillObject.getAsJsonArray("m_pSkillData");
+        JsonArray skillIconDataArray = skillObject.getAsJsonArray("m_pSkillIconData");
+
+        for (int powerID = 1; powerID < nanoPowerDataArray.size(); powerID++) {
+            JsonObject nanoPowerDataObject = nanoPowerDataArray.get(powerID).getAsJsonObject();
+            JsonObject nanoPowerStringObject = nanoPowerStringArray
+                    .get(nanoPowerDataObject.get("m_iTuneName").getAsInt())
+                    .getAsJsonObject();
+            JsonObject skillDataObject = skillDataArray
+                    .get(nanoPowerDataObject.get("m_iSkillID").getAsInt())
+                    .getAsJsonObject();
+            JsonObject skillIconDataObject = skillIconDataArray
+                    .get(skillDataObject.get("m_iIcon").getAsInt())
+                    .getAsJsonObject();
+
+            NanoPowerInfo nanoPowerInfo = new NanoPowerInfo(
+                    powerID,
+                    nanoPowerStringObject.get("m_strComment1").getAsString(),
+                    nanoPowerStringObject.get("m_strName").getAsString(),
+                    nanoPowerStringObject.get("m_strComment").getAsString(),
+                    String.format("skillicon_%02d", skillIconDataObject.get("m_iIconNumber").getAsInt())
+            );
+
+            nanoPowerInfoMap.put(powerID, nanoPowerInfo);
+        }
+
+        for (int i = 1; i < nanoDataArray.size(); i++) {
+            JsonObject nanoDataObject = nanoDataArray.get(i).getAsJsonObject();
+            JsonObject nanoStringObject = nanoStringArray
+                    .get(nanoDataObject.get("m_iNanoName").getAsInt())
+                    .getAsJsonObject();
+            JsonObject nanoIconObject = nanoIconArray
+                    .get(nanoDataObject.get("m_iIcon1").getAsInt())
+                    .getAsJsonObject();
+
+            JsonArray nanoPowerListArray = nanoDataObject.get("m_iTune").getAsJsonArray();
+
+            NanoInfo nanoInfo = new NanoInfo(
+                    i,
+                    nanoStringObject.get("m_strName").getAsString(),
+                    nanoStringObject.get("m_strComment1").getAsString(),
+                    String.format("nanoicon_%02d", nanoIconObject.get("m_iIconNumber").getAsInt()),
+                    IntStream.range(0, 3)
+                            .mapToObj(p -> nanoPowerInfoMap.get(nanoPowerListArray.get(p).getAsInt()))
+                            .toList()
+            );
+
+            nanoInfoMap.put(i, nanoInfo);
+        }
+    }
+
     private void readMapRegionData(JsonObject mapXDT, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException {
 
@@ -696,6 +761,7 @@ public class JSONManager {
             readEggData(staticDataStore);
             readMissionData(xdt, staticDataStore);
             readInstanceData(xdt, staticDataStore);
+            readNanoData(xdt, staticDataStore);
         }
 
         preferences.setXDTFile(xdtFile.getAbsolutePath());

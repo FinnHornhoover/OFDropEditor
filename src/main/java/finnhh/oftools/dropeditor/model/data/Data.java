@@ -12,9 +12,9 @@ import java.util.Optional;
 import java.util.Set;
 
 public abstract class Data implements BindingConstructor {
-    public final static String UNSET_ID = "<Data>";
-    public final static String PLACEHOLDER_ID = "-1";
     public static final int INT_PLACEHOLDER_ID = -1;
+    public final static String UNSET_ID = "<Data>";
+    public final static String PLACEHOLDER_ID = String.valueOf(INT_PLACEHOLDER_ID);
 
     protected final BooleanProperty malformed;
     protected final StringProperty id;

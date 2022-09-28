@@ -46,6 +46,13 @@ public enum ViewMode {
             drops -> drops.getItemReferences()
                     .values().stream()
                     .sorted(Comparator.comparingInt(ItemReference::getItemReferenceID))
+                    .toList()),
+    NANO_CAPSULE("Nano Capsules",
+            NanoCapsuleComponent::new,
+            MainController::showAddNanoCapsuleMenuForResult,
+            drops -> drops.getNanoCapsules()
+                    .values().stream()
+                    .sorted(Comparator.comparingInt(NanoCapsule::getNano))
                     .toList());
 
     private final String modeString;

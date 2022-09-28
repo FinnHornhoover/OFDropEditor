@@ -168,7 +168,8 @@ public class RacingComponent extends HBox implements RootDataComponent {
             });
             crateValueListeners.add((o, oldVal, newVal) -> {
                 makeEditable(controller.getDrops());
-                racing.get().getRewards().set(finalIndex, Objects.isNull(newVal) ? 0 : newVal.getCrateID());
+                racing.get().getRewards().set(finalIndex,
+                        Objects.isNull(newVal) ? Crate.INT_CRATE_PLACEHOLDER_ID : newVal.getCrateID());
 
                 CrateTypeBoxComponent current = (CrateTypeBoxComponent) rewardHBox.getChildren()
                         .filtered(c -> c instanceof CrateTypeBoxComponent)
@@ -177,12 +178,12 @@ public class RacingComponent extends HBox implements RootDataComponent {
             });
             removeClickHandlers.add(event -> {
                 makeEditable(controller.getDrops());
-                racing.get().getRewards().set(finalIndex, 0);
+                racing.get().getRewards().set(finalIndex, Crate.INT_CRATE_PLACEHOLDER_ID);
 
                 CrateTypeBoxComponent current = (CrateTypeBoxComponent) rewardHBox.getChildren()
                         .filtered(c -> c instanceof CrateTypeBoxComponent)
                         .get(finalIndex);
-                current.setObservable(controller.getDrops().getCrates().get(0));
+                current.setObservable(null);
             });
 
             svb.getSpinner().valueProperty().addListener(spinnerValueListeners.get(index));

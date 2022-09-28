@@ -23,7 +23,12 @@ public class Racing extends Data {
     public Racing() {
         EPID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
         rankScores = new SimpleListProperty<>(FXCollections.observableArrayList(0, 0, 0, 0, 0));
-        rewards = new SimpleListProperty<>(FXCollections.observableArrayList(0, 0, 0, 0, 0));
+        rewards = new SimpleListProperty<>(FXCollections.observableArrayList(
+                Crate.INT_CRATE_PLACEHOLDER_ID,
+                Crate.INT_CRATE_PLACEHOLDER_ID,
+                Crate.INT_CRATE_PLACEHOLDER_ID,
+                Crate.INT_CRATE_PLACEHOLDER_ID,
+                Crate.INT_CRATE_PLACEHOLDER_ID));
         timeLimit = new SimpleIntegerProperty(0);
     }
 

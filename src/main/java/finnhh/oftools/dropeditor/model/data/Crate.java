@@ -5,6 +5,8 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
 public class Crate extends Data {
+    public static final int INT_CRATE_PLACEHOLDER_ID = 0;
+
     @Expose
     private final IntegerProperty crateID;
     @Expose
