@@ -439,14 +439,20 @@ public class Drops extends Data {
                 return null;
 
             int intKey = getNextTrueID();
+            String id = data.getId();
+
+            if (!id.equals(PLACEHOLDER_ID) && !id.equals(UNSET_ID)) {
+                try {
+                    intKey = Integer.parseInt(id);
+                } catch (NumberFormatException ignored) {
+                }
+            }
 
             if (trueMap.containsKey(intKey))
                 return null;
 
             String key = getNextID();
-            String id = data.getId();
-            if (id.equals(PLACEHOLDER_ID) || id.equals(UNSET_ID))
-                data.setId(String.valueOf(intKey));
+            data.setId(String.valueOf(intKey));
 
             trueMap.put(intKey, data);
             keyMap.put(intKey, key);

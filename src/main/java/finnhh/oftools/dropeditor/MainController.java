@@ -7,7 +7,6 @@ import finnhh.oftools.dropeditor.view.util.NoSelectionModel;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
-import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -45,7 +44,7 @@ public class MainController {
     }
 
     @FXML
-    protected void onNewButtonPressed(Event event) {
+    protected void onNewButtonPressed() {
         viewModeChoiceBox.getValue().getNewDataAdder().apply(this).ifPresent(data -> {
             drops.add(data);
             refreshList();
@@ -54,12 +53,12 @@ public class MainController {
     }
 
     @FXML
-    protected void onSettingsButtonPressed(Event event) {
+    protected void onSettingsButtonPressed() {
         // TODO
     }
 
     @FXML
-    protected void onSaveButtonPressed(Event event) {
+    protected void onSaveButtonPressed() {
         // TODO
     }
 
@@ -79,6 +78,7 @@ public class MainController {
             private final CodeItemComponent codeItemComponent;
             private final ItemReferenceComponent itemReferenceComponent;
             private final NanoCapsuleComponent nanoCapsuleComponent;
+            private final EventComponent eventComponent;
 
             {
                 mobComponent = new MobComponent(controller, mainListView);
@@ -87,6 +87,7 @@ public class MainController {
                 codeItemComponent = new CodeItemComponent(controller, mainListView);
                 itemReferenceComponent = new ItemReferenceComponent(controller, mainListView);
                 nanoCapsuleComponent = new NanoCapsuleComponent(controller, mainListView);
+                eventComponent = new EventComponent(controller, mainListView);
             }
 
             @Override
@@ -120,6 +121,10 @@ public class MainController {
                         case NANO_CAPSULE -> {
                             nanoCapsuleComponent.setObservable(data);
                             graphic = nanoCapsuleComponent;
+                        }
+                        case EVENT -> {
+                            eventComponent.setObservable(data);
+                            graphic = eventComponent;
                         }
                     }
                 }
@@ -345,6 +350,16 @@ public class MainController {
         );
     }
 
+    public TableView<EventType> getEventAdditionGraphic() {
+        return getTableGraphic(
+                () -> Arrays.stream(EventType.values())
+                        .filter(et -> et != EventType.NO_EVENT && !drops.getEvents().containsKey(et.getType()))
+                        .toList(),
+                () -> getIconColumn(EventType::iconName),
+                () -> getTableColumn("Name", -1.0, EventType::getName)
+        );
+    }
+
     public TextField getCodeItemAdditionGraphic() {
         TextField textField = new TextField();
         textField.getStyleClass().add("code-text-field");
@@ -469,6 +484,22 @@ public class MainController {
                             nanoCapsule.setNano(ni.id());
                             nanoCapsule.constructBindings();
                             return nanoCapsule;
+                        }));
+    }
+
+    public Optional<Data> showAddEventMenuForResult() {
+        return application.showSelectionAlert(
+                "Add New Event Setting",
+                "Please select one to add:",
+                getEventAdditionGraphic(),
+                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                        .map(et -> {
+                            Event event = new Event();
+                            event.setEventID((et == EventType.CUSTOM_EVENT) ?
+                                    Math.max(EventType.nextId(), drops.eventsProperty().getNextTrueID()) :
+                                    et.getType());
+                            event.constructBindings();
+                            return event;
                         }));
     }
 

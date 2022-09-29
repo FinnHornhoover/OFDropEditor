@@ -53,6 +53,13 @@ public enum ViewMode {
             drops -> drops.getNanoCapsules()
                     .values().stream()
                     .sorted(Comparator.comparingInt(NanoCapsule::getNano))
+                    .toList()),
+    EVENT("Events",
+            EventComponent::new,
+            MainController::showAddEventMenuForResult,
+            drops -> drops.getEvents()
+                    .values().stream()
+                    .sorted(Comparator.comparingInt(Event::getEventID))
                     .toList());
 
     private final String modeString;

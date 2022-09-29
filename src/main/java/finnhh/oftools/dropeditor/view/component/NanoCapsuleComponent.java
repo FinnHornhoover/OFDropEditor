@@ -154,6 +154,9 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
+        var iconMap = controller.getIconManager().getIconMap();
+        byte[] defaultIcon = iconMap.get("unknown");
+
         removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
         nanoCapsuleBox.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, capsuleRemoveClickHandler);
 
@@ -162,10 +165,11 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
         nanoPowerVBox.getChildren().clear();
 
         if (nanoCapsule.isNull().get()) {
+            nanoNameLabel.setText("UNKNOWN");
+            nanoIconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
+            nanoTypeLabel.setText("Unknown");
             nanoCapsuleBox.setObservable(null);
         } else {
-            var iconMap = controller.getIconManager().getIconMap();
-
             NanoInfo nanoInfo = controller.getStaticDataStore().getNanoInfoMap().get(nanoCapsule.get().getNano());
 
             String name = Objects.isNull(nanoInfo) ?
@@ -174,7 +178,6 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
             String type = Objects.isNull(nanoInfo) ?
                     "Unknown" :
                     nanoInfo.type();
-            byte[] defaultIcon = iconMap.get("unknown");
             byte[] icon = Objects.isNull(nanoInfo) ?
                     defaultIcon :
                     iconMap.getOrDefault(nanoInfo.iconName(), defaultIcon);

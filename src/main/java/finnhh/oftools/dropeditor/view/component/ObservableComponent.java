@@ -4,6 +4,7 @@ import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.FilterType;
 import javafx.beans.property.ReadOnlyObjectProperty;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +21,8 @@ public interface ObservableComponent<T> {
 
     static Set<FilterChoice> getSearchableValuesFor(Class<?> valueClass) {
         return Arrays.stream(valueClass.getDeclaredFields())
-                .filter(f -> FilterType.getFilterTypeFor(f.getType()) != FilterType.NONE)
+                .filter(f -> FilterType.getFilterTypeFor(f.getType()) != FilterType.NONE
+                        && !Modifier.isStatic(f.getModifiers()))
                 .map(f -> new FilterChoice(
                         FilterType.getFilterTypeFor(f.getType()),
                         op -> op.map(o -> {

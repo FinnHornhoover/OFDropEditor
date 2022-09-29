@@ -109,20 +109,23 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
+        var iconMap = controller.getIconManager().getIconMap();
+        byte[] defaultIcon = iconMap.get("unknown");
+
         removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
 
         itemReference.set((ItemReference) data);
 
         infoFlowPane.getChildren().clear();
 
-        if (itemReference.isNotNull().get()) {
+        if (itemReference.isNull().get()) {
+            iconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
+        } else {
             var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
-            var iconMap = controller.getIconManager().getIconMap();
 
             ItemInfo itemInfo = itemInfoMap.get(new Pair<>(
                     itemReference.get().getItemID(), itemReference.get().getType()));
 
-            byte[] defaultIcon = iconMap.get("unknown");
             byte[] icon = Objects.isNull(itemInfo) ?
                     defaultIcon :
                     iconMap.getOrDefault(itemInfo.iconName(), defaultIcon);
