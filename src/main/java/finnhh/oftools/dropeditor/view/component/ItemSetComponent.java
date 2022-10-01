@@ -1,10 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
-import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.Gender;
-import finnhh.oftools.dropeditor.model.ItemInfo;
-import finnhh.oftools.dropeditor.model.Rarity;
+import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.ItemDrop;
 import finnhh.oftools.dropeditor.model.data.ItemReference;
@@ -812,6 +809,22 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                     ObservableComponent.getSearchableValuesFor(ItemInfo.class),
                     op -> op.map(o -> (ItemReference) o)
                             .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .stream().toList()
+            ));
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(ItemType.class),
+                    op -> op.map(o -> (ItemReference) o)
+                            .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .map(ItemInfo::type)
+                            .stream().toList()
+            ));
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(WeaponType.class),
+                    op -> op.map(o -> (ItemReference) o)
+                            .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .map(ItemInfo::weaponType)
                             .stream().toList()
             ));
 

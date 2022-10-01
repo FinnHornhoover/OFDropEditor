@@ -1,28 +1,24 @@
 package finnhh.oftools.dropeditor.model;
 
 public enum ItemType {
-    WEAPON(0, "Weapon", "m_pWeaponItemTable", "wpnicon"),
-    SHIRT(1, "Shirt", "m_pShirtsItemTable", "cosicon"),
-    PANTS(2, "Pants", "m_pPantsItemTable", "cosicon"),
-    SHOES(3, "Shoes", "m_pShoesItemTable", "cosicon"),
-    HAT(4, "Hat", "m_pHatItemTable", "cosicon"),
-    GLASSES(5, "Glasses", "m_pGlassItemTable", "cosicon"),
-    BACKPACK(6, "Backpack", "m_pBackItemTable", "cosicon"),
-    GENERAL_ITEM(7, "General Item", "m_pGeneralItemTable", "generalitemicon"),
-    NONE(8, "None", "", "error"),
-    CRATE(9, "Crate", "m_pChestItemTable", "generalitemicon"),
-    VEHICLE(10, "Vehicle", "m_pVehicleItemTable", "vehicle");
+    WEAPON(0, "Weapon"),
+    SHIRT(1, "Shirt"),
+    PANTS(2, "Pants"),
+    SHOES(3, "Shoes"),
+    HAT(4, "Hat"),
+    GLASSES(5, "Glasses"),
+    BACKPACK(6, "Backpack"),
+    GENERAL_ITEM(7, "General Item"),
+    NONE(8, "None"),
+    CRATE(9, "Crate"),
+    VEHICLE(10, "Vehicle");
 
     private final int typeID;
     private final String name;
-    private final String xdtKey;
-    private final String iconPrefix;
 
-    ItemType(int typeID, String name, String xdtKey, String iconPrefix) {
+    ItemType(int typeID, String name) {
         this.typeID = typeID;
         this.name = name;
-        this.xdtKey = xdtKey;
-        this.iconPrefix = iconPrefix;
     }
 
     public int getTypeID() {
@@ -31,14 +27,6 @@ public enum ItemType {
 
     public String getName() {
         return name;
-    }
-
-    public String getXDTKey() {
-        return xdtKey;
-    }
-
-    public String getIconPrefix() {
-        return iconPrefix;
     }
 
     @Override

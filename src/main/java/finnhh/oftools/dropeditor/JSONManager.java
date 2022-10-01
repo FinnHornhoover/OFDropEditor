@@ -33,6 +33,32 @@ public class JSONManager {
     public static final String[] CONSTANT_NAMES = new String[] {
             "areas",
     };
+    public static final String[] ITEM_TYPE_NAMES = new String[] {
+            "m_pWeaponItemTable",
+            "m_pShirtsItemTable",
+            "m_pPantsItemTable",
+            "m_pShoesItemTable",
+            "m_pHatItemTable",
+            "m_pGlassItemTable",
+            "m_pBackItemTable",
+            "m_pGeneralItemTable",
+            "",
+            "m_pChestItemTable",
+            "m_pVehicleItemTable",
+    };
+    public static final String[] ITEM_ICON_NAMES = new String[] {
+            "wpnicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "cosicon",
+            "generalitemicon",
+            "error",
+            "generalitemicon",
+            "vehicle",
+    };
     public static final String[] NPC_ICON_NAMES = new String[] {
             "error",
             "error",
@@ -169,7 +195,7 @@ public class JSONManager {
             if (itemType == ItemType.NONE)
                 continue;
 
-            JsonObject typedItemObject = xdt.getAsJsonObject(itemType.getXDTKey());
+            JsonObject typedItemObject = xdt.getAsJsonObject(ITEM_TYPE_NAMES[itemType.getTypeID()]);
             JsonArray itemDataArray = typedItemObject.getAsJsonArray("m_pItemData");
             JsonArray itemStringArray = typedItemObject.getAsJsonArray("m_pItemStringData");
             JsonArray itemIconArray = typedItemObject.getAsJsonArray("m_pItemIconData");
@@ -190,7 +216,7 @@ public class JSONManager {
                                 .get("m_strComment")
                                 .getAsString();
 
-                String iconName = String.format("%s_%02d", itemType.getIconPrefix(), itemIconArray
+                String iconName = String.format("%s_%02d", ITEM_ICON_NAMES[itemType.getTypeID()], itemIconArray
                         .get(itemData.get("m_iIcon").getAsInt())
                         .getAsJsonObject()
                         .get("m_iIconNumber")
