@@ -2,13 +2,12 @@ package finnhh.oftools.dropeditor.view.component;
 
 import javafx.scene.Node;
 import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
 
 import java.util.Objects;
 
 public class StandardSpinner extends Spinner<Integer> {
-    public StandardSpinner(SpinnerValueFactory<Integer> valueFactory) {
-        super(valueFactory);
+    public StandardSpinner(int min, int max, int initialValue) {
+        super(min, max, initialValue);
 
         setEditable(true);
         getEditor().setOnAction(event -> {
@@ -28,9 +27,5 @@ public class StandardSpinner extends Spinner<Integer> {
             if (Objects.nonNull(decrement))
                 decrement.getOnMouseReleased().handle(null);
         });
-    }
-
-    public StandardSpinner(int min, int max, int initialValue) {
-        this(new SpinnerValueFactory.IntegerSpinnerValueFactory(min, max, initialValue));
     }
 }

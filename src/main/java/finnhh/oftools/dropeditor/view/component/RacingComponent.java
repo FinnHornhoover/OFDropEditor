@@ -14,13 +14,9 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -56,7 +52,7 @@ public class RacingComponent extends HBox implements RootDataComponent {
     private final List<ChangeListener<Crate>> crateValueListeners;
     private final List<EventHandler<MouseEvent>> removeClickHandlers;
 
-    public RacingComponent(MainController controller, ListView<Data> listView) {
+    public RacingComponent(MainController controller) {
         racing = new SimpleObjectProperty<>();
 
         this.controller = controller;
@@ -99,7 +95,7 @@ public class RacingComponent extends HBox implements RootDataComponent {
         getChildren().addAll(racingBorderPane, contentScrollPane);
         setHgrow(contentScrollPane, Priority.ALWAYS);
 
-        contentScrollPane.prefWidthProperty().bind(listView.widthProperty()
+        contentScrollPane.prefWidthProperty().bind(this.controller.getMainListView().widthProperty()
                 .subtract(racingInfoComponent.widthProperty())
                 .subtract(28));
         contentScrollPane.setMaxWidth(USE_PREF_SIZE);
@@ -107,110 +103,63 @@ public class RacingComponent extends HBox implements RootDataComponent {
         scoreVBoxCache = new ArrayList<>();
         crateTypeBoxCache = new ArrayList<>();
 
-        timeLimitListener = (o, oldVal, newVal) -> {
-            unbindListVariables();
-
-            makeEditable(this.controller.getDrops());
-
-            racing.get().setTimeLimit(newVal);
-            timeLimitSpinner.getValueFactory().setValue(newVal);
-
-            bindListVariables();
-        };
-        racingRemoveClickHandler = event -> {
-            this.controller.getDrops().remove(racing.get());
-            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(racing.get()));
-            listView.getItems().remove(racing.get());
-        };
+        timeLimitListener = (o, oldVal, newVal) -> makeEdit(() -> racing.get().setTimeLimit(newVal));
+        racingRemoveClickHandler = event -> onRemoveClick();
 
         spinnerValueListeners = new ArrayList<>();
         crateValueListeners = new ArrayList<>();
         removeClickHandlers = new ArrayList<>();
-
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        racingInfoComponent.setDisable(true);
-        racingDataVBox.setDisable(true);
-        setIdDisable(true);
-
-        racing.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                racingInfoComponent.setDisable(true);
-                racingDataVBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                racingInfoComponent.setDisable(false);
-                racingDataVBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
     }
 
-    private void bindListVariables() {
-        var scoresChildren = scoreHBox.getChildren().filtered(c -> c instanceof ScoreVBox);
-        var rewardsChildren = rewardHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
-
-        for (int index = 0; index < scoresChildren.size(); index++) {
-            ScoreVBox svb = (ScoreVBox) scoresChildren.get(index);
-            CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) rewardsChildren.get(index);
-
-            final int finalIndex = index;
-
-            spinnerValueListeners.add((o, oldVal, newVal) -> {
-                makeEditable(controller.getDrops());
-                racing.get().getRankScores().set(finalIndex, newVal);
-
-                ScoreVBox current = (ScoreVBox) scoreHBox.getChildren()
-                        .filtered(c -> c instanceof ScoreVBox)
-                        .get(finalIndex);
-                current.getSpinner().getValueFactory().setValue(newVal);
-            });
-            crateValueListeners.add((o, oldVal, newVal) -> {
-                makeEditable(controller.getDrops());
-                racing.get().getRewards().set(finalIndex,
-                        Objects.isNull(newVal) ? Crate.INT_CRATE_PLACEHOLDER_ID : newVal.getCrateID());
-
-                CrateTypeBoxComponent current = (CrateTypeBoxComponent) rewardHBox.getChildren()
-                        .filtered(c -> c instanceof CrateTypeBoxComponent)
-                        .get(finalIndex);
-                current.setObservable(newVal);
-            });
-            removeClickHandlers.add(event -> {
-                makeEditable(controller.getDrops());
-                racing.get().getRewards().set(finalIndex, Crate.INT_CRATE_PLACEHOLDER_ID);
-
-                CrateTypeBoxComponent current = (CrateTypeBoxComponent) rewardHBox.getChildren()
-                        .filtered(c -> c instanceof CrateTypeBoxComponent)
-                        .get(finalIndex);
-                current.setObservable(null);
-            });
-
-            svb.getSpinner().valueProperty().addListener(spinnerValueListeners.get(index));
-            ctb.crateProperty().addListener(crateValueListeners.get(index));
-            ctb.getRemoveButton().addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
-        }
+    @Override
+    public MainController getController() {
+        return controller;
     }
 
-    private void unbindListVariables() {
-        var scoresChildren = scoreHBox.getChildren().filtered(c -> c instanceof ScoreVBox);
-        var rewardsChildren = rewardHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
-
-        for (int index = 0; index < scoresChildren.size(); index++) {
-            ScoreVBox svb = (ScoreVBox) scoresChildren.get(index);
-            CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) rewardsChildren.get(index);
-
-            svb.getSpinner().valueProperty().removeListener(spinnerValueListeners.get(index));
-            ctb.crateProperty().removeListener(crateValueListeners.get(index));
-            ctb.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
-        }
-
-        spinnerValueListeners.clear();
-        crateValueListeners.clear();
-        removeClickHandlers.clear();
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
     }
 
-    private void populateListBoxes() {
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(racingInfoComponent, racingDataVBox);
+    }
+
+    @Override
+    public Class<Racing> getObservableClass() {
+        return Racing.class;
+    }
+
+    @Override
+    public ReadOnlyObjectProperty<Racing> getObservable() {
+        return racing;
+    }
+
+    @Override
+    public void setObservable(Data data) {
+        racing.set((Racing) data);
+    }
+
+    @Override
+    public void cleanUIState() {
+        RootDataComponent.super.cleanUIState();
+
+        racingInfoComponent.setObservableAndState(null);
+        timeLimitSpinner.getValueFactory().setValue(0);
+
+        scoreHBox.getChildren().clear();
+        rewardHBox.getChildren().clear();
+    }
+
+    @Override
+    public void fillUIState() {
+        RootDataComponent.super.fillUIState();
+
+        racingInfoComponent.setObservableAndState(controller.getStaticDataStore().getEPInstanceMap().get(
+                racing.get().getEPID()));
+        timeLimitSpinner.getValueFactory().setValue(racing.get().getTimeLimit());
+
         var scores = racing.get().getRankScores();
         var crateIDs = racing.get().getRewards();
 
@@ -237,45 +186,64 @@ public class RacingComponent extends HBox implements RootDataComponent {
         IntStream.range(0, crateIDs.size())
                 .mapToObj(i -> {
                     CrateTypeBoxComponent ctb = crateTypeBoxCache.get(i);
-                    ctb.setObservable(controller.getDrops().getCrates().get(crateIDs.get(i)));
+                    ctb.setObservableAndState(controller.getDrops().getCrates().get(crateIDs.get(i)));
                     return ctb;
                 })
                 .forEach(rewardHBox.getChildren()::add);
     }
 
     @Override
-    public Class<Racing> getObservableClass() {
-        return Racing.class;
+    public void bindVariablesNonNull() {
+        timeLimitSpinner.valueProperty().addListener(timeLimitListener);
+
+        var scoresChildren = scoreHBox.getChildren().filtered(c -> c instanceof ScoreVBox);
+        var rewardsChildren = rewardHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
+
+        IntStream.range(0, scoresChildren.size())
+                .forEach(index -> {
+                    ScoreVBox svb = (ScoreVBox) scoresChildren.get(index);
+                    CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) rewardsChildren.get(index);
+
+                    spinnerValueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
+                            racing.get().getRankScores().set(index, newVal)));
+                    crateValueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
+                            racing.get().getRewards().set(index,
+                                    Objects.isNull(newVal) ? Crate.INT_CRATE_PLACEHOLDER_ID : newVal.getCrateID())));
+                    removeClickHandlers.add(event -> makeEdit(() ->
+                            racing.get().getRewards().set(index, Crate.INT_CRATE_PLACEHOLDER_ID)));
+
+                    svb.getSpinner().valueProperty().addListener(spinnerValueListeners.get(index));
+                    ctb.crateProperty().addListener(crateValueListeners.get(index));
+                    ctb.getRemoveButton().addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
+                });
     }
 
     @Override
-    public ReadOnlyObjectProperty<Racing> getObservable() {
-        return racing;
+    public void bindVariablesNullable() {
+        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, racingRemoveClickHandler);
     }
 
     @Override
-    public void setObservable(Data data) {
+    public void unbindVariables() {
         removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, racingRemoveClickHandler);
         timeLimitSpinner.valueProperty().removeListener(timeLimitListener);
 
-        racing.set((Racing) data);
+        var scoresChildren = scoreHBox.getChildren().filtered(c -> c instanceof ScoreVBox);
+        var rewardsChildren = rewardHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
 
-        unbindListVariables();
-        scoreHBox.getChildren().clear();
-        rewardHBox.getChildren().clear();
+        IntStream.range(0, scoresChildren.size())
+                .forEach(index -> {
+                    ScoreVBox svb = (ScoreVBox) scoresChildren.get(index);
+                    CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) rewardsChildren.get(index);
 
-        if (racing.isNull().get()) {
-            racingInfoComponent.setObservable(null);
-            timeLimitSpinner.getValueFactory().setValue(0);
-        } else {
-            racingInfoComponent.setObservable(controller.getStaticDataStore().getEPInstanceMap().get(racing.get().getEPID()));
-            timeLimitSpinner.getValueFactory().setValue(racing.get().getTimeLimit());
-            populateListBoxes();
-            bindListVariables();
-            timeLimitSpinner.valueProperty().addListener(timeLimitListener);
-        }
+                    svb.getSpinner().valueProperty().removeListener(spinnerValueListeners.get(index));
+                    ctb.crateProperty().removeListener(crateValueListeners.get(index));
+                    ctb.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandlers.get(index));
+                });
 
-        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, racingRemoveClickHandler);
+        spinnerValueListeners.clear();
+        crateValueListeners.clear();
+        removeClickHandlers.clear();
     }
 
     @Override
@@ -309,11 +277,6 @@ public class RacingComponent extends HBox implements RootDataComponent {
         ));
 
         return allValues;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
     }
 
     @Override

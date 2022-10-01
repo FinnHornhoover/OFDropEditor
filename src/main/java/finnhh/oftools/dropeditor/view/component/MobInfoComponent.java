@@ -8,13 +8,9 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
-
-import java.io.ByteArrayInputStream;
 
 public class MobInfoComponent extends VBox implements ObservableComponent<MobTypeInfo> {
     private final ObjectProperty<MobTypeInfo> mobTypeInfo;
@@ -23,7 +19,7 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     private final MobInfoTooltipComponent mobInfoTooltipComponent;
     private final Label mobNameLabel;
-    private final ImageView iconView;
+    private final StandardImageView iconView;
 
     public MobInfoComponent(double width, MainController controller) {
         mobTypeInfo = new SimpleObjectProperty<>();
@@ -40,11 +36,7 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
         mobNameLabel.setTextAlignment(TextAlignment.CENTER);
         mobNameLabel.setTooltip(tooltip);
 
-        iconView = new ImageView();
-        iconView.setFitWidth(64);
-        iconView.setFitHeight(64);
-        iconView.setPreserveRatio(true);
-        iconView.setCache(true);
+        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
         Tooltip.install(iconView, tooltip);
 
         setSpacing(2);
@@ -53,6 +45,11 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
         setMaxWidth(width);
         getChildren().addAll(mobNameLabel, iconView);
         getStyleClass().add("bordered-pane");
+    }
+
+    @Override
+    public MainController getController() {
+        return controller;
     }
 
     @Override
@@ -67,21 +64,21 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     @Override
     public void setObservable(MobTypeInfo data) {
-        var iconMap = controller.getIconManager().getIconMap();
-
         mobTypeInfo.set(data);
-        mobInfoTooltipComponent.setObservable(data);
+    }
 
-        String name = mobTypeInfo.isNull().get() ?
-                "Unknown Mob" :
-                mobTypeInfo.get().name();
-        byte[] defaultIcon = iconMap.get("unknown");
-        byte[] icon = mobTypeInfo.isNull().get() ?
-                defaultIcon :
-                iconMap.getOrDefault(mobTypeInfo.get().iconName(), defaultIcon);
+    @Override
+    public void cleanUIState() {
+        mobInfoTooltipComponent.setObservableAndState(null);
+        mobNameLabel.setText("Unknown Mob");
+        iconView.cleanImage();
+    }
 
-        mobNameLabel.setText(name);
-        iconView.setImage(new Image(new ByteArrayInputStream(icon)));
+    @Override
+    public void fillUIState() {
+        mobInfoTooltipComponent.setObservableAndState(mobTypeInfo.get());
+        mobNameLabel.setText(mobTypeInfo.get().name());
+        iconView.setImage(mobTypeInfo.get().iconName());
     }
 
     public MobTypeInfo getMobTypeInfo() {
@@ -100,7 +97,7 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
         return mobNameLabel;
     }
 
-    public ImageView getIconView() {
+    public StandardImageView getIconView() {
         return iconView;
     }
 
@@ -110,6 +107,11 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
         public MobInfoTooltipComponent(MainController controller) {
             super(controller);
             mobTypeInfo = new SimpleObjectProperty<>();
+        }
+
+        @Override
+        public MainController getController() {
+            return controller;
         }
 
         @Override
@@ -125,11 +127,16 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
         @Override
         public void setObservable(MobTypeInfo data) {
             mobTypeInfo.set(data);
+        }
 
+        @Override
+        public void cleanUIState() {
             clearMaps();
+        }
 
-            if (mobTypeInfo.isNotNull().get())
-                arrangeMobLocationMaps(mobTypeInfo.get().type());
+        @Override
+        public void fillUIState() {
+            arrangeMobLocationMaps(mobTypeInfo.get().type());
         }
     }
 }

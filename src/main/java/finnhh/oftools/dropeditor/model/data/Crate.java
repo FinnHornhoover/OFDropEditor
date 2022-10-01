@@ -4,8 +4,10 @@ import com.google.gson.annotations.Expose;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+@IdMeaningful
 public class Crate extends Data {
     public static final int INT_CRATE_PLACEHOLDER_ID = 0;
+    public static final int TYPE = 9;
 
     @Expose
     private final IntegerProperty crateID;
@@ -33,9 +35,9 @@ public class Crate extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(crateID.lessThan(0)
-                .or(itemSetID.lessThan(0))
-                .or(rarityWeightID.lessThan(0)));
+        malformed.bind(crateID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
+                .or(itemSetID.lessThanOrEqualTo(INT_PLACEHOLDER_ID))
+                .or(rarityWeightID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)));
 
         id.set(String.valueOf(crateID.get()));
         crateID.addListener((o, oldVal, newVal) -> id.set(String.valueOf(newVal.intValue())));

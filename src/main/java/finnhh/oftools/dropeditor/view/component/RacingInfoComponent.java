@@ -8,12 +8,9 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 
-import java.io.ByteArrayInputStream;
 import java.util.Optional;
 
 public class RacingInfoComponent extends VBox implements ObservableComponent<InstanceInfo> {
@@ -22,7 +19,7 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
     private final MainController controller;
 
     private final Label izNameLabel;
-    private final ImageView iconView;
+    private final StandardImageView iconView;
     private final Label entryLabel;
 
     public RacingInfoComponent(double width, MainController controller) {
@@ -34,11 +31,7 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
         izNameLabel.setWrapText(true);
         izNameLabel.setTextAlignment(TextAlignment.CENTER);
 
-        iconView = new ImageView();
-        iconView.setFitWidth(64);
-        iconView.setFitHeight(64);
-        iconView.setPreserveRatio(true);
-        iconView.setCache(true);
+        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
         entryLabel = new Label();
         entryLabel.setWrapText(true);
@@ -53,6 +46,11 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
     }
 
     @Override
+    public MainController getController() {
+        return controller;
+    }
+
+    @Override
     public Class<InstanceInfo> getObservableClass() {
         return InstanceInfo.class;
     }
@@ -64,28 +62,28 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
 
     @Override
     public void setObservable(InstanceInfo data) {
-        var iconMap = controller.getIconManager().getIconMap();
-        var npcInfoMap = controller.getStaticDataStore().getNpcInfoMap();
-        var mapRegionList = controller.getStaticDataStore().getMapRegionInfoList();
-
         instanceInfo.set(data);
+    }
 
-        String name = instanceInfo.isNull().get() ?
-                "Unknown" :
-                instanceInfo.get().name();
-        byte[] defaultIcon = iconMap.get("unknown");
-        byte[] icon = instanceInfo.isNull().get() ?
-                defaultIcon :
-                iconMap.getOrDefault(String.format("ep_small_%02d", instanceInfo.get().EPID()), defaultIcon);
+    @Override
+    public void cleanUIState() {
+        izNameLabel.setText("Unknown");
+        entryLabel.setText(MapRegionInfo.UNKNOWN.areaName() + " - " + MapRegionInfo.UNKNOWN.zoneName());
+        iconView.cleanImage();
+    }
+
+    @Override
+    public void fillUIState() {
         MapRegionInfo entryRegion = Optional.ofNullable(instanceInfo.get())
-                .flatMap(ii -> InstanceInfo.getOverworldNPCLocations(mapRegionList, ii.getEntryWarpNPCs(npcInfoMap))
-                        .stream().findFirst())
+                .flatMap(ii -> InstanceInfo.getOverworldNPCLocations(
+                                controller.getStaticDataStore().getMapRegionInfoList(),
+                                ii.getEntryWarpNPCs(controller.getStaticDataStore().getNpcInfoMap())
+                        ).stream().findFirst())
                 .orElse(MapRegionInfo.UNKNOWN);
-        String entry = entryRegion.areaName() + " - " + entryRegion.zoneName();
 
-        izNameLabel.setText(name);
-        iconView.setImage(new Image(new ByteArrayInputStream(icon)));
-        entryLabel.setText(entry);
+        izNameLabel.setText(instanceInfo.get().name());
+        entryLabel.setText(entryRegion.areaName() + " - " + entryRegion.zoneName());
+        iconView.setImage(String.format("ep_small_%02d", instanceInfo.get().EPID()));
     }
 
     public InstanceInfo getInstanceInfo() {
@@ -96,11 +94,11 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
         return instanceInfo;
     }
 
-    public Label getIzNameLabel() {
+    public Label getIZNameLabel() {
         return izNameLabel;
     }
 
-    public ImageView getIconView() {
+    public StandardImageView getIconView() {
         return iconView;
     }
 

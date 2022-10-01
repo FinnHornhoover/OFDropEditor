@@ -2,7 +2,9 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.data.*;
+import finnhh.oftools.dropeditor.model.data.Data;
+import finnhh.oftools.dropeditor.model.data.Drops;
+import finnhh.oftools.dropeditor.model.data.MobDrop;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -12,10 +14,12 @@ import javafx.scene.Group;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class MobDropComponent extends BorderPane implements DataComponent {
@@ -69,24 +73,23 @@ public class MobDropComponent extends BorderPane implements DataComponent {
         setLeft(idGroup);
         setCenter(contentVBox);
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentVBox.setDisable(true);
-        setIdDisable(true);
-
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
-                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
+                .ifPresent(this::makeReplacement);
+    }
 
-        mobDrop.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentVBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentVBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+    @Override
+    public MainController getController() {
+        return controller;
+    }
+
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentVBox);
     }
 
     @Override
@@ -101,53 +104,62 @@ public class MobDropComponent extends BorderPane implements DataComponent {
 
     @Override
     public void setObservable(Data data) {
-        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-
         mobDrop.set((MobDrop) data);
+    }
 
-        if (mobDrop.isNull().get()) {
-            crateDropChanceComponent.setObservable(null);
-            crateDropTypeComponent.setObservable(null);
-            miscDropChanceComponent.setObservable(null);
-            miscDropTypeComponent.setObservable(null);
-        } else {
-            var drops = controller.getDrops();
+    @Override
+    public void cleanUIState() {
+        DataComponent.super.cleanUIState();
 
-            crateDropChanceComponent.setObservable(
-                    drops.getCrateDropChances().get(mobDrop.get().getCrateDropChanceID()));
-            crateDropTypeComponent.setObservable(
-                    drops.getCrateDropTypes().get(mobDrop.get().getCrateDropTypeID()));
-            miscDropChanceComponent.setObservable(
-                    drops.getMiscDropChances().get(mobDrop.get().getMiscDropChanceID()));
-            miscDropTypeComponent.setObservable(
-                    drops.getMiscDropTypes().get(mobDrop.get().getMiscDropTypeID()));
-        }
+        crateDropChanceComponent.setObservableAndState(null);
+        crateDropTypeComponent.setObservableAndState(null);
+        miscDropChanceComponent.setObservableAndState(null);
+        miscDropTypeComponent.setObservableAndState(null);
+    }
 
+    @Override
+    public void fillUIState() {
+        DataComponent.super.fillUIState();
+
+        var drops = controller.getDrops();
+
+        crateDropChanceComponent.setObservableAndState(
+                drops.getCrateDropChances().get(mobDrop.get().getCrateDropChanceID()));
+        crateDropTypeComponent.setObservableAndState(
+                drops.getCrateDropTypes().get(mobDrop.get().getCrateDropTypeID()));
+        miscDropChanceComponent.setObservableAndState(
+                drops.getMiscDropChances().get(mobDrop.get().getMiscDropChanceID()));
+        miscDropTypeComponent.setObservableAndState(
+                drops.getMiscDropTypes().get(mobDrop.get().getMiscDropTypeID()));
+    }
+
+    @Override
+    public void bindVariablesNullable() {
         idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     @Override
-    public void refreshObservable(Drops drops) {
-        CrateDropChance newCrateDropChance = crateDropChanceComponent.getCrateDropChance();
-        CrateDropType newCrateDropType = crateDropTypeComponent.getCrateDropType();
-        MiscDropChance newMiscDropChance = miscDropChanceComponent.getMiscDropChance();
-        MiscDropType newMiscDropType = miscDropTypeComponent.getMiscDropType();
+    public void unbindVariables() {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    }
 
-        if (Objects.nonNull(newCrateDropChance)
-                && newCrateDropChance.getCrateDropChanceID() != mobDrop.get().getCrateDropChanceID())
-            mobDrop.get().setCrateDropChanceID(newCrateDropChance.getCrateDropChanceID());
+    @Override
+    public void updateObservableFromUI(Drops drops) {
+        Optional.ofNullable(crateDropChanceComponent.getCrateDropChance())
+                .filter(cdc -> cdc.getCrateDropChanceID() != mobDrop.get().getCrateDropChanceID())
+                .ifPresent(cdc -> mobDrop.get().setCrateDropChanceID(cdc.getCrateDropChanceID()));
 
-        if (Objects.nonNull(newCrateDropType)
-                && newCrateDropType.getCrateDropTypeID() != mobDrop.get().getCrateDropTypeID())
-            mobDrop.get().setCrateDropTypeID(newCrateDropType.getCrateDropTypeID());
+        Optional.ofNullable(crateDropTypeComponent.getCrateDropType())
+                .filter(cdt -> cdt.getCrateDropTypeID() != mobDrop.get().getCrateDropTypeID())
+                .ifPresent(cdt -> mobDrop.get().setCrateDropTypeID(cdt.getCrateDropTypeID()));
 
-        if (Objects.nonNull(newMiscDropChance)
-                && newMiscDropChance.getMiscDropChanceID() != mobDrop.get().getMiscDropChanceID())
-            mobDrop.get().setMiscDropChanceID(newMiscDropChance.getMiscDropChanceID());
+        Optional.ofNullable(miscDropChanceComponent.getMiscDropChance())
+                .filter(mdc -> mdc.getMiscDropChanceID() != mobDrop.get().getMiscDropChanceID())
+                .ifPresent(mdc -> mobDrop.get().setMiscDropChanceID(mdc.getMiscDropChanceID()));
 
-        if (Objects.nonNull(newMiscDropType)
-                && newMiscDropType.getMiscDropTypeID() != mobDrop.get().getMiscDropTypeID())
-            mobDrop.get().setMiscDropTypeID(newMiscDropType.getMiscDropTypeID());
+        Optional.ofNullable(miscDropTypeComponent.getMiscDropType())
+                .filter(mdt -> mdt.getMiscDropTypeID() != mobDrop.get().getMiscDropTypeID())
+                .ifPresent(mdt -> mobDrop.get().setMiscDropTypeID(mdt.getMiscDropTypeID()));
     }
 
     @Override
@@ -189,6 +201,11 @@ public class MobDropComponent extends BorderPane implements DataComponent {
         return allValues;
     }
 
+    @Override
+    public DataComponent getParentComponent() {
+        return parent;
+    }
+
     public double getBoxSpacing() {
         return boxSpacing;
     }
@@ -227,15 +244,5 @@ public class MobDropComponent extends BorderPane implements DataComponent {
 
     public Group getIdGroup() {
         return idGroup;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
-    @Override
-    public DataComponent getParentComponent() {
-        return parent;
     }
 }

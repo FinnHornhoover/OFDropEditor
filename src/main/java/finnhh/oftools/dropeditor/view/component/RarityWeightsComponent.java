@@ -25,9 +25,11 @@ import javafx.scene.control.Slider;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class RarityWeightsComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<RarityWeights> rarityWeights;
@@ -70,81 +72,23 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
         valueListeners = new ArrayList<>();
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentVBox.setDisable(true);
-        setIdDisable(true);
-
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
-                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
-
-        // both makeEditable and setObservable sets the observable, just use a listener here
-        rarityWeights.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentVBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentVBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+                .ifPresent(this::makeReplacement);
     }
 
-    private void bindListVariables() {
-        DoubleExpression totalExpression = contentVBox.getChildren().stream()
-                .filter(c -> c instanceof RarityHBox)
-                .map(c -> DoubleBinding.doubleExpression(
-                        ((RarityHBox) c).getSpinner().valueProperty()))
-                .reduce(DoubleExpression::add)
-                .orElse(Bindings.createDoubleBinding(() -> 0.0));
-
-        var children = contentVBox.getChildren().filtered(c -> c instanceof RarityHBox);
-
-        for (int index = 0; index < children.size(); index++) {
-            RarityHBox rhb = (RarityHBox) children.get(index);
-
-            rhb.getPercentageLabel().textProperty().bind(
-                    DoubleBinding.doubleExpression(rhb.getSpinner().valueProperty())
-                            .multiply(100.0)
-                            .divide(Bindings.max(1.0, totalExpression))
-                            .asString(Locale.US, "%.5f%%")
-            );
-
-            rhb.getPercentageSlider().valueProperty().bind(
-                    DoubleBinding.doubleExpression(rhb.getSpinner().valueProperty())
-                            .multiply(100.0)
-                            .divide(Bindings.max(1.0, totalExpression))
-            );
-
-            final int finalIndex = index;
-            valueListeners.add((o, oldVal, newVal) -> {
-                makeEditable(controller.getDrops());
-                rarityWeights.get().getWeights().set(finalIndex, newVal);
-
-                RarityHBox current = (RarityHBox) contentVBox.getChildren()
-                        .filtered(c -> c instanceof RarityHBox)
-                        .get(finalIndex);
-                current.getSpinner().getValueFactory().setValue(newVal);
-            });
-            rhb.getSpinner().valueProperty().addListener(valueListeners.get(index));
-        }
+    @Override
+    public MainController getController() {
+        return controller;
     }
 
-    private void unbindListVariables() {
-        var children = contentVBox.getChildren().filtered(c -> c instanceof RarityHBox);
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
 
-        for (int index = 0; index < children.size(); index++) {
-            RarityHBox rhb = (RarityHBox) children.get(index);
-
-            rhb.getPercentageLabel().textProperty().unbind();
-
-            rhb.getPercentageSlider().valueProperty().unbind();
-
-            rhb.getSpinner().valueProperty().removeListener(valueListeners.get(index));
-        }
-
-        valueListeners.clear();
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentVBox);
     }
 
     @Override
@@ -159,31 +103,90 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
     @Override
     public void setObservable(Data data) {
+        rarityWeights.set((RarityWeights) data);
+    }
+
+    @Override
+    public void cleanUIState() {
+        DataComponent.super.cleanUIState();
+
+        contentVBox.getChildren().clear();
+    }
+
+    @Override
+    public void fillUIState() {
+        DataComponent.super.fillUIState();
+
+        ObservableList<Integer> weights = rarityWeights.get().getWeights();
+
+        IntStream.range(0, Rarity.values().length - 1)
+                .forEach(index -> {
+                    int weight = index < weights.size() ? weights.get(index) : 0;
+
+                    contentVBox.getChildren().add(new RarityHBox(boxWidth, 2,
+                            Rarity.forType(index + 1).getName(), weight));
+
+                    // should be safe, since this is what the omission of rarity weights mean
+                    if (index >= weights.size())
+                        weights.add(0);
+                });
+    }
+
+    @Override
+    public void bindVariablesNonNull() {
+        DoubleExpression totalExpression = contentVBox.getChildren().stream()
+                .filter(c -> c instanceof RarityHBox)
+                .map(c -> DoubleBinding.doubleExpression(
+                        ((RarityHBox) c).getSpinner().valueProperty()))
+                .reduce(DoubleExpression::add)
+                .orElse(Bindings.createDoubleBinding(() -> 0.0));
+
+        var children = contentVBox.getChildren().filtered(c -> c instanceof RarityHBox);
+
+        IntStream.range(0, children.size())
+                .forEach(index -> {
+                    RarityHBox rhb = (RarityHBox) children.get(index);
+
+                    rhb.getPercentageLabel().textProperty().bind(
+                            DoubleBinding.doubleExpression(rhb.getSpinner().valueProperty())
+                                    .multiply(100.0)
+                                    .divide(Bindings.max(1.0, totalExpression))
+                                    .asString(Locale.US, "%.5f%%")
+                    );
+
+                    rhb.getPercentageSlider().valueProperty().bind(
+                            DoubleBinding.doubleExpression(rhb.getSpinner().valueProperty())
+                                    .multiply(100.0)
+                                    .divide(Bindings.max(1.0, totalExpression))
+                    );
+
+                    valueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
+                            rarityWeights.get().getWeights().set(index, newVal)));
+                    rhb.getSpinner().valueProperty().addListener(valueListeners.get(index));
+                });
+    }
+
+    @Override
+    public void bindVariablesNullable() {
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
         idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
 
-        rarityWeights.set((RarityWeights) data);
+        var children = contentVBox.getChildren().filtered(c -> c instanceof RarityHBox);
 
-        unbindListVariables();
-        contentVBox.getChildren().clear();
+        IntStream.range(0, children.size())
+                .forEach(index -> {
+                    RarityHBox rhb = (RarityHBox) children.get(index);
 
-        if (rarityWeights.isNotNull().get()) {
-            ObservableList<Integer> weights = rarityWeights.get().getWeights();
+                    rhb.getPercentageLabel().textProperty().unbind();
+                    rhb.getPercentageSlider().valueProperty().unbind();
+                    rhb.getSpinner().valueProperty().removeListener(valueListeners.get(index));
+                });
 
-            for (int index = 0; index < Rarity.values().length - 1; index++) {
-                int weight = index < weights.size() ? weights.get(index) : 0;
-
-                contentVBox.getChildren().add(new RarityHBox(boxWidth, 2,
-                        Rarity.forType(index + 1).getName(), weight));
-
-                // should be safe, since this is what the omission of rarity weights mean
-                if (index >= weights.size())
-                    weights.add(0);
-            }
-
-            bindListVariables();
-        }
-
-        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+        valueListeners.clear();
     }
 
     @Override
@@ -192,29 +195,28 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
         String[] rarities = new String[] { "common", "uncommon", "rare", "ultraRare" };
 
-        for (int i = 0; i < rarities.length; i++) {
-            final int index = i;
+        IntStream.range(0, rarities.length)
+                .forEach(index -> {
+                    allValues.add(new FilterChoice(
+                            FilterType.INTEGER,
+                            op -> op.map(o -> (RarityWeights) o)
+                                    .map(rw -> Bindings.integerValueAt(rw.getWeights(), index))
+                                    .stream().toList(),
+                            List.of(rarities[index] + "Weight", getObservableClass().getSimpleName())
+                    ));
 
-            allValues.add(new FilterChoice(
-                    FilterType.INTEGER,
-                    op -> op.map(o -> (RarityWeights) o)
-                            .map(rw -> Bindings.integerValueAt(rw.getWeights(), index))
-                            .stream().toList(),
-                    List.of(rarities[index] + "Weight", getObservableClass().getSimpleName())
-            ));
-
-            allValues.add(new FilterChoice(
-                    FilterType.DOUBLE,
-                    op -> op.map(o -> (RarityWeights) o)
-                            .map(rw -> Bindings.integerValueAt(rw.getWeights(), index)
-                                    .multiply(100.0)
-                                    .divide(Bindings.createIntegerBinding(() ->
-                                            rw.getWeights().stream().reduce(0, Integer::sum),
-                                            rw.getWeights())))
-                            .stream().toList(),
-                    List.of(rarities[index] + "Percent", getObservableClass().getSimpleName())
-            ));
-        }
+                    allValues.add(new FilterChoice(
+                            FilterType.DOUBLE,
+                            op -> op.map(o -> (RarityWeights) o)
+                                    .map(rw -> Bindings.integerValueAt(rw.getWeights(), index)
+                                            .multiply(100.0)
+                                            .divide(Bindings.createIntegerBinding(() ->
+                                                            rw.getWeights().stream().reduce(0, Integer::sum),
+                                                    rw.getWeights())))
+                                    .stream().toList(),
+                            List.of(rarities[index] + "Percent", getObservableClass().getSimpleName())
+                    ));
+                });
 
         allValues.add(new FilterChoice(
                 FilterType.LIST,
@@ -229,6 +231,11 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
         ));
 
         return allValues;
+    }
+
+    @Override
+    public DataComponent getParentComponent() {
+        return parent;
     }
 
     public double getBoxSpacing() {
@@ -249,16 +256,6 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
 
     public VBox getContentVBox() {
         return contentVBox;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
-    @Override
-    public DataComponent getParentComponent() {
-        return parent;
     }
 
     public static class RarityHBox extends HBox {

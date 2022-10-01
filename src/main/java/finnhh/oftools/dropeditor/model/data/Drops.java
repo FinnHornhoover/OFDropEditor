@@ -441,7 +441,8 @@ public class Drops extends Data {
             int intKey = getNextTrueID();
             String id = data.getId();
 
-            if (!id.equals(PLACEHOLDER_ID) && !id.equals(UNSET_ID)) {
+            if (data.getClass().isAnnotationPresent(IdMeaningful.class) &&
+                    !id.equals(PLACEHOLDER_ID) && !id.equals(UNSET_ID)) {
                 try {
                     intKey = Integer.parseInt(id);
                 } catch (NumberFormatException ignored) {

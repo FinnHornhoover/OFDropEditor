@@ -41,7 +41,7 @@ public class ItemDrop extends ItemReference {
     public void constructBindings() {
         super.constructBindings();
         malformed.unbind();
-        malformed.bind(itemReferenceID.lessThan(0)
+        malformed.bind(itemReferenceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(itemID.lessThan(0))
                 .or(type.lessThan(0))
                 .or(weight.lessThan(0)));

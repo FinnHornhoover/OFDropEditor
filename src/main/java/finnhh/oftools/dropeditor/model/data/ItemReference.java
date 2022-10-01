@@ -31,7 +31,7 @@ public class ItemReference extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(itemReferenceID.lessThan(0)
+        malformed.bind(itemReferenceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(itemID.lessThan(0))
                 .or(type.lessThan(0)));
 

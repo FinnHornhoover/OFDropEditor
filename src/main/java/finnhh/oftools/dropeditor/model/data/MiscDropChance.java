@@ -75,7 +75,7 @@ public class MiscDropChance extends Data {
         fmDropChance.addListener((o, oldVal, newVal) ->
                 fmDropChance.set(Math.min(Math.max(0, newVal.intValue()), fmDropChanceTotal.get())));
 
-        malformed.bind(miscDropChanceID.lessThan(0)
+        malformed.bind(miscDropChanceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(potionDropChanceTotal.lessThan(1))
                 .or(potionDropChance.lessThan(0))
                 .or(potionDropChanceTotal.lessThan(potionDropChance))

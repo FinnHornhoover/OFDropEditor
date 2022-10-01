@@ -26,16 +26,14 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.util.Pair;
 import org.controlsfx.control.ToggleSwitch;
 
-import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -179,18 +177,11 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
                 if (!event.isConsumed() && !valGetter.apply(itemDrop).equals(newVal)) {
                     event.consume();
-                    makeEditable(controller.getDrops());
-
-                    unbindVariables();
-
-                    handler.accept(itemDrop, newVal);
+                    makeEdit(() -> handler.accept(itemDrop, newVal));
 
                     rarityViewSettingsChoiceBox.setValue(rarity);
                     genderViewSettingsChoiceBox.setValue(gender);
-
                     itemSetComponent.requestFocus();
-                    refreshItemDrops();
-                    bindVariables();
                 }
             }
 
@@ -212,12 +203,12 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                                 alterWeightMap.put(itemReferenceID, newVal);
                         }
                 );
-                removeClickHandler = event -> {
-                    if (!event.isConsumed()) {
-                        event.consume();
-                        itemDropRemoved(itemDropVBox.getItemDrop().getItemReferenceID());
-                    }
-                };
+                removeClickHandler = event -> handleEvent(
+                        event,
+                        itemDropVBox.getIdLabel()::getText,
+                        idr -> "<REMOVE>",
+                        (idr, newVal) -> itemSet.get().getItemReferenceIDs().remove((Integer) idr.getItemReferenceID())
+                );
                 rarityHandler = event -> handleEvent(
                         event,
                         itemDropVBox.getRarityChoiceBox()::getValue,
@@ -287,7 +278,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                 unbindFor(getItem());
 
                 if (!empty) {
-                    itemDropVBox.setObservable(itemDrop);
+                    itemDropVBox.setObservableAndState(itemDrop);
                     bindFor(itemDrop);
                     setGraphic(itemDropVBox);
                 } else {
@@ -307,83 +298,62 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         setAlignment(idLabel, Pos.TOP_LEFT);
 
         defaultWeightRecalculateClickHandler = event -> {
-            unbindVariables();
             handleDefaultWeightChange();
-            refreshItemDrops();
-            bindVariables();
+            refreshObservableAndState();
         };
         defaultWeightListener = (o, oldVal, newVal) -> {
             Rarity rarity = rarityViewSettingsChoiceBox.getValue();
             Gender gender = genderViewSettingsChoiceBox.getValue();
 
-            makeEditable(this.controller.getDrops());
+            makeEdit(() -> {
+                itemSet.get().setDefaultItemWeight(newVal);
+                handleDefaultWeightChange();
+            });
 
-            unbindVariables();
-
-            itemSet.get().setDefaultItemWeight(newVal);
-            handleDefaultWeightChange();
             rarityViewSettingsChoiceBox.setValue(rarity);
             genderViewSettingsChoiceBox.setValue(gender);
-
-            refreshItemDrops();
-            bindVariables();
         };
         ignoreRarityListener = (o, oldVal, newVal) -> {
             Gender gender = genderViewSettingsChoiceBox.getValue();
 
-            makeEditable(this.controller.getDrops());
+            makeEdit(() -> itemSet.get().setIgnoreRarity(newVal));
 
-            unbindVariables();
-
-            itemSet.get().setIgnoreRarity(newVal);
             ignoreRarityButton.setSelected(newVal);
             rarityViewSettingsChoiceBox.setValue(Rarity.ANY);
             rarityViewSettingsChoiceBox.setDisable(newVal);
             genderViewSettingsChoiceBox.setValue(gender);
-
-            refreshListView();
-            bindVariables();
         };
         ignoreGenderListener = (o, oldVal, newVal) -> {
             Rarity rarity = rarityViewSettingsChoiceBox.getValue();
 
-            makeEditable(this.controller.getDrops());
+            makeEdit(() -> itemSet.get().setIgnoreGender(newVal));
 
-            unbindVariables();
-
-            itemSet.get().setIgnoreGender(newVal);
             ignoreGenderButton.setSelected(newVal);
             rarityViewSettingsChoiceBox.setValue(rarity);
             genderViewSettingsChoiceBox.setValue(Gender.ANY);
             genderViewSettingsChoiceBox.setDisable(newVal);
-
-            refreshListView();
-            bindVariables();
         };
         rarityViewSettingsListener = (o, oldVal, newVal) -> refreshListView();
         genderViewSettingsListener = (o, oldVal, newVal) -> refreshListView();
         addClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
-                .ifPresent(d -> itemDropAdded(((ItemReference) d).getItemReferenceID()));
+                .ifPresent(d -> {
+                    int newItemReferenceID = ((ItemReference) d).getItemReferenceID();
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentVBox.setDisable(true);
-        setIdDisable(true);
+                    if (!itemSet.get().getItemReferenceIDs().contains(newItemReferenceID)) {
+                        Rarity rarity = rarityViewSettingsChoiceBox.getValue();
+                        Gender gender = genderViewSettingsChoiceBox.getValue();
 
+                        makeEdit(() -> {
+                            itemSet.get().getItemReferenceIDs().add(newItemReferenceID);
+                            itemSet.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
+                        });
+
+                        rarityViewSettingsChoiceBox.setValue(rarity);
+                        genderViewSettingsChoiceBox.setValue(gender);
+                    }
+                });
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
-                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
-
-        // both makeEditable and setObservable sets the observable, just use a listener here
-        itemSet.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentVBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentVBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+                .ifPresent(this::makeReplacement);
     }
 
     private boolean itemIncluded(ItemDrop idr) {
@@ -391,26 +361,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                 controller.getStaticDataStore().getItemInfoMap().containsKey(new Pair<>(idr.getItemID(), idr.getType())) &&
                 (itemSet.get().getIgnoreRarity() || idr.getRarity().match(rarityViewSettingsChoiceBox.getValue())) &&
                 (itemSet.get().getIgnoreGender() || idr.getGender().match(genderViewSettingsChoiceBox.getValue()));
-    }
-
-    private void bindVariables() {
-        defaultWeightRecalculateButton.addEventHandler(ActionEvent.ACTION, defaultWeightRecalculateClickHandler);
-        defaultWeightSpinner.valueProperty().addListener(defaultWeightListener);
-        addButton.addEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
-        genderViewSettingsChoiceBox.valueProperty().addListener(genderViewSettingsListener);
-        rarityViewSettingsChoiceBox.valueProperty().addListener(rarityViewSettingsListener);
-        ignoreGenderButton.selectedProperty().addListener(ignoreGenderListener);
-        ignoreRarityButton.selectedProperty().addListener(ignoreRarityListener);
-    }
-
-    private void unbindVariables() {
-        ignoreRarityButton.selectedProperty().removeListener(ignoreRarityListener);
-        ignoreGenderButton.selectedProperty().removeListener(ignoreGenderListener);
-        rarityViewSettingsChoiceBox.valueProperty().removeListener(rarityViewSettingsListener);
-        genderViewSettingsChoiceBox.valueProperty().removeListener(genderViewSettingsListener);
-        addButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
-        defaultWeightSpinner.valueProperty().removeListener(defaultWeightListener);
-        defaultWeightRecalculateButton.removeEventHandler(ActionEvent.ACTION, defaultWeightRecalculateClickHandler);
     }
 
     private ItemDrop makeItemDrop(ItemReference ir, ItemSet itemSet) {
@@ -443,33 +393,12 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         return makeItemDrop(ir, itemSet.get());
     }
 
-    private void clearItemDrops() {
-        originalItemList.clear();
-        itemListView.getItems().clear();
-    }
-
-    private void populateItemDrops() {
-        itemSet.get().getItemReferenceIDs().stream()
-                .map(irID -> makeItemDrop(controller.getDrops().getItemReferences().get(irID)))
-                .forEach(originalItemList::add);
-
-        itemListView.getItems().addAll(originalItemList.stream()
-                .filter(this::itemIncluded)
-                .sorted(Comparator.comparingInt(ItemDrop::getWeight).reversed())
-                .toList());
-    }
-
     private void refreshListView() {
         itemListView.getItems().clear();
         itemListView.getItems().addAll(originalItemList.stream()
                 .filter(this::itemIncluded)
                 .sorted(Comparator.comparingInt(ItemDrop::getWeight).reversed())
                 .toList());
-    }
-
-    private void refreshItemDrops() {
-        clearItemDrops();
-        populateItemDrops();
     }
 
     private void handleDefaultWeightChange() {
@@ -513,63 +442,33 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         });
     }
 
-    public void itemDropAdded(Integer newItemReferenceID) {
-        Rarity rarity = rarityViewSettingsChoiceBox.getValue();
-        Gender gender = genderViewSettingsChoiceBox.getValue();
-
-        if (!itemSet.get().getItemReferenceIDs().contains(newItemReferenceID)) {
-            makeEditable(controller.getDrops());
-
-            unbindVariables();
-            clearItemDrops();
-
-            rarityViewSettingsChoiceBox.setValue(rarity);
-            genderViewSettingsChoiceBox.setValue(gender);
-
-            itemSet.get().getItemReferenceIDs().add(newItemReferenceID);
-            itemSet.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
-
-            populateItemDrops();
-            bindVariables();
-        }
-    }
-
-    public void itemDropRemoved(Integer itemReferenceID) {
-        Rarity rarity = rarityViewSettingsChoiceBox.getValue();
-        Gender gender = genderViewSettingsChoiceBox.getValue();
-
-        makeEditable(controller.getDrops());
-
-        unbindVariables();
-        clearItemDrops();
-
-        rarityViewSettingsChoiceBox.setValue(rarity);
-        genderViewSettingsChoiceBox.setValue(gender);
-
-        itemSet.get().getItemReferenceIDs().remove(itemReferenceID);
-
-        populateItemDrops();
-        bindVariables();
-    }
-
     public void itemDropChanged(Integer oldItemReferenceID, Integer newItemReferenceID) {
         Rarity rarity = rarityViewSettingsChoiceBox.getValue();
         Gender gender = genderViewSettingsChoiceBox.getValue();
 
-        makeEditable(controller.getDrops());
-
-        unbindVariables();
-        clearItemDrops();
+        makeEdit(() -> {
+            int index = itemSet.get().getItemReferenceIDs().indexOf(oldItemReferenceID);
+            itemSet.get().getItemReferenceIDs().set(index, newItemReferenceID);
+            itemSet.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
+        });
 
         rarityViewSettingsChoiceBox.setValue(rarity);
         genderViewSettingsChoiceBox.setValue(gender);
+    }
 
-        int index = itemSet.get().getItemReferenceIDs().indexOf(oldItemReferenceID);
-        itemSet.get().getItemReferenceIDs().set(index, newItemReferenceID);
-        itemSet.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
+    @Override
+    public MainController getController() {
+        return controller;
+    }
 
-        populateItemDrops();
-        bindVariables();
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentVBox);
     }
 
     @Override
@@ -584,30 +483,67 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
     @Override
     public void setObservable(Data data) {
-        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-
         itemSet.set((ItemSet) data);
+    }
 
-        unbindVariables();
+    @Override
+    public void cleanUIState() {
+        DataComponent.super.cleanUIState();
 
-        clearItemDrops();
+        originalItemList.clear();
+        itemListView.getItems().clear();
+
         ignoreRarityButton.setSelected(false);
         ignoreGenderButton.setSelected(false);
         defaultWeightSpinner.getValueFactory().setValue(1);
         rarityViewSettingsChoiceBox.setValue(Rarity.ANY);
         genderViewSettingsChoiceBox.setValue(Gender.ANY);
+    }
 
-        if (itemSet.isNotNull().get()) {
-            populateItemDrops();
+    @Override
+    public void fillUIState() {
+        DataComponent.super.fillUIState();
 
-            ignoreRarityButton.setSelected(itemSet.get().getIgnoreRarity());
-            ignoreGenderButton.setSelected(itemSet.get().getIgnoreGender());
-            defaultWeightSpinner.getValueFactory().setValue(itemSet.get().getDefaultItemWeight());
+        itemSet.get().getItemReferenceIDs().stream()
+                .map(irID -> makeItemDrop(controller.getDrops().getItemReferences().get(irID)))
+                .forEach(originalItemList::add);
 
-            bindVariables();
-        }
+        itemListView.getItems().addAll(originalItemList.stream()
+                .filter(this::itemIncluded)
+                .sorted(Comparator.comparingInt(ItemDrop::getWeight).reversed())
+                .toList());
 
+        ignoreRarityButton.setSelected(itemSet.get().getIgnoreRarity());
+        ignoreGenderButton.setSelected(itemSet.get().getIgnoreGender());
+        defaultWeightSpinner.getValueFactory().setValue(itemSet.get().getDefaultItemWeight());
+    }
+
+    @Override
+    public void bindVariablesNonNull() {
+        ignoreRarityButton.selectedProperty().addListener(ignoreRarityListener);
+        ignoreGenderButton.selectedProperty().addListener(ignoreGenderListener);
+        rarityViewSettingsChoiceBox.valueProperty().addListener(rarityViewSettingsListener);
+        genderViewSettingsChoiceBox.valueProperty().addListener(genderViewSettingsListener);
+        addButton.addEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
+        defaultWeightSpinner.valueProperty().addListener(defaultWeightListener);
+        defaultWeightRecalculateButton.addEventHandler(ActionEvent.ACTION, defaultWeightRecalculateClickHandler);
+    }
+
+    @Override
+    public void bindVariablesNullable() {
         idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+        ignoreRarityButton.selectedProperty().removeListener(ignoreRarityListener);
+        ignoreGenderButton.selectedProperty().removeListener(ignoreGenderListener);
+        rarityViewSettingsChoiceBox.valueProperty().removeListener(rarityViewSettingsListener);
+        genderViewSettingsChoiceBox.valueProperty().removeListener(genderViewSettingsListener);
+        addButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
+        defaultWeightSpinner.valueProperty().removeListener(defaultWeightListener);
+        defaultWeightRecalculateButton.removeEventHandler(ActionEvent.ACTION, defaultWeightRecalculateClickHandler);
     }
 
     @Override
@@ -630,6 +566,11 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         ));
 
         return allValues;
+    }
+
+    @Override
+    public DataComponent getParentComponent() {
+        return parent;
     }
 
     public ItemSet getItemSet() {
@@ -716,24 +657,13 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         return contentVBox;
     }
 
-    @Override
-    public DataComponent getParentComponent() {
-        return parent;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
     public static class ItemDropVBox extends VBox implements DataComponent {
         private final ObjectProperty<ItemDrop> itemDrop;
-        private final ObjectProperty<ItemInfo> itemInfo;
 
         private final MainController controller;
         private final ItemSetComponent parent;
 
-        private final ImageView iconView;
+        private final StandardImageView iconView;
         private final Label nameLabel;
         private final StandardSpinner spinner;
         private final Label percentageLabel;
@@ -753,16 +683,11 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                             ItemSetComponent parent) {
 
             itemDrop = new SimpleObjectProperty<>();
-            itemInfo = new SimpleObjectProperty<>();
 
             this.controller = controller;
             this.parent = parent;
 
-            iconView = new ImageView();
-            iconView.setFitWidth(64);
-            iconView.setFitHeight(64);
-            iconView.setPreserveRatio(true);
-            iconView.setCache(true);
+            iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
             nameLabel = new Label();
             spinner = new StandardSpinner(0, Integer.MAX_VALUE, 0);
@@ -797,10 +722,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             setSpacing(boxSpacing);
             getChildren().addAll(contentVBox, idHBox);
 
-            idLabel.setText(getObservableClass().getSimpleName() + ": null");
-            contentVBox.setDisable(true);
-            setIdDisable(true);
-
             // it is okay to just set the observable
             idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
                     .map(d -> this.parent.makeItemDrop((ItemReference) d))
@@ -809,19 +730,21 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                         setObservable(idr);
                         this.parent.itemDropChanged(oldID, idr.getItemReferenceID());
                     });
+        }
 
-            // both makeEditable and setObservable sets the observable, just use a listener here
-            itemDrop.addListener((o, oldVal, newVal) -> {
-                if (Objects.isNull(newVal)) {
-                    idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                    contentVBox.setDisable(true);
-                    setIdDisable(true);
-                } else {
-                    idLabel.setText(newVal.getIdBinding().getValueSafe());
-                    contentVBox.setDisable(false);
-                    setIdDisable(newVal.isMalformed());
-                }
-            });
+        @Override
+        public MainController getController() {
+            return controller;
+        }
+
+        @Override
+        public Label getIdLabel() {
+            return idLabel;
+        }
+
+        @Override
+        public List<Pane> getContentPanes() {
+            return List.of(contentVBox);
         }
 
         @Override
@@ -836,39 +759,46 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
         @Override
         public void setObservable(Data data) {
-            idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-
             itemDrop.set((ItemDrop) data);
+        }
 
-            var iconMap = controller.getIconManager().getIconMap();
-            byte[] defaultIcon = iconMap.get("unknown");
+        @Override
+        public void cleanUIState() {
+            DataComponent.super.cleanUIState();
+
+            spinner.getValueFactory().setValue(0);
+            rarityChoiceBox.setValue(Rarity.ANY);
+            genderChoiceBox.setValue(Gender.ANY);
 
             nameLabel.setText("<INVALID>");
-            iconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
-            contentVBox.setDisable(true);
+            iconView.cleanImage();
+        }
 
-            if (itemDrop.isNotNull().get()) {
-                ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
-                        itemDrop.get().getItemID(),
-                        itemDrop.get().getType()
-                ));
+        @Override
+        public void fillUIState() {
+            DataComponent.super.fillUIState();
 
-                if (Objects.nonNull(itemInfo)) {
-                    String name = itemInfo.name();
-                    byte[] icon = iconMap.getOrDefault(itemInfo.iconName(), defaultIcon);
+            spinner.getValueFactory().setValue(itemDrop.get().getWeight());
+            rarityChoiceBox.setValue(itemDrop.get().getRarity());
+            genderChoiceBox.setValue(itemDrop.get().getGender());
 
-                    this.itemInfo.set(itemInfo);
+            ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
+                    itemDrop.get().getItemID(), itemDrop.get().getType()));
 
-                    nameLabel.setText(name);
-                    iconView.setImage(new Image(new ByteArrayInputStream(icon)));
-                    spinner.getValueFactory().setValue(itemDrop.get().getWeight());
-                    rarityChoiceBox.setValue(itemDrop.get().getRarity());
-                    genderChoiceBox.setValue(itemDrop.get().getGender());
-                    contentVBox.setDisable(false);
-                }
+            if (Objects.nonNull(itemInfo)) {
+                nameLabel.setText(itemInfo.name());
+                iconView.setImage(itemInfo.iconName());
             }
+        }
 
+        @Override
+        public void bindVariablesNullable() {
             idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+        }
+
+        @Override
+        public void unbindVariables() {
+            idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
         }
 
         @Override
@@ -888,6 +818,11 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             return allValues;
         }
 
+        @Override
+        public DataComponent getParentComponent() {
+            return parent;
+        }
+
         public ItemDrop getItemDrop() {
             return itemDrop.get();
         }
@@ -896,15 +831,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             return itemDrop;
         }
 
-        public ItemInfo getItemInfo() {
-            return itemInfo.get();
-        }
-
-        public ReadOnlyObjectProperty<ItemInfo> itemInfoProperty() {
-            return itemInfo;
-        }
-
-        public ImageView getIconView() {
+        public StandardImageView getIconView() {
             return iconView;
         }
 
@@ -942,16 +869,6 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
         public HBox getIdHBox() {
             return idHBox;
-        }
-
-        @Override
-        public DataComponent getParentComponent() {
-            return parent;
-        }
-
-        @Override
-        public Label getIdLabel() {
-            return idLabel;
         }
     }
 }

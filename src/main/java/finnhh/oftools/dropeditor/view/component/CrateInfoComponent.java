@@ -8,13 +8,9 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
-
-import java.io.ByteArrayInputStream;
 
 public class CrateInfoComponent extends VBox implements ObservableComponent<ItemInfo> {
     private final ObjectProperty<ItemInfo> crateInfo;
@@ -24,7 +20,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
     private final CrateInfoTooltipComponent crateInfoTooltipComponent;
     private final Label nameLabel;
     private final Label commentLabel;
-    private final ImageView iconView;
+    private final StandardImageView iconView;
 
     public CrateInfoComponent(double width, MainController controller) {
         crateInfo = new SimpleObjectProperty<>();
@@ -46,11 +42,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         commentLabel.setTextAlignment(TextAlignment.CENTER);
         commentLabel.setTooltip(tooltip);
 
-        iconView = new ImageView();
-        iconView.setFitWidth(64);
-        iconView.setFitHeight(64);
-        iconView.setPreserveRatio(true);
-        iconView.setCache(true);
+        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
         Tooltip.install(iconView, tooltip);
 
         setSpacing(2);
@@ -59,6 +51,11 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         setMaxWidth(width);
         getChildren().addAll(nameLabel, commentLabel, iconView);
         getStyleClass().add("bordered-pane");
+    }
+
+    @Override
+    public MainController getController() {
+        return controller;
     }
 
     @Override
@@ -73,25 +70,23 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     @Override
     public void setObservable(ItemInfo data) {
-        var iconMap = controller.getIconManager().getIconMap();
-
         crateInfo.set(data);
-        crateInfoTooltipComponent.setObservable(data);
+    }
 
-        String name = crateInfo.isNull().get() ?
-                "UNKNOWN" :
-                crateInfo.get().name();
-        String comment = crateInfo.isNull().get() ?
-                "Unknown Crate" :
-                crateInfo.get().comment();
-        byte[] defaultIcon = iconMap.get("unknown");
-        byte[] icon = crateInfo.isNull().get() ?
-                defaultIcon :
-                iconMap.getOrDefault(crateInfo.get().iconName(), defaultIcon);
+    @Override
+    public void cleanUIState() {
+        crateInfoTooltipComponent.setObservableAndState(null);
+        nameLabel.setText("UNKNOWN");
+        commentLabel.setText("Unknown Crate");
+        iconView.cleanImage();
+    }
 
-        nameLabel.setText(name);
-        commentLabel.setText(comment);
-        iconView.setImage(new Image(new ByteArrayInputStream(icon)));
+    @Override
+    public void fillUIState() {
+        crateInfoTooltipComponent.setObservableAndState(crateInfo.get());
+        nameLabel.setText(crateInfo.get().name());
+        commentLabel.setText(crateInfo.get().comment());
+        iconView.setImage(crateInfo.get().iconName());
     }
 
     public ItemInfo getCrateInfo() {
@@ -114,7 +109,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         return commentLabel;
     }
 
-    public ImageView getIconView() {
+    public StandardImageView getIconView() {
         return iconView;
     }
 
@@ -124,6 +119,11 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         public CrateInfoTooltipComponent(MainController controller) {
             super(controller);
             crateInfo = new SimpleObjectProperty<>();
+        }
+
+        @Override
+        public MainController getController() {
+            return controller;
         }
 
         @Override
@@ -139,13 +139,17 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         @Override
         public void setObservable(ItemInfo data) {
             crateInfo.set(data);
+        }
 
+        @Override
+        public void cleanUIState() {
             clearMaps();
+        }
 
-            if (crateInfo.isNotNull().get()) {
-                ItemInfo ci = crateInfo.get();
-                arrangeMaps(ci.id(), ci.type());
-            }
+        @Override
+        public void fillUIState() {
+            ItemInfo ci = crateInfo.get();
+            arrangeMaps(ci.id(), ci.type());
         }
     }
 }

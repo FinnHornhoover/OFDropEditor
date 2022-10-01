@@ -21,8 +21,9 @@ public class IconManager {
     }
 
     private byte[] loadSingleEmbeddedImage(String directory, String name) throws IOException {
+        String pathString = (directory.equals(".") ? "" : directory + "/") + name + ".png";
         return Files.readAllBytes(Paths.get(new File(Objects.requireNonNull(
-                IconManager.class.getResource(directory + "/" + name + ".png")).getFile()).getPath()));
+                IconManager.class.getResource(pathString)).getFile()).getPath()));
     }
 
     public void setIconDirectory(File iconDirectory) throws IOException {

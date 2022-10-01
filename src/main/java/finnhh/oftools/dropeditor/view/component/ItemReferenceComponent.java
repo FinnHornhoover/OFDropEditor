@@ -12,17 +12,10 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.util.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.util.*;
 
 public class ItemReferenceComponent extends VBox implements RootDataComponent {
@@ -30,7 +23,7 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
 
     private final MainController controller;
 
-    private final ImageView iconView;
+    private final StandardImageView iconView;
     private final FlowPane infoFlowPane;
     private final HBox contentHBox;
     private final Label idLabel;
@@ -40,16 +33,12 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
     private final EventHandler<MouseEvent> removeClickHandler;
 
 
-    public ItemReferenceComponent(MainController controller, ListView<Data> listView) {
+    public ItemReferenceComponent(MainController controller) {
         itemReference = new SimpleObjectProperty<>();
 
         this.controller = controller;
 
-        iconView = new ImageView();
-        iconView.setFitWidth(64);
-        iconView.setFitHeight(64);
-        iconView.setPreserveRatio(true);
-        iconView.setCache(true);
+        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
         infoFlowPane = new FlowPane(iconView);
         infoFlowPane.setHgap(2);
@@ -73,28 +62,22 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
         setAlignment(Pos.CENTER_LEFT);
         getChildren().addAll(idHBox, contentHBox);
 
-        removeClickHandler = event -> {
-            this.controller.getDrops().remove(itemReference.get());
-            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(itemReference.get()));
-            listView.getItems().remove(itemReference.get());
-        };
+        removeClickHandler = event -> onRemoveClick();
+    }
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentHBox.setDisable(true);
-        setIdDisable(true);
+    @Override
+    public MainController getController() {
+        return controller;
+    }
 
-        // both makeEditable and setObservable sets the observable, just use a listener here
-        itemReference.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentHBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentHBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentHBox);
     }
 
     @Override
@@ -109,48 +92,52 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
-        var iconMap = controller.getIconManager().getIconMap();
-        byte[] defaultIcon = iconMap.get("unknown");
-
-        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
-
         itemReference.set((ItemReference) data);
+    }
+
+    @Override
+    public void cleanUIState() {
+        RootDataComponent.super.cleanUIState();
 
         infoFlowPane.getChildren().clear();
+        iconView.cleanImage();
+    }
 
-        if (itemReference.isNull().get()) {
-            iconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
-        } else {
-            var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
+    @Override
+    public void fillUIState() {
+        RootDataComponent.super.fillUIState();
 
-            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(
-                    itemReference.get().getItemID(), itemReference.get().getType()));
+        ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
+                itemReference.get().getItemID(), itemReference.get().getType()));
 
-            byte[] icon = Objects.isNull(itemInfo) ?
-                    defaultIcon :
-                    iconMap.getOrDefault(itemInfo.iconName(), defaultIcon);
-            iconView.setImage(new Image(new ByteArrayInputStream(icon)));
+        if (Objects.nonNull(itemInfo)) {
+            Arrays.stream(ItemInfo.class.getDeclaredFields())
+                    .map(f -> {
+                        String objectString = "<INVALID>";
+                        try {
+                            f.setAccessible(true);
+                            objectString = f.get(itemInfo).toString();
+                        } catch (IllegalAccessException | IllegalArgumentException ignored) {
+                        }
 
-            if (Objects.nonNull(itemInfo)) {
-                Arrays.stream(ItemInfo.class.getDeclaredFields())
-                        .map(f -> {
-                            String objectString = "<INVALID>";
-                            try {
-                                f.setAccessible(true);
-                                objectString = f.get(itemInfo).toString();
-                            } catch (IllegalAccessException | IllegalArgumentException ignored) {
-                            }
-
-                            return new Label(String.format("%s%s: %s",
-                                    f.getName().substring(0, 1).toUpperCase(Locale.ENGLISH),
-                                    f.getName().substring(1).replaceAll("([A-Z])", " $1"),
-                                    objectString));
-                        })
-                        .forEach(infoFlowPane.getChildren()::add);
-            }
+                        return new Label(String.format("%s%s: %s",
+                                f.getName().substring(0, 1).toUpperCase(Locale.ENGLISH),
+                                f.getName().substring(1).replaceAll("([A-Z])", " $1"),
+                                objectString));
+                    })
+                    .forEach(infoFlowPane.getChildren()::add);
+            iconView.setImage(itemInfo.iconName());
         }
+    }
 
+    @Override
+    public void bindVariablesNullable() {
         removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     @Override
@@ -170,11 +157,6 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
     }
 
     @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
-    @Override
     public Button getRemoveButton() {
         return removeButton;
     }
@@ -187,7 +169,7 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
         return itemReference;
     }
 
-    public ImageView getIconView() {
+    public StandardImageView getIconView() {
         return iconView;
     }
 

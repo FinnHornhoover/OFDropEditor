@@ -6,7 +6,6 @@ import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Event;
-import finnhh.oftools.dropeditor.model.data.MobDrop;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -14,19 +13,13 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.text.TextAlignment;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class EventComponent extends HBox implements RootDataComponent {
@@ -35,7 +28,7 @@ public class EventComponent extends HBox implements RootDataComponent {
     private final MainController controller;
 
     private final Label nameLabel;
-    private final ImageView iconView;
+    private final StandardImageView iconView;
     private final VBox eventVBox;
 
     private final MobDropComponent mobDropComponent;
@@ -47,7 +40,7 @@ public class EventComponent extends HBox implements RootDataComponent {
 
     private final EventHandler<MouseEvent> removeClickHandler;
 
-    public EventComponent(MainController controller, ListView<Data> listView) {
+    public EventComponent(MainController controller) {
         event = new SimpleObjectProperty<>();
 
         this.controller = controller;
@@ -56,11 +49,7 @@ public class EventComponent extends HBox implements RootDataComponent {
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setWrapText(true);
 
-        iconView = new ImageView();
-        iconView.setFitWidth(64);
-        iconView.setFitHeight(64);
-        iconView.setPreserveRatio(true);
-        iconView.setCache(true);
+        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
         eventVBox = new VBox(2, nameLabel, iconView);
         eventVBox.setAlignment(Pos.CENTER);
@@ -70,7 +59,7 @@ public class EventComponent extends HBox implements RootDataComponent {
 
         mobDropComponent = new MobDropComponent(60.0, 160.0, controller, this);
 
-        mobDropComponent.prefWidthProperty().bind(listView.widthProperty()
+        mobDropComponent.prefWidthProperty().bind(this.controller.getMainListView().widthProperty()
                 .subtract(eventVBox.widthProperty())
                 .subtract(28));
         mobDropComponent.setMaxWidth(USE_PREF_SIZE);
@@ -91,30 +80,22 @@ public class EventComponent extends HBox implements RootDataComponent {
         getChildren().addAll(eventBorderPane, mobDropComponent);
         setHgrow(mobDropComponent, Priority.ALWAYS);
 
-        removeClickHandler = event -> {
-            this.controller.getDrops().remove(this.event.get());
-            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(this.event.get()));
-            listView.getItems().remove(this.event.get());
-        };
+        removeClickHandler = event -> onRemoveClick();
+    }
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        eventVBox.setDisable(true);
-        mobDropComponent.setDisable(true);
-        setIdDisable(true);
+    @Override
+    public MainController getController() {
+        return controller;
+    }
 
-        event.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                eventVBox.setDisable(true);
-                mobDropComponent.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                eventVBox.setDisable(false);
-                mobDropComponent.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(eventVBox, mobDropComponent);
     }
 
     @Override
@@ -129,43 +110,47 @@ public class EventComponent extends HBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
-        var iconMap = controller.getIconManager().getIconMap();
-        byte[] defaultIcon = iconMap.get("unknown");
-
-        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
-
         event.set((Event) data);
+    }
 
-        if (event.isNull().get()) {
-            nameLabel.setText("UNKNOWN");
-            iconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
-            mobDropComponent.setObservable(null);
-        } else {
-            EventType eventType = EventType.forType(event.get().getEventID());
+    @Override
+    public void cleanUIState() {
+        RootDataComponent.super.cleanUIState();
 
-            String name = Objects.isNull(eventType) ?
-                    "UNKNOWN" :
-                    eventType.getName();
-            byte[] icon = Objects.isNull(eventType) ?
-                    defaultIcon :
-                    iconMap.getOrDefault(eventType.iconName(), defaultIcon);
+        mobDropComponent.setObservableAndState(null);
+        nameLabel.setText("UNKNOWN");
+        iconView.cleanImage();
+    }
 
-            nameLabel.setText(name);
-            iconView.setImage(new Image(new ByteArrayInputStream(icon)));
-            mobDropComponent.setObservable(controller.getDrops().getMobDrops().get(event.get().getMobDropID()));
+    @Override
+    public void fillUIState() {
+        RootDataComponent.super.fillUIState();
+
+        EventType eventType = EventType.forType(event.get().getEventID());
+
+        if (eventType != EventType.NO_EVENT) {
+            mobDropComponent.setObservableAndState(
+                    controller.getDrops().getMobDrops().get(event.get().getMobDropID()));
+            nameLabel.setText(eventType.getName());
+            iconView.setImage(eventType.iconName());
         }
+    }
 
+    @Override
+    public void bindVariablesNullable() {
         removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     @Override
-    public void refreshObservable(Drops drops) {
-        makeEditable(drops);
+    public void unbindVariables() {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+    }
 
-        MobDrop newMobDrop = mobDropComponent.getMobDrop();
-
-        if (Objects.nonNull(newMobDrop) && newMobDrop.getMobDropID() != event.get().getMobDropID())
-            event.get().setMobDropID(newMobDrop.getMobDropID());
+    @Override
+    public void updateObservableFromUI(Drops drops) {
+        Optional.ofNullable(mobDropComponent.getMobDrop())
+                .filter(md -> md.getMobDropID() != event.get().getMobDropID())
+                .ifPresent(md -> event.get().setMobDropID(md.getMobDropID()));
     }
 
     @Override
@@ -193,11 +178,6 @@ public class EventComponent extends HBox implements RootDataComponent {
     }
 
     @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
-    @Override
     public Button getRemoveButton() {
         return removeButton;
     }
@@ -214,7 +194,7 @@ public class EventComponent extends HBox implements RootDataComponent {
         return nameLabel;
     }
 
-    public ImageView getIconView() {
+    public StandardImageView getIconView() {
         return iconView;
     }
 

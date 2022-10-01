@@ -4,15 +4,40 @@ import finnhh.oftools.dropeditor.model.ReferenceMode;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Pane;
 
+import java.util.List;
 import java.util.Objects;
 
 public interface DataComponent extends ObservableComponent<Data> {
     Label getIdLabel();
 
+    List<Pane> getContentPanes();
+
     DataComponent getParentComponent();
 
-    default void makeEditable(Drops drops) {
+    @Override
+    default void cleanUIState() {
+        getIdLabel().setText(getObservableClass().getSimpleName() + ": null");
+        getContentPanes().forEach(pane -> pane.setDisable(true));
+        setIdDisable(true);
+    }
+
+    @Override
+    default void fillUIState() {
+        getIdLabel().setText(getObservable().get().getIdBinding().getValueSafe());
+        getContentPanes().forEach(pane -> pane.setDisable(false));
+        setIdDisable(getObservable().get().isMalformed());
+    }
+
+    default void setIdDisable(boolean disable) {
+        getIdLabel().getStyleClass().removeIf("disabled-id"::equals);
+        if (disable)
+            getIdLabel().getStyleClass().add("disabled-id");
+    }
+
+    default void makeEditable() {
+        Drops drops = getController().getDrops();
         Data oldObject = getObservable().get();
         DataComponent parent = getParentComponent();
 
@@ -34,16 +59,17 @@ public interface DataComponent extends ObservableComponent<Data> {
 
             // 5?. if component has a parent, then make the parent editable as well
             if (Objects.nonNull(parent))
-                parent.makeEditable(drops);
+                parent.makeEditable();
 
             // 6. set new object as the new observable of the component
             // the listeners on observable will now fire
-            setObservable(newObject);
+            setObservableAndState(newObject);
 
             // if component has a parent
             if (Objects.nonNull(parent)) {
                 // 7?. update fields of parent to reflect new object's new id
-                parent.refreshObservable(drops);
+                parent.updateObservableFromUI(drops);
+                parent.refreshObservableAndState();
 
                 Data referencer = parent.getObservable().get();
                 var referenceMap = drops.getReferenceMap();
@@ -57,7 +83,8 @@ public interface DataComponent extends ObservableComponent<Data> {
         }
     }
 
-    default void makeEdit(Drops drops, Data newObject) {
+    default void makeReplacement(Data newObject) {
+        Drops drops = getController().getDrops();
         Data oldObject = getObservable().get();
         DataComponent parent = getParentComponent();
 
@@ -67,16 +94,17 @@ public interface DataComponent extends ObservableComponent<Data> {
 
         // 1?. if component has a parent, then make the parent editable as well
         if (drops.getReferenceModeFor(oldObject) == ReferenceMode.MULTIPLE && Objects.nonNull(parent))
-            parent.makeEditable(drops);
+            parent.makeEditable();
 
         // 2. set new object as the new observable of the component
         // the listeners on observable will now fire
-        setObservable(newObject);
+        setObservableAndState(newObject);
 
         // if component has a parent
         if (Objects.nonNull(parent)) {
             // 3?. update fields of parent to reflect new object's new id
-            parent.refreshObservable(drops);
+            parent.updateObservableFromUI(drops);
+            parent.refreshObservableAndState();
 
             Data referencer = parent.getObservable().get();
             var referenceMap = drops.getReferenceMap();
@@ -93,13 +121,17 @@ public interface DataComponent extends ObservableComponent<Data> {
         }
     }
 
-    default void refreshObservable(Drops drops) {
+    default void makeEdit(Runnable editor) {
+        // 1. make sure the observable is editable
+        makeEditable();
+
+        // 2. run the edit
+        editor.run();
+
+        // 3. refresh values and UI State
+        refreshObservableAndState();
     }
 
-    default void setIdDisable(boolean disable) {
-        if (disable)
-            getIdLabel().getStyleClass().add("disabled-id");
-        else
-            getIdLabel().getStyleClass().remove("disabled-id");
+    default void updateObservableFromUI(Drops drops) {
     }
 }

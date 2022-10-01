@@ -12,29 +12,27 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.util.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<Crate> crate;
-    private final ObjectProperty<ItemInfo> itemInfo;
 
     private final MainController controller;
     private final DataComponent parent;
 
     private final Label nameLabel;
     private final Label commentLabel;
-    private final ImageView iconView;
+    private final StandardImageView iconView;
     private final VBox contentVBox;
     private final Label idLabel;
     private final Button removeButton;
@@ -47,18 +45,13 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
                     DataComponent parent) {
 
         crate = new SimpleObjectProperty<>();
-        itemInfo = new SimpleObjectProperty<>();
 
         this.controller = controller;
         this.parent = parent;
         nameLabel = new Label();
         commentLabel = new Label();
 
-        iconView = new ImageView();
-        iconView.setFitWidth(64);
-        iconView.setFitHeight(64);
-        iconView.setPreserveRatio(true);
-        iconView.setCache(true);
+        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
         contentVBox = new VBox(2, nameLabel, commentLabel, iconView);
         contentVBox.setAlignment(Pos.CENTER);
@@ -79,26 +72,23 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
         setCenter(contentVBox);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
-        // observable is listened, it is okay to just set the observable
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
-                .ifPresent(this::setObservable);
+                .ifPresent(this::setObservableAndState);
+    }
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentVBox.setDisable(true);
-        setIdDisable(true);
+    @Override
+    public MainController getController() {
+        return controller;
+    }
 
-        // both makeEditable and setObservable sets the observable, just use a listener here
-        crate.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentVBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentVBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentVBox);
     }
 
     @Override
@@ -113,39 +103,40 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
 
     @Override
     public void setObservable(Data data) {
-        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-
         crate.set((Crate) data);
+    }
 
-        var iconMap = controller.getIconManager().getIconMap();
-        var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
-        byte[] defaultIcon = iconMap.get("unknown");
+    @Override
+    public void cleanUIState() {
+        DataComponent.super.cleanUIState();
 
-        if (crate.isNull().get()) {
-            nameLabel.setText("<INVALID>");
-            commentLabel.setText("<INVALID>");
-            iconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
+        nameLabel.setText("<INVALID>");
+        commentLabel.setText("<INVALID>");
+        iconView.cleanImage();
+    }
 
-            contentVBox.setDisable(true);
-        } else {
-            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(crate.get().getCrateID(), 9));
+    @Override
+    public void fillUIState() {
+        DataComponent.super.fillUIState();
 
-            String name = Objects.isNull(itemInfo) ? "<INVALID>" : itemInfo.name();
-            String comment = Objects.isNull(itemInfo) ? "<INVALID>" :  itemInfo.comment();
-            byte[] icon = Objects.isNull(itemInfo) ?
-                    defaultIcon :
-                    iconMap.getOrDefault(itemInfo.iconName(), defaultIcon);
+        ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
+                crate.get().getCrateID(), Crate.TYPE));
 
-            this.itemInfo.set(itemInfo);
-
-            nameLabel.setText(name);
-            commentLabel.setText(comment);
-            iconView.setImage(new Image(new ByteArrayInputStream(icon)));
-
-            contentVBox.setDisable(Objects.isNull(itemInfo));
+        if (Objects.nonNull(itemInfo)) {
+            nameLabel.setText(itemInfo.name());
+            commentLabel.setText(itemInfo.comment());
+            iconView.setImage(itemInfo.iconName());
         }
+    }
 
+    @Override
+    public void bindVariablesNullable() {
         idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
     }
 
     @Override
@@ -157,11 +148,16 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
         allValues.addAll(getNestedSearchableValues(
                 ObservableComponent.getSearchableValuesFor(ItemInfo.class),
                 op -> op.map(o -> (Crate) o)
-                        .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), 9)))
+                        .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), Crate.TYPE)))
                         .stream().toList()
         ));
 
         return allValues;
+    }
+
+    @Override
+    public DataComponent getParentComponent() {
+        return parent;
     }
 
     public Crate getCrate() {
@@ -172,14 +168,6 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
         return crate;
     }
 
-    public ItemInfo getItemInfo() {
-        return itemInfo.get();
-    }
-
-    public ReadOnlyObjectProperty<ItemInfo> itemInfoProperty() {
-        return itemInfo;
-    }
-
     public Label getNameLabel() {
         return nameLabel;
     }
@@ -188,7 +176,7 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
         return commentLabel;
     }
 
-    public ImageView getIconView() {
+    public StandardImageView getIconView() {
         return iconView;
     }
 
@@ -202,15 +190,5 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
 
     public HBox getIdHBox() {
         return idHBox;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
-    @Override
-    public DataComponent getParentComponent() {
-        return parent;
     }
 }

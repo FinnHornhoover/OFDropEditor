@@ -31,7 +31,7 @@ public class RarityWeights extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(rarityWeightID.lessThan(0)
+        malformed.bind(rarityWeightID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(weights.isNull())
                 .or(weights.emptyProperty())
                 .or(weights.sizeProperty().greaterThan(4)));

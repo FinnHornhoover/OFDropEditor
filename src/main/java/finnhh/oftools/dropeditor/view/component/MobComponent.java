@@ -5,21 +5,21 @@ import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Mob;
-import finnhh.oftools.dropeditor.model.data.MobDrop;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class MobComponent extends HBox implements RootDataComponent {
@@ -36,7 +36,7 @@ public class MobComponent extends HBox implements RootDataComponent {
 
     private final EventHandler<MouseEvent> removeClickHandler;
 
-    public MobComponent(MainController controller, ListView<Data> listView) {
+    public MobComponent(MainController controller) {
         mob = new SimpleObjectProperty<>();
 
         this.controller = controller;
@@ -44,7 +44,7 @@ public class MobComponent extends HBox implements RootDataComponent {
         mobInfoComponent = new MobInfoComponent(160.0, controller);
         mobDropComponent = new MobDropComponent(60.0, 160.0, controller, this);
 
-        mobDropComponent.prefWidthProperty().bind(listView.widthProperty()
+        mobDropComponent.prefWidthProperty().bind(this.controller.getMainListView().widthProperty()
                 .subtract(mobInfoComponent.widthProperty())
                 .subtract(28));
         mobDropComponent.setMaxWidth(USE_PREF_SIZE);
@@ -65,30 +65,22 @@ public class MobComponent extends HBox implements RootDataComponent {
         getChildren().addAll(mobBorderPane, mobDropComponent);
         setHgrow(mobDropComponent, Priority.ALWAYS);
 
-        removeClickHandler = event -> {
-            this.controller.getDrops().remove(mob.get());
-            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(mob.get()));
-            listView.getItems().remove(mob.get());
-        };
+        removeClickHandler = event -> onRemoveClick();
+    }
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        mobInfoComponent.setDisable(true);
-        mobDropComponent.setDisable(true);
-        setIdDisable(true);
+    @Override
+    public MainController getController() {
+        return controller;
+    }
 
-        mob.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                mobInfoComponent.setDisable(true);
-                mobDropComponent.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                mobInfoComponent.setDisable(false);
-                mobDropComponent.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(mobInfoComponent, mobDropComponent);
     }
 
     @Override
@@ -103,29 +95,42 @@ public class MobComponent extends HBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
-        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
-
         mob.set((Mob) data);
+    }
 
-        if (mob.isNull().get()) {
-            mobInfoComponent.setObservable(null);
-            mobDropComponent.setObservable(null);
-        } else {
-            mobInfoComponent.setObservable(controller.getStaticDataStore().getMobTypeInfoMap().get(mob.get().getMobID()));
-            mobDropComponent.setObservable(controller.getDrops().getMobDrops().get(mob.get().getMobDropID()));
-        }
+    @Override
+    public void cleanUIState() {
+        RootDataComponent.super.cleanUIState();
 
+        mobInfoComponent.setObservableAndState(null);
+        mobDropComponent.setObservableAndState(null);
+    }
+
+    @Override
+    public void fillUIState() {
+        RootDataComponent.super.fillUIState();
+
+        mobInfoComponent.setObservableAndState(controller.getStaticDataStore().getMobTypeInfoMap().get(
+                mob.get().getMobID()));
+        mobDropComponent.setObservableAndState(controller.getDrops().getMobDrops().get(
+                mob.get().getMobDropID()));
+    }
+
+    @Override
+    public void bindVariablesNullable() {
         removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     @Override
-    public void refreshObservable(Drops drops) {
-        makeEditable(drops);
+    public void unbindVariables() {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+    }
 
-        MobDrop newMobDrop = mobDropComponent.getMobDrop();
-
-        if (Objects.nonNull(newMobDrop) && newMobDrop.getMobDropID() != mob.get().getMobDropID())
-            mob.get().setMobDropID(newMobDrop.getMobDropID());
+    @Override
+    public void updateObservableFromUI(Drops drops) {
+        Optional.ofNullable(mobDropComponent.getMobDrop())
+                .filter(md -> md.getMobDropID() != mob.get().getMobID())
+                .ifPresent(md -> mob.get().setMobDropID(md.getMobDropID()));
     }
 
     @Override
@@ -151,11 +156,6 @@ public class MobComponent extends HBox implements RootDataComponent {
         ));
 
         return allValues;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
     }
 
     @Override

@@ -46,7 +46,7 @@ public class MiscDropType extends Data {
         taroAmount.addListener((o, oldVal, newVal) -> taroAmount.set(Math.max(0, newVal.intValue())));
         fmAmount.addListener((o, oldVal, newVal) -> fmAmount.set(Math.max(0, newVal.intValue())));
 
-        malformed.bind(miscDropTypeID.lessThan(0)
+        malformed.bind(miscDropTypeID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(potionAmount.lessThan(0))
                 .or(boostAmount.lessThan(0))
                 .or(taroAmount.lessThan(0))

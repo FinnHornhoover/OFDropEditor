@@ -16,16 +16,14 @@ import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.util.*;
 
 public class CodeItemComponent extends VBox implements RootDataComponent {
@@ -48,7 +46,7 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
     private final EventHandler<ActionEvent> textFieldActionHandler;
     private final EventHandler<MouseEvent> removeClickHandler;
 
-    public CodeItemComponent(MainController controller, ListView<Data> listView) {
+    public CodeItemComponent(MainController controller) {
         codeItem = new SimpleObjectProperty<>();
 
         this.controller = controller;
@@ -89,12 +87,13 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
                 removeClickHandler = event -> { };
 
                 if (!empty) {
-                    itemReferenceVBox.setObservable(itemReference);
+                    itemReferenceVBox.setObservableAndState(itemReference);
                     removeClickHandler = event -> {
                         if (!event.isConsumed()) {
                             event.consume();
                             Optional.ofNullable(itemReference)
-                                    .ifPresent(ir -> itemDropRemoved(ir.getItemReferenceID()));
+                                    .ifPresent(ir -> makeEdit(() -> codeItem.get().getItemReferenceIDs().remove(
+                                            (Integer) ir.getItemReferenceID())));
                         }
                     };
                     itemReferenceVBox.getRemoveButton().addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
@@ -123,101 +122,27 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
         getChildren().addAll(idHBox, contentVBox);
 
         addClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
-                .ifPresent(d -> itemDropAdded(((ItemReference) d).getItemReferenceID()));
-        textFieldActionHandler = event -> {
-            unbindVariables();
-
-            makeEditable(this.controller.getDrops());
-            codeItem.get().setCode(codeTextField.getText());
-            idLabel.setText(codeItem.get().getIdBinding().getValueSafe());
-
-            bindVariables();
-        };
-        removeClickHandler = event -> {
-            this.controller.getDrops().remove(codeItem.get());
-            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(codeItem.get()));
-            listView.getItems().remove(codeItem.get());
-        };
-
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentVBox.setDisable(true);
-        setIdDisable(true);
-
-        // both makeEditable and setObservable sets the observable, just use a listener here
-        codeItem.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentVBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentVBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+                .ifPresent(d -> makeEdit(() -> {
+                    codeItem.get().getItemReferenceIDs().add(((ItemReference) d).getItemReferenceID());
+                    codeItem.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
+                }));
+        textFieldActionHandler = event -> makeEdit(() -> codeItem.get().setCode(codeTextField.getText()));
+        removeClickHandler = event -> onRemoveClick();
     }
 
-    private void bindVariables() {
-        addButton.addEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
-        codeTextField.addEventHandler(ActionEvent.ACTION, textFieldActionHandler);
-        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+    @Override
+    public MainController getController() {
+        return controller;
     }
 
-    private void unbindVariables() {
-        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
-        codeTextField.removeEventHandler(ActionEvent.ACTION, textFieldActionHandler);
-        addButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
     }
 
-    private void clearItemDrops() {
-        itemListView.getItems().clear();
-    }
-
-    private void populateItemDrops() {
-        itemListView.getItems().addAll(codeItem.get().getItemReferenceIDs().stream()
-                .map(irID -> controller.getDrops().getItemReferences().get(irID))
-                .toList());
-    }
-
-    public void itemDropAdded(Integer newItemReferenceID) {
-        if (!codeItem.get().getItemReferenceIDs().contains(newItemReferenceID)) {
-            makeEditable(controller.getDrops());
-
-            unbindVariables();
-            clearItemDrops();
-
-            codeItem.get().getItemReferenceIDs().add(newItemReferenceID);
-            codeItem.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
-
-            populateItemDrops();
-            bindVariables();
-        }
-    }
-
-    public void itemDropRemoved(Integer itemReferenceID) {
-        makeEditable(controller.getDrops());
-
-        unbindVariables();
-        clearItemDrops();
-
-        codeItem.get().getItemReferenceIDs().remove(itemReferenceID);
-
-        populateItemDrops();
-        bindVariables();
-    }
-
-    public void itemDropChanged(Integer oldItemReferenceID, Integer newItemReferenceID) {
-        makeEditable(controller.getDrops());
-
-        unbindVariables();
-        clearItemDrops();
-
-        int index = codeItem.get().getItemReferenceIDs().indexOf(oldItemReferenceID);
-        codeItem.get().getItemReferenceIDs().set(index, newItemReferenceID);
-        codeItem.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
-
-        populateItemDrops();
-        bindVariables();
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentVBox);
     }
 
     @Override
@@ -233,16 +158,42 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
     @Override
     public void setObservable(Data data) {
         codeItem.set((CodeItem) data);
+    }
 
-        unbindVariables();
-        clearItemDrops();
+    @Override
+    public void cleanUIState() {
+        RootDataComponent.super.cleanUIState();
+
         codeTextField.setText("");
+        itemListView.getItems().clear();
+    }
 
-        if (codeItem.isNotNull().get()) {
-            codeTextField.setText(codeItem.get().getCode());
-            populateItemDrops();
-            bindVariables();
-        }
+    @Override
+    public void fillUIState() {
+        RootDataComponent.super.fillUIState();
+
+        codeTextField.setText(codeItem.get().getCode());
+        itemListView.getItems().addAll(codeItem.get().getItemReferenceIDs().stream()
+                .map(irID -> controller.getDrops().getItemReferences().get(irID))
+                .toList());
+    }
+
+    @Override
+    public void bindVariablesNonNull() {
+        addButton.addEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
+        codeTextField.addEventHandler(ActionEvent.ACTION, textFieldActionHandler);
+    }
+
+    @Override
+    public void bindVariablesNullable() {
+        removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
+        addButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, addClickHandler);
+        codeTextField.removeEventHandler(ActionEvent.ACTION, textFieldActionHandler);
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     @Override
@@ -264,11 +215,6 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
         ));
 
         return allValues;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
     }
 
     @Override
@@ -310,12 +256,11 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
 
     public static class ItemReferenceVBox extends VBox implements DataComponent {
         private final ObjectProperty<ItemReference> itemReference;
-        private final ObjectProperty<ItemInfo> itemInfo;
 
         private final MainController controller;
         private final CodeItemComponent parent;
 
-        private final ImageView iconView;
+        private final StandardImageView iconView;
         private final Label nameLabel;
         private final VBox contentVBox;
         private final Label idLabel;
@@ -330,16 +275,11 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
                                  CodeItemComponent parent) {
 
             itemReference = new SimpleObjectProperty<>();
-            itemInfo = new SimpleObjectProperty<>();
 
             this.controller = controller;
             this.parent = parent;
 
-            iconView = new ImageView();
-            iconView.setFitWidth(64);
-            iconView.setFitHeight(64);
-            iconView.setPreserveRatio(true);
-            iconView.setCache(true);
+            iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
             nameLabel = new Label();
             nameLabel.setWrapText(true);
@@ -362,31 +302,33 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
             setSpacing(boxSpacing);
             getChildren().addAll(contentVBox, idHBox);
 
-            idLabel.setText(getObservableClass().getSimpleName() + ": null");
-            contentVBox.setDisable(true);
-            setIdDisable(true);
-
             // it is okay to just set the observable
             idClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
-                    .map(d -> (ItemReference) d)
-                    .ifPresent(idr -> {
+                    .ifPresent(d -> {
                         int oldID = getObservable().get().getItemReferenceID();
-                        setObservable(idr);
-                        this.parent.itemDropChanged(oldID, idr.getItemReferenceID());
+                        setObservableAndState(d);
+                        this.parent.makeEdit(() -> {
+                            int index = this.parent.getCodeItem().getItemReferenceIDs().indexOf(oldID);
+                            this.parent.getCodeItem().getItemReferenceIDs().set(index,
+                                    ((ItemReference) d).getItemReferenceID());
+                            this.parent.getCodeItem().getItemReferenceIDs().sort(Comparator.naturalOrder());
+                        });
                     });
+        }
 
-            // both makeEditable and setObservable sets the observable, just use a listener here
-            itemReference.addListener((o, oldVal, newVal) -> {
-                if (Objects.isNull(newVal)) {
-                    idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                    contentVBox.setDisable(true);
-                    setIdDisable(true);
-                } else {
-                    idLabel.setText(newVal.getIdBinding().getValueSafe());
-                    contentVBox.setDisable(false);
-                    setIdDisable(newVal.isMalformed());
-                }
-            });
+        @Override
+        public MainController getController() {
+            return controller;
+        }
+
+        @Override
+        public Label getIdLabel() {
+            return idLabel;
+        }
+
+        @Override
+        public List<Pane> getContentPanes() {
+            return List.of(contentVBox);
         }
 
         @Override
@@ -401,36 +343,38 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
 
         @Override
         public void setObservable(Data data) {
-            idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-
             itemReference.set((ItemReference) data);
+        }
 
-            var iconMap = controller.getIconManager().getIconMap();
-            byte[] defaultIcon = iconMap.get("unknown");
+        @Override
+        public void cleanUIState() {
+            DataComponent.super.cleanUIState();
 
             nameLabel.setText("<INVALID>");
-            iconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
-            contentVBox.setDisable(true);
+            iconView.cleanImage();
+        }
 
-            if (itemReference.isNotNull().get()) {
-                ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
-                        itemReference.get().getItemID(),
-                        itemReference.get().getType()
-                ));
+        @Override
+        public void fillUIState() {
+            DataComponent.super.fillUIState();
 
-                if (Objects.nonNull(itemInfo)) {
-                    String name = itemInfo.name();
-                    byte[] icon = iconMap.getOrDefault(itemInfo.iconName(), defaultIcon);
+            ItemInfo itemInfo = controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(
+                    itemReference.get().getItemID(), itemReference.get().getType()));
 
-                    this.itemInfo.set(itemInfo);
-
-                    nameLabel.setText(name);
-                    iconView.setImage(new Image(new ByteArrayInputStream(icon)));
-                    contentVBox.setDisable(false);
-                }
+            if (Objects.nonNull(itemInfo)) {
+                nameLabel.setText(itemInfo.name());
+                iconView.setImage(itemInfo.iconName());
             }
+        }
 
+        @Override
+        public void bindVariablesNullable() {
             idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+        }
+
+        @Override
+        public void unbindVariables() {
+            idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
         }
 
         @Override
@@ -454,11 +398,6 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
             return parent;
         }
 
-        @Override
-        public Label getIdLabel() {
-            return idLabel;
-        }
-
         public ItemReference getItemReference() {
             return itemReference.get();
         }
@@ -467,15 +406,7 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
             return itemReference;
         }
 
-        public ItemInfo getItemInfo() {
-            return itemInfo.get();
-        }
-
-        public ReadOnlyObjectProperty<ItemInfo> itemInfoProperty() {
-            return itemInfo;
-        }
-
-        public ImageView getIconView() {
+        public StandardImageView getIconView() {
             return iconView;
         }
 

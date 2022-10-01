@@ -3,12 +3,10 @@ package finnhh.oftools.dropeditor.model;
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.*;
 import finnhh.oftools.dropeditor.view.component.*;
-import javafx.scene.control.ListView;
 
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public enum ViewMode {
@@ -63,12 +61,12 @@ public enum ViewMode {
                     .toList());
 
     private final String modeString;
-    private final BiFunction<MainController, ListView<Data>, ObservableComponent<?>> componentConstructor;
+    private final Function<MainController, ObservableComponent<?>> componentConstructor;
     private final Function<MainController, Optional<Data>> newDataAdder;
     private final Function<Drops, Collection<? extends Data>> dataGetter;
 
     ViewMode(String modeString,
-             BiFunction<MainController, ListView<Data>, ObservableComponent<?>> componentConstructor,
+             Function<MainController, ObservableComponent<?>> componentConstructor,
              Function<MainController, Optional<Data>> newDataAdder,
              Function<Drops, Collection<? extends Data>> dataGetter) {
         this.modeString = modeString;
@@ -81,7 +79,7 @@ public enum ViewMode {
         return modeString;
     }
 
-    public BiFunction<MainController, ListView<Data>, ObservableComponent<?>> getComponentConstructor() {
+    public Function<MainController, ObservableComponent<?>> getComponentConstructor() {
         return componentConstructor;
     }
 

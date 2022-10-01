@@ -15,18 +15,11 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -38,7 +31,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
     private final MainController controller;
 
     private final Label nanoNameLabel;
-    private final ImageView nanoIconView;
+    private final StandardImageView nanoIconView;
     private final Label nanoTypeLabel;
     private final VBox nanoVBox;
 
@@ -52,8 +45,9 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
     private final EventHandler<MouseEvent> removeClickHandler;
     private final EventHandler<MouseEvent> capsuleRemoveClickHandler;
+    private final EventHandler<MouseEvent> capsuleIdClickHandler;
 
-    public NanoCapsuleComponent(MainController controller, ListView<Data> listView) {
+    public NanoCapsuleComponent(MainController controller) {
         nanoCapsule = new SimpleObjectProperty<>();
 
         this.controller = controller;
@@ -62,11 +56,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
         nanoNameLabel.setTextAlignment(TextAlignment.CENTER);
         nanoNameLabel.setWrapText(true);
 
-        nanoIconView = new ImageView();
-        nanoIconView.setFitWidth(64);
-        nanoIconView.setFitHeight(64);
-        nanoIconView.setPreserveRatio(true);
-        nanoIconView.setCache(true);
+        nanoIconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
         nanoTypeLabel = new Label();
         nanoTypeLabel.setTextAlignment(TextAlignment.CENTER);
@@ -103,43 +93,26 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
         setAlignment(Pos.CENTER_LEFT);
         getChildren().addAll(idHBox, contentHBox);
 
-        removeClickHandler = event -> {
-            this.controller.getDrops().remove(nanoCapsule.get());
-            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(nanoCapsule.get()));
-            listView.getItems().remove(nanoCapsule.get());
-        };
-        capsuleRemoveClickHandler = event -> {
-            if (nanoCapsule.isNotNull().get()) {
-                nanoCapsule.get().setCrateID(Crate.INT_CRATE_PLACEHOLDER_ID);
-                nanoCapsuleBox.setObservable(null);
-            }
-        };
-        nanoCapsuleBox.getIdLabel().addEventHandler(MouseEvent.MOUSE_CLICKED, event ->
-                this.controller.showSelectCapsuleMenuForResult().ifPresent(data -> {
-                    if (nanoCapsule.isNotNull().get()) {
-                        int crateID = ((NanoCapsule) data).getCrateID();
-                        nanoCapsule.get().setCrateID(crateID);
-                        nanoCapsuleBox.setObservable(controller.getStaticDataStore().getItemInfoMap()
-                                .get(new Pair<>(crateID, 9)));
-                    }
-                }));
+        removeClickHandler = event -> onRemoveClick();
+        capsuleRemoveClickHandler = event -> makeEdit(() ->
+                nanoCapsule.get().setCrateID(Crate.INT_CRATE_PLACEHOLDER_ID));
+        capsuleIdClickHandler = event -> this.controller.showSelectCapsuleMenuForResult().ifPresent(d ->
+                makeEdit(() -> nanoCapsule.get().setCrateID(((NanoCapsule) d).getCrateID())));
+    }
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentHBox.setDisable(true);
-        setIdDisable(true);
+    @Override
+    public MainController getController() {
+        return controller;
+    }
 
-        // both makeEditable and setObservable sets the observable, just use a listener here
-        nanoCapsule.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentHBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentHBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentHBox);
     }
 
     @Override
@@ -154,53 +127,57 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
-        var iconMap = controller.getIconManager().getIconMap();
-        byte[] defaultIcon = iconMap.get("unknown");
-
-        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
-        nanoCapsuleBox.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, capsuleRemoveClickHandler);
-
         nanoCapsule.set((NanoCapsule) data);
+    }
+
+    @Override
+    public void cleanUIState() {
+        RootDataComponent.super.cleanUIState();
 
         nanoPowerVBox.getChildren().clear();
 
-        if (nanoCapsule.isNull().get()) {
-            nanoNameLabel.setText("UNKNOWN");
-            nanoIconView.setImage(new Image(new ByteArrayInputStream(defaultIcon)));
-            nanoTypeLabel.setText("Unknown");
-            nanoCapsuleBox.setObservable(null);
-        } else {
-            NanoInfo nanoInfo = controller.getStaticDataStore().getNanoInfoMap().get(nanoCapsule.get().getNano());
+        nanoNameLabel.setText("UNKNOWN");
+        nanoIconView.cleanImage();
+        nanoTypeLabel.setText("Unknown");
+        nanoCapsuleBox.setObservableAndState(null);
+    }
 
-            String name = Objects.isNull(nanoInfo) ?
-                    "UNKNOWN" :
-                    nanoInfo.name();
-            String type = Objects.isNull(nanoInfo) ?
-                    "Unknown" :
-                    nanoInfo.type();
-            byte[] icon = Objects.isNull(nanoInfo) ?
-                    defaultIcon :
-                    iconMap.getOrDefault(nanoInfo.iconName(), defaultIcon);
-            List<NanoPowerInfo> nanoPowers = Objects.isNull(nanoInfo) ?
-                    List.of() :
-                    nanoInfo.powers();
+    @Override
+    public void fillUIState() {
+        RootDataComponent.super.fillUIState();
 
-            nanoCapsuleBox.setObservable(controller.getStaticDataStore().getItemInfoMap()
-                    .get(new Pair<>(nanoCapsule.get().getCrateID(), 9)));
-            nanoNameLabel.setText(name);
-            nanoIconView.setImage(new Image(new ByteArrayInputStream(icon)));
-            nanoTypeLabel.setText(type);
-            nanoPowers.stream()
+        NanoInfo nanoInfo = controller.getStaticDataStore().getNanoInfoMap().get(nanoCapsule.get().getNano());
+
+        if (Objects.nonNull(nanoInfo)) {
+            int crateID = nanoCapsule.get().getCrateID();
+            nanoCapsuleBox.setObservableAndState(crateID == Crate.INT_CRATE_PLACEHOLDER_ID ?
+                    null :
+                    controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(crateID, Crate.TYPE)));
+            nanoNameLabel.setText(nanoInfo.name());
+            nanoIconView.setImage(nanoInfo.iconName());
+            nanoTypeLabel.setText(nanoInfo.type());
+            nanoInfo.powers().stream()
                     .map(npi -> {
                         NanoPowerBox nanoPowerBox = new NanoPowerBox(controller);
-                        nanoPowerBox.setObservable(npi);
+                        nanoPowerBox.setObservableAndState(npi);
                         return nanoPowerBox;
                     })
                     .forEach(nanoPowerVBox.getChildren()::add);
         }
+    }
 
+    @Override
+    public void bindVariablesNullable() {
         removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
         nanoCapsuleBox.getRemoveButton().addEventHandler(MouseEvent.MOUSE_CLICKED, capsuleRemoveClickHandler);
+        nanoCapsuleBox.getIdLabel().addEventHandler(MouseEvent.MOUSE_CLICKED, capsuleIdClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+        nanoCapsuleBox.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, capsuleRemoveClickHandler);
+        nanoCapsuleBox.getIdLabel().removeEventHandler(MouseEvent.MOUSE_CLICKED, capsuleIdClickHandler);
     }
 
     @Override
@@ -235,8 +212,8 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
                 op -> op.map(o -> (NanoCapsule) o)
                         .map(NanoCapsule::getCrateID)
                         .stream()
-                        .filter(id -> itemInfoMap.containsKey(new Pair<>(id, 9)))
-                        .map(id -> itemInfoMap.get(new Pair<>(id, 9)))
+                        .filter(id -> itemInfoMap.containsKey(new Pair<>(id, Crate.TYPE)))
+                        .map(id -> itemInfoMap.get(new Pair<>(id, Crate.TYPE)))
                         .toList()
         ));
 
@@ -246,11 +223,6 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
     @Override
     public Button getRemoveButton() {
         return removeButton;
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
     }
 
     public NanoCapsule getNanoCapsule() {
@@ -265,7 +237,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
         return nanoNameLabel;
     }
 
-    public ImageView getNanoIconView() {
+    public StandardImageView getNanoIconView() {
         return nanoIconView;
     }
 
@@ -298,7 +270,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
         private final MainController controller;
 
-        private final ImageView nanoPowerIconView;
+        private final StandardImageView nanoPowerIconView;
         private final Label nanoPowerNameLabel;
         private final Label nanoPowerCommentLabel;
 
@@ -307,11 +279,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
             this.controller = controller;
 
-            nanoPowerIconView = new ImageView();
-            nanoPowerIconView.setFitWidth(32);
-            nanoPowerIconView.setFitHeight(32);
-            nanoPowerIconView.setPreserveRatio(true);
-            nanoPowerIconView.setCache(true);
+            nanoPowerIconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 32);
 
             nanoPowerNameLabel = new Label();
             nanoPowerNameLabel.setTextAlignment(TextAlignment.CENTER);
@@ -329,6 +297,11 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
         }
 
         @Override
+        public MainController getController() {
+            return controller;
+        }
+
+        @Override
         public Class<NanoPowerInfo> getObservableClass() {
             return NanoPowerInfo.class;
         }
@@ -340,24 +313,22 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
         @Override
         public void setObservable(NanoPowerInfo data) {
-            var iconMap = controller.getIconManager().getIconMap();
-
             nanoPowerInfo.set(data);
+        }
 
-            String name = nanoPowerInfo.isNull().get() ?
-                    "UNKNOWN" :
-                    String.format("%s (%s)", nanoPowerInfo.get().name(), nanoPowerInfo.get().type());
-            String comment = nanoPowerInfo.isNull().get() ?
-                    "Unknown" :
-                    nanoPowerInfo.get().comment();
-            byte[] defaultIcon = iconMap.get("unknown");
-            byte[] icon = nanoPowerInfo.isNull().get() ?
-                    defaultIcon :
-                    iconMap.getOrDefault(nanoPowerInfo.get().iconName(), defaultIcon);
+        @Override
+        public void cleanUIState() {
+            nanoPowerNameLabel.setText("UNKNOWN");
+            nanoPowerCommentLabel.setText("Unknown");
+            nanoPowerIconView.cleanImage();
+        }
 
-            nanoPowerIconView.setImage(new Image(new ByteArrayInputStream(icon)));
-            nanoPowerNameLabel.setText(name);
-            nanoPowerCommentLabel.setText(comment);
+        @Override
+        public void fillUIState() {
+            nanoPowerNameLabel.setText(String.format("%s (%s)",
+                    nanoPowerInfo.get().name(), nanoPowerInfo.get().type()));
+            nanoPowerCommentLabel.setText(nanoPowerInfo.get().comment());
+            nanoPowerIconView.setImage(nanoPowerInfo.get().iconName());
         }
 
         public NanoPowerInfo getNanoPowerInfo() {
@@ -368,7 +339,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
             return nanoPowerInfo;
         }
 
-        public ImageView getNanoPowerIconView() {
+        public StandardImageView getNanoPowerIconView() {
             return nanoPowerIconView;
         }
 
@@ -387,7 +358,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
         private final MainController controller;
 
         private final Label nameLabel;
-        private final ImageView iconView;
+        private final StandardImageView iconView;
         private final VBox contentVBox;
 
         private final Label idLabel;
@@ -403,11 +374,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
             nameLabel.setTextAlignment(TextAlignment.CENTER);
             nameLabel.setWrapText(true);
 
-            iconView = new ImageView();
-            iconView.setFitWidth(64);
-            iconView.setFitHeight(64);
-            iconView.setPreserveRatio(true);
-            iconView.setCache(true);
+            iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
 
             contentVBox = new VBox(2, nameLabel, iconView);
             contentVBox.setAlignment(Pos.CENTER);
@@ -426,21 +393,12 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
             setSpacing(2);
             setAlignment(Pos.CENTER_LEFT);
             getChildren().addAll(idHBox, contentVBox);
-
-            idLabel.setText("Capsule: null");
-            contentVBox.setDisable(true);
-
-            capsuleItemInfo.addListener((o, oldVal, newVal) -> {
-                if (Objects.isNull(newVal)) {
-                    idLabel.setText("Capsule: null");
-                    contentVBox.setDisable(true);
-                } else {
-                    idLabel.setText("Capsule: " + newVal.id());
-                    contentVBox.setDisable(false);
-                }
-            });
         }
 
+        @Override
+        public MainController getController() {
+            return controller;
+        }
 
         @Override
         public Class<ItemInfo> getObservableClass() {
@@ -454,20 +412,30 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
         @Override
         public void setObservable(ItemInfo data) {
+            capsuleItemInfo.set(data);
+        }
+
+        @Override
+        public void cleanUIState() {
+            idLabel.setText("Capsule: null");
+            contentVBox.setDisable(true);
+            idLabel.getStyleClass().removeIf("disabled-id"::equals);
+            idLabel.getStyleClass().add("disabled-id");
+
+            nameLabel.setText("UNKNOWN");
+            iconView.cleanImage();
+        }
+
+        @Override
+        public void fillUIState() {
             var iconMap = controller.getIconManager().getIconMap();
 
-            capsuleItemInfo.set(data);
+            idLabel.setText("Capsule: " + capsuleItemInfo.get().id());
+            contentVBox.setDisable(false);
+            idLabel.getStyleClass().removeIf("disabled-id"::equals);
 
-            String name = capsuleItemInfo.isNull().get() ?
-                    "UNKNOWN" :
-                    capsuleItemInfo.get().name();
-            byte[] defaultIcon = iconMap.get("unknown");
-            byte[] icon = capsuleItemInfo.isNull().get() ?
-                    defaultIcon :
-                    iconMap.getOrDefault(capsuleItemInfo.get().iconName(), defaultIcon);
-
-            nameLabel.setText(name);
-            iconView.setImage(new Image(new ByteArrayInputStream(icon)));
+            nameLabel.setText(capsuleItemInfo.get().name());
+            iconView.setImage(capsuleItemInfo.get().iconName());
         }
 
         public ItemInfo getCapsuleItemInfo() {
@@ -482,7 +450,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
             return nameLabel;
         }
 
-        public ImageView getIconView() {
+        public StandardImageView getIconView() {
             return iconView;
         }
 

@@ -1,5 +1,6 @@
 package finnhh.oftools.dropeditor.view.component;
 
+import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.FilterType;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -13,11 +14,52 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public interface ObservableComponent<T> {
+    MainController getController();
+
     Class<? extends T> getObservableClass();
 
     ReadOnlyObjectProperty<? extends T> getObservable();
 
     void setObservable(T data);
+
+    void cleanUIState();
+
+    void fillUIState();
+
+    default void bindVariablesNonNull() {
+    }
+
+    default void bindVariablesNullable() {
+    }
+
+    default void unbindVariables() {
+    }
+
+    default void refreshObservableAndState() {
+        setObservableAndState(getObservable().get());
+    }
+
+    default void setObservableAndState(T data) {
+        // 1. unbind listeners, handlers, and bound variables
+        unbindVariables();
+
+        // 2. make the UI State "clean" i.e. as if observable is null
+        cleanUIState();
+
+        // 3. set the observable
+        setObservable(data);
+
+        if (getObservable().isNotNull().get()) {
+            // 4?. fill the UI State with the non-null observable
+            fillUIState();
+
+            // 5?. bind variables that depend on a non-null observable
+            bindVariablesNonNull();
+        }
+
+        // 6. bind all variables that are independent of the nullity of the observable
+        bindVariablesNullable();
+    }
 
     static Set<FilterChoice> getSearchableValuesFor(Class<?> valueClass) {
         return Arrays.stream(valueClass.getDeclaredFields())

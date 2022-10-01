@@ -6,18 +6,15 @@ import finnhh.oftools.dropeditor.model.MobTypeInfo;
 import finnhh.oftools.dropeditor.model.data.*;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.util.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.util.Objects;
 
 public class ImageSummaryBox extends StackPane {
     private final MainController controller;
     private final double imageWidth;
-    private final ImageView iconView;
+    private final StandardImageView iconView;
     private final Label centerLabel;
     private final Label idLabel;
     private final Label extraLabel;
@@ -26,11 +23,7 @@ public class ImageSummaryBox extends StackPane {
         this.controller = controller;
         this.imageWidth = imageWidth;
 
-        iconView = new ImageView();
-        iconView.setFitWidth(imageWidth);
-        iconView.setFitHeight(imageWidth);
-        iconView.setPreserveRatio(true);
-        iconView.setCache(true);
+        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), imageWidth);
 
         String classInitials = data.toString()
                 .split(":", 2)[0]
@@ -55,37 +48,34 @@ public class ImageSummaryBox extends StackPane {
     }
 
     private void setIconAndExtra(Data data) {
-        var iconMap = controller.getIconManager().getIconMap();
         var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
-        var mobTypeInfoMap = controller.getStaticDataStore().getMobTypeInfoMap();
 
         if (data instanceof Mob m) {
-            MobTypeInfo mobTypeInfo = mobTypeInfoMap.get(m.getMobID());
+            MobTypeInfo mobTypeInfo = controller.getStaticDataStore().getMobTypeInfoMap().get(m.getMobID());
 
-            if (Objects.nonNull(mobTypeInfo) && iconMap.containsKey(mobTypeInfo.iconName())) {
-                iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(mobTypeInfo.iconName()))));
+            if (Objects.nonNull(mobTypeInfo)) {
+                iconView.setImage(mobTypeInfo.iconName());
                 centerLabel.setText("");
                 setExtra(mobTypeInfo.level() + "Lv");
             }
         } else if (data instanceof ItemReference ir) {
             ItemInfo itemInfo = itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType()));
 
-            if (Objects.nonNull(itemInfo) && iconMap.containsKey(itemInfo.iconName())) {
-                iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(itemInfo.iconName()))));
+            if (Objects.nonNull(itemInfo)) {
+                iconView.setImage(itemInfo.iconName());
                 centerLabel.setText("");
                 setExtra(itemInfo.requiredLevel() + "Lv");
             }
         } else if (data instanceof Crate cr) {
-            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(cr.getCrateID(), 9));
+            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(cr.getCrateID(), Crate.TYPE));
 
-            if (Objects.nonNull(itemInfo) && iconMap.containsKey(itemInfo.iconName())) {
-                iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(itemInfo.iconName()))));
+            if (Objects.nonNull(itemInfo)) {
+                iconView.setImage(itemInfo.iconName());
                 centerLabel.setText("");
                 setExtra(itemInfo.contentLevel() + "Lv");
             }
         } else if (data instanceof Racing r) {
-            iconView.setImage(new Image(new ByteArrayInputStream(iconMap.get(
-                    String.format("ep_small_%02d", r.getEPID())))));
+            iconView.setImage(String.format("ep_small_%02d", r.getEPID()));
             centerLabel.setText("");
         } else if (data instanceof CodeItem ci) {
             idLabel.setText(ci.getCode());
@@ -106,7 +96,7 @@ public class ImageSummaryBox extends StackPane {
         return idLabel;
     }
 
-    public ImageView getIconView() {
+    public StandardImageView getIconView() {
         return iconView;
     }
 

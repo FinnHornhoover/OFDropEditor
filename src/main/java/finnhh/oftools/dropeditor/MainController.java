@@ -10,11 +10,8 @@ import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.util.Pair;
 
-import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -47,6 +44,7 @@ public class MainController {
     protected void onNewButtonPressed() {
         viewModeChoiceBox.getValue().getNewDataAdder().apply(this).ifPresent(data -> {
             drops.add(data);
+            data.registerReferences(drops);
             refreshList();
             mainListView.scrollTo(data);
         });
@@ -65,7 +63,7 @@ public class MainController {
     public void setup() {
         rootPrototypeMap = new HashMap<>();
         for (ViewMode viewMode : ViewMode.values())
-            rootPrototypeMap.put(viewMode, viewMode.getComponentConstructor().apply(this, mainListView));
+            rootPrototypeMap.put(viewMode, viewMode.getComponentConstructor().apply(this));
 
         viewModeChoiceBox.getItems().addAll(ViewMode.values());
         viewModeChoiceBox.setValue(ViewMode.MONSTER);
@@ -81,13 +79,13 @@ public class MainController {
             private final EventComponent eventComponent;
 
             {
-                mobComponent = new MobComponent(controller, mainListView);
-                crateComponent = new CrateComponent(controller, mainListView);
-                racingComponent = new RacingComponent(controller, mainListView);
-                codeItemComponent = new CodeItemComponent(controller, mainListView);
-                itemReferenceComponent = new ItemReferenceComponent(controller, mainListView);
-                nanoCapsuleComponent = new NanoCapsuleComponent(controller, mainListView);
-                eventComponent = new EventComponent(controller, mainListView);
+                mobComponent = new MobComponent(controller);
+                crateComponent = new CrateComponent(controller);
+                racingComponent = new RacingComponent(controller);
+                codeItemComponent = new CodeItemComponent(controller);
+                itemReferenceComponent = new ItemReferenceComponent(controller);
+                nanoCapsuleComponent = new NanoCapsuleComponent(controller);
+                eventComponent = new EventComponent(controller);
             }
 
             @Override
@@ -99,31 +97,31 @@ public class MainController {
                 if (!empty) {
                     switch (viewModeChoiceBox.getValue()) {
                         case MONSTER -> {
-                            mobComponent.setObservable(data);
+                            mobComponent.setObservableAndState(data);
                             graphic = mobComponent;
                         }
                         case CRATE -> {
-                            crateComponent.setObservable(data);
+                            crateComponent.setObservableAndState(data);
                             graphic = crateComponent;
                         }
                         case RACING -> {
-                            racingComponent.setObservable(data);
+                            racingComponent.setObservableAndState(data);
                             graphic = racingComponent;
                         }
                         case CODE_ITEM -> {
-                            codeItemComponent.setObservable(data);
+                            codeItemComponent.setObservableAndState(data);
                             graphic = codeItemComponent;
                         }
                         case ITEM_REFERENCE -> {
-                            itemReferenceComponent.setObservable(data);
+                            itemReferenceComponent.setObservableAndState(data);
                             graphic = itemReferenceComponent;
                         }
                         case NANO_CAPSULE -> {
-                            nanoCapsuleComponent.setObservable(data);
+                            nanoCapsuleComponent.setObservableAndState(data);
                             graphic = nanoCapsuleComponent;
                         }
                         case EVENT -> {
-                            eventComponent.setObservable(data);
+                            eventComponent.setObservableAndState(data);
                             graphic = eventComponent;
                         }
                     }
@@ -173,19 +171,13 @@ public class MainController {
     }
 
     public <T> TableColumn<T, String> getIconColumn(Function<T, String> iconNameGetter) {
-        var iconMap = iconManager.getIconMap();
-
         TableColumn<T, String> iconColumn = getTableColumn("Icon", 68.0, iconNameGetter);
 
         iconColumn.setCellFactory(cfData -> new TableCell<>() {
-            private final ImageView iconView;
+            private final StandardImageView iconView;
 
             {
-                iconView = new ImageView();
-                iconView.setFitWidth(64);
-                iconView.setFitHeight(64);
-                iconView.setPreserveRatio(true);
-                iconView.setCache(true);
+                iconView = new StandardImageView(iconManager.getIconMap(), 64);
             }
 
             @Override
@@ -193,8 +185,7 @@ public class MainController {
                 super.updateItem(iconName, empty);
 
                 if (!empty) {
-                    iconView.setImage(new Image(new ByteArrayInputStream(
-                            iconMap.getOrDefault(iconName, iconMap.get("unknown")))));
+                    iconView.setImage(iconName);
                     setGraphic(iconView);
                 } else {
                     setGraphic(null);
@@ -262,7 +253,7 @@ public class MainController {
     public TableView<ItemInfo> getCrateAdditionGraphic() {
         return getTableGraphic(
                 () -> staticDataStore.getItemInfoMap().values().stream()
-                        .filter(ii -> ii.type() == 9 && !drops.cratesProperty().containsKey(ii.id()))
+                        .filter(ii -> ii.type() == Crate.TYPE && !drops.cratesProperty().containsKey(ii.id()))
                         .toList(),
                 () -> getIconColumn(ItemInfo::iconName),
                 () -> getTableColumn("ID", 68.0, ItemInfo::id),
@@ -320,8 +311,8 @@ public class MainController {
                             .map(NanoCapsule::getCrateID)
                             .collect(Collectors.toSet());
                     return staticDataStore.getItemInfoMap().values().stream()
-                            .filter(ii -> ii.type() == 9 && ii.name().contains("Nano") && ii.name().contains("Capsule")
-                                    && !crateIDSet.contains(ii.id()))
+                            .filter(ii -> ii.type() == Crate.TYPE && ii.name().contains("Nano")
+                                    && ii.name().contains("Capsule") && !crateIDSet.contains(ii.id()))
                             .toList();
                 },
                 () -> getIconColumn(ItemInfo::iconName),
@@ -501,6 +492,10 @@ public class MainController {
                             event.constructBindings();
                             return event;
                         }));
+    }
+
+    public ListView<Data> getMainListView() {
+        return mainListView;
     }
 
     public void setJSONManager(JSONManager jsonManager) {

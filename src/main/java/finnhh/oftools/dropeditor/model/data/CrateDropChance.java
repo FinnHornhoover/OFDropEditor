@@ -45,7 +45,7 @@ public class CrateDropChance extends Data {
         dropChance.addListener((o, oldVal, newVal) ->
                 dropChance.set(Math.min(Math.max(0, newVal.intValue()), dropChanceTotal.get())));
 
-        malformed.bind(crateDropChanceID.lessThan(0)
+        malformed.bind(crateDropChanceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(dropChance.lessThan(0))
                 .or(dropChanceTotal.lessThan(1))
                 .or(dropChanceTotal.lessThan(dropChance))

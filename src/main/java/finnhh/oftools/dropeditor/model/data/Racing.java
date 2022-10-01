@@ -9,6 +9,7 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+@IdMeaningful
 public class Racing extends Data {
     @Expose
     @SerializedName("EPID")
@@ -46,7 +47,7 @@ public class Racing extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(EPID.lessThan(0)
+        malformed.bind(EPID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(rankScores.isNull())
                 .or(rankScores.sizeProperty().lessThan(5))
                 .or(rankScores.sizeProperty().greaterThan(5))

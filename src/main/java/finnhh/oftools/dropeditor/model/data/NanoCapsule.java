@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+@IdMeaningful
 public class NanoCapsule extends Data {
     @Expose
     private final IntegerProperty nano;
@@ -27,8 +28,8 @@ public class NanoCapsule extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(nano.lessThan(0)
-                .or(crateID.lessThan(0)));
+        malformed.bind(nano.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
+                .or(crateID.lessThanOrEqualTo(Crate.INT_CRATE_PLACEHOLDER_ID)));
 
         id.set(String.valueOf(nano.get()));
         nano.addListener((o, oldVal, newVal) -> id.set(String.valueOf(newVal.intValue())));

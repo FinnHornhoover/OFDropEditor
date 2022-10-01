@@ -59,7 +59,7 @@ public class ItemSet extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(itemSetID.lessThan(0)
+        malformed.bind(itemSetID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(defaultItemWeight.lessThan(0))
                 .or(alterRarityMap.isNull())
                 .or(alterGenderMap.isNull())

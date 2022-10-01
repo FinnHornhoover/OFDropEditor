@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+@IdMeaningful
 public class Event extends Data {
     @Expose
     private final IntegerProperty eventID;
@@ -27,8 +28,8 @@ public class Event extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(eventID.lessThan(0)
-                .or(mobDropID.lessThan(0)));
+        malformed.bind(eventID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
+                .or(mobDropID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)));
 
         id.set(String.valueOf(eventID.get()));
         eventID.addListener((o, oldVal, newVal) -> id.set(String.valueOf(newVal.intValue())));

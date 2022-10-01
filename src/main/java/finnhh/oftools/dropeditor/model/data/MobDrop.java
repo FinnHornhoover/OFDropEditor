@@ -39,11 +39,11 @@ public class MobDrop extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(mobDropID.lessThan(0)
-                .or(crateDropChanceID.lessThan(0))
-                .or(crateDropTypeID.lessThan(0))
-                .or(miscDropChanceID.lessThan(0))
-                .or(miscDropTypeID.lessThan(0)));
+        malformed.bind(mobDropID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
+                .or(crateDropChanceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID))
+                .or(crateDropTypeID.lessThanOrEqualTo(INT_PLACEHOLDER_ID))
+                .or(miscDropChanceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID))
+                .or(miscDropTypeID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)));
 
         id.set(String.valueOf(mobDropID.get()));
         mobDropID.addListener((o, oldVal, newVal) -> id.set(String.valueOf(newVal.intValue())));

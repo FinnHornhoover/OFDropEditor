@@ -15,10 +15,11 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 
+import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 
 public class MiscDropChanceComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<MiscDropChance> miscDropChance;
@@ -77,104 +78,39 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         setCenter(contentScrollPane);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
-        potionChanceListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setPotionDropChance(newVal.intValue());
-                potionVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        potionChanceTotalListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setPotionDropChanceTotal(newVal.intValue());
-                potionVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        boostChanceListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setBoostDropChance(newVal.intValue());
-                boostVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        boostChanceTotalListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setBoostDropChanceTotal(newVal.intValue());
-                boostVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        taroChanceListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setTaroDropChance(newVal.intValue());
-                taroVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        taroChanceTotalListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setTaroDropChanceTotal(newVal.intValue());
-                taroVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        fmChanceListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setFMDropChance(newVal.intValue());
-                fmVBox.getChanceSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        fmChanceTotalListener = (o, oldVal, newVal) -> {
-            if (miscDropChance.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropChance.get().setFMDropChanceTotal(newVal.intValue());
-                fmVBox.getChanceTotalSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentHBox.setDisable(true);
-        setIdDisable(true);
-
+        potionChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setPotionDropChance(newVal.intValue()));
+        potionChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setPotionDropChanceTotal(newVal.intValue()));
+        boostChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setBoostDropChance(newVal.intValue()));
+        boostChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setBoostDropChanceTotal(newVal.intValue()));
+        taroChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setTaroDropChance(newVal.intValue()));
+        taroChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setTaroDropChanceTotal(newVal.intValue()));
+        fmChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setFMDropChance(newVal.intValue()));
+        fmChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
+                miscDropChance.get().setFMDropChanceTotal(newVal.intValue()));
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
-                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
-
-        // both makeEditable and setObservable sets the observable, just use a listener here
-        miscDropChance.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentHBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentHBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+                .ifPresent(this::makeReplacement);
     }
 
-    private void bindVariables() {
-        potionVBox.getChanceSpinner().valueProperty().addListener(potionChanceListener);
-        potionVBox.getChanceTotalSpinner().valueProperty().addListener(potionChanceTotalListener);
-        boostVBox.getChanceSpinner().valueProperty().addListener(boostChanceListener);
-        boostVBox.getChanceTotalSpinner().valueProperty().addListener(boostChanceTotalListener);
-        taroVBox.getChanceSpinner().valueProperty().addListener(taroChanceListener);
-        taroVBox.getChanceTotalSpinner().valueProperty().addListener(taroChanceTotalListener);
-        fmVBox.getChanceSpinner().valueProperty().addListener(fmChanceListener);
-        fmVBox.getChanceTotalSpinner().valueProperty().addListener(fmChanceTotalListener);
+    @Override
+    public MainController getController() {
+        return controller;
     }
 
-    private void unbindVariables() {
-        potionVBox.getChanceSpinner().valueProperty().removeListener(potionChanceListener);
-        potionVBox.getChanceTotalSpinner().valueProperty().removeListener(potionChanceTotalListener);
-        boostVBox.getChanceSpinner().valueProperty().removeListener(boostChanceListener);
-        boostVBox.getChanceTotalSpinner().valueProperty().removeListener(boostChanceTotalListener);
-        taroVBox.getChanceSpinner().valueProperty().removeListener(taroChanceListener);
-        taroVBox.getChanceTotalSpinner().valueProperty().removeListener(taroChanceTotalListener);
-        fmVBox.getChanceSpinner().valueProperty().removeListener(fmChanceListener);
-        fmVBox.getChanceTotalSpinner().valueProperty().removeListener(fmChanceTotalListener);
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentHBox);
     }
 
     @Override
@@ -189,35 +125,55 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
 
     @Override
     public void setObservable(Data data) {
+        miscDropChance.set((MiscDropChance) data);
+    }
+
+    @Override
+    public void cleanUIState() {
+        DataComponent.super.cleanUIState();
+
+        potionVBox.cleanUIState();
+        boostVBox.cleanUIState();
+        taroVBox.cleanUIState();
+        fmVBox.cleanUIState();
+    }
+
+    @Override
+    public void fillUIState() {
+        DataComponent.super.fillUIState();
+
+        potionVBox.fillUIState(miscDropChance.get().getPotionDropChance(), miscDropChance.get().getPotionDropChanceTotal());
+        boostVBox.fillUIState(miscDropChance.get().getBoostDropChance(), miscDropChance.get().getBoostDropChanceTotal());
+        taroVBox.fillUIState(miscDropChance.get().getTaroDropChance(), miscDropChance.get().getTaroDropChanceTotal());
+        fmVBox.fillUIState(miscDropChance.get().getFMDropChance(), miscDropChance.get().getFMDropChanceTotal());
+    }
+
+    @Override
+    public void bindVariablesNonNull() {
+        potionVBox.bindVariables(potionChanceListener, potionChanceTotalListener);
+        boostVBox.bindVariables(boostChanceListener, boostChanceTotalListener);
+        taroVBox.bindVariables(taroChanceListener, taroChanceTotalListener);
+        fmVBox.bindVariables(fmChanceListener, fmChanceTotalListener);
+    }
+
+    @Override
+    public void bindVariablesNullable() {
+        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
         idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
 
-        miscDropChance.set((MiscDropChance) data);
+        potionVBox.unbindVariables(potionChanceListener, potionChanceTotalListener);
+        boostVBox.unbindVariables(boostChanceListener, boostChanceTotalListener);
+        taroVBox.unbindVariables(taroChanceListener, taroChanceTotalListener);
+        fmVBox.unbindVariables(fmChanceListener, fmChanceTotalListener);
+    }
 
-        unbindVariables();
-
-        if (miscDropChance.isNull().get()) {
-            potionVBox.getChanceSpinner().getValueFactory().setValue(0);
-            potionVBox.getChanceTotalSpinner().getValueFactory().setValue(1);
-            boostVBox.getChanceSpinner().getValueFactory().setValue(0);
-            boostVBox.getChanceTotalSpinner().getValueFactory().setValue(1);
-            taroVBox.getChanceSpinner().getValueFactory().setValue(0);
-            taroVBox.getChanceTotalSpinner().getValueFactory().setValue(1);
-            fmVBox.getChanceSpinner().getValueFactory().setValue(0);
-            fmVBox.getChanceTotalSpinner().getValueFactory().setValue(1);
-        } else {
-            potionVBox.getChanceSpinner().getValueFactory().setValue(miscDropChance.get().getPotionDropChance());
-            potionVBox.getChanceTotalSpinner().getValueFactory().setValue(miscDropChance.get().getPotionDropChanceTotal());
-            boostVBox.getChanceSpinner().getValueFactory().setValue(miscDropChance.get().getBoostDropChance());
-            boostVBox.getChanceTotalSpinner().getValueFactory().setValue(miscDropChance.get().getBoostDropChanceTotal());
-            taroVBox.getChanceSpinner().getValueFactory().setValue(miscDropChance.get().getTaroDropChance());
-            taroVBox.getChanceTotalSpinner().getValueFactory().setValue(miscDropChance.get().getTaroDropChanceTotal());
-            fmVBox.getChanceSpinner().getValueFactory().setValue(miscDropChance.get().getFMDropChance());
-            fmVBox.getChanceTotalSpinner().getValueFactory().setValue(miscDropChance.get().getFMDropChanceTotal());
-
-            bindVariables();
-        }
-
-        idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    @Override
+    public DataComponent getParentComponent() {
+        return parent;
     }
 
     public double getBoxSpacing() {
@@ -260,16 +216,6 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         return contentScrollPane;
     }
 
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
-    @Override
-    public DataComponent getParentComponent() {
-        return parent;
-    }
-
     public static class ChanceVBox extends VBox {
         private final StandardSpinner chanceSpinner;
         private final StandardSpinner chanceTotalSpinner;
@@ -278,14 +224,15 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         private final Slider chanceSlider;
         private final Label chancePercentageLabel;
 
+        private final ChangeListener<Number> sliderChangeListener;
+        private final ChangeListener<Integer> spinnerChangeListener;
+
         public ChanceVBox(double width) {
             this(0, 1, width);
         }
 
         public ChanceVBox(int chanceValue, int chanceTotalValue, double width) {
-            var spinnerValueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(
-                    0, chanceTotalValue, chanceValue);
-            chanceSpinner = new StandardSpinner(spinnerValueFactory);
+            chanceSpinner = new StandardSpinner(0, chanceTotalValue, chanceValue);
             chanceTotalSpinner = new StandardSpinner(1, Integer.MAX_VALUE, chanceTotalValue);
 
             chanceSeparator = new Separator(Orientation.HORIZONTAL);
@@ -308,18 +255,50 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
             setMinWidth(width);
             setMaxWidth(width);
 
-            chanceSlider.valueProperty().addListener((o, oldVal, newVal) ->
-                    chanceSpinner.getValueFactory().setValue(newVal.intValue()));
-            chanceSpinner.valueProperty().addListener((o, oldVal, newVal) ->
-                    chanceSlider.setValue(newVal));
+            sliderChangeListener = (o, oldVal, newVal) -> chanceSpinner.getValueFactory().setValue(newVal.intValue());
+            spinnerChangeListener = (o, oldVal, newVal) -> chanceSlider.setValue(newVal);
+        }
 
-            spinnerValueFactory.maxProperty().bind(chanceTotalSpinner.valueProperty());
+        public void bindVariables(ChangeListener<Number> valueListener, ChangeListener<Number> totalValueListener) {
+            chanceSlider.valueProperty().addListener(sliderChangeListener);
+            chanceSpinner.valueProperty().addListener(spinnerChangeListener);
+
+            ((SpinnerValueFactory.IntegerSpinnerValueFactory) chanceSpinner.getValueFactory()).maxProperty()
+                    .bind(chanceTotalSpinner.valueProperty());
             chanceSlider.maxProperty().bind(chanceTotalSpinner.valueProperty());
 
             chancePercentageLabel.textProperty().bind(DoubleProperty.doubleExpression(chanceSpinner.valueProperty())
                     .multiply(100.0)
                     .divide(DoubleProperty.doubleExpression(chanceTotalSpinner.valueProperty()))
                     .asString(Locale.US, "%.5f%%"));
+
+            chanceSpinner.valueProperty().addListener(valueListener);
+            chanceTotalSpinner.valueProperty().addListener(totalValueListener);
+        }
+
+        public void unbindVariables(ChangeListener<Number> valueListener, ChangeListener<Number> totalValueListener) {
+            chanceSlider.valueProperty().removeListener(sliderChangeListener);
+            chanceSpinner.valueProperty().removeListener(spinnerChangeListener);
+
+            ((SpinnerValueFactory.IntegerSpinnerValueFactory) chanceSpinner.getValueFactory()).maxProperty().unbind();
+            chanceSlider.maxProperty().unbind();
+
+            chancePercentageLabel.textProperty().unbind();
+
+            chanceSpinner.valueProperty().removeListener(valueListener);
+            chanceTotalSpinner.valueProperty().removeListener(totalValueListener);
+        }
+
+        public void cleanUIState() {
+            chanceSpinner.getValueFactory().setValue(0);
+            chanceTotalSpinner.getValueFactory().setValue(1);
+            chanceSlider.setValue(0);
+        }
+
+        public void fillUIState(int value, int totalValue) {
+            chanceSpinner.getValueFactory().setValue(value);
+            chanceTotalSpinner.getValueFactory().setValue(totalValue);
+            chanceSlider.setValue(value);
         }
 
         public StandardSpinner getChanceSpinner() {

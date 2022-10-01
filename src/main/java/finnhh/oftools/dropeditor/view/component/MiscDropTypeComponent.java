@@ -11,15 +11,14 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 
-import java.io.ByteArrayInputStream;
-import java.util.Objects;
+import java.util.List;
+import java.util.Map;
 
 public class MiscDropTypeComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<MiscDropType> miscDropType;
@@ -56,10 +55,10 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         this.parent = parent;
 
         var iconMap = this.controller.getIconManager().getIconMap();
-        potionVBox = new TypeVBox(iconMap.get("potions"), boxWidth);
-        boostVBox = new TypeVBox(iconMap.get("boosts"), boxWidth);
-        taroVBox = new TypeVBox(iconMap.get("taro"), boxWidth);
-        fmVBox = new TypeVBox(iconMap.get("fm"), boxWidth);
+        potionVBox = new TypeVBox(iconMap, 0, "potions", boxWidth);
+        boostVBox = new TypeVBox(iconMap, 0, "boosts", boxWidth);
+        taroVBox = new TypeVBox(iconMap, 0, "taro", boxWidth);
+        fmVBox = new TypeVBox(iconMap, 0, "fm", boxWidth);
 
         contentHBox = new HBox(boxSpacing, potionVBox, boostVBox, taroVBox, fmVBox);
         contentHBox.setAlignment(Pos.CENTER);
@@ -76,67 +75,27 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         setCenter(contentScrollPane);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
-        potionListener = (o, oldVal, newVal) -> {
-            if (miscDropType.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropType.get().setPotionAmount(newVal.intValue());
-                potionVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        boostListener = (o, oldVal, newVal) -> {
-            if (miscDropType.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropType.get().setBoostAmount(newVal.intValue());
-                boostVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        taroListener = (o, oldVal, newVal) -> {
-            if (miscDropType.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropType.get().setTaroAmount(newVal.intValue());
-                taroVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-        fmListener = (o, oldVal, newVal) -> {
-            if (miscDropType.isNotNull().get()) {
-                makeEditable(this.controller.getDrops());
-                miscDropType.get().setFMAmount(newVal.intValue());
-                fmVBox.getAmountSpinner().getValueFactory().setValue(newVal.intValue());
-            }
-        };
-
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        contentHBox.setDisable(true);
-        setIdDisable(true);
-
+        potionListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setPotionAmount(newVal.intValue()));
+        boostListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setBoostAmount(newVal.intValue()));
+        taroListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setTaroAmount(newVal.intValue()));
+        fmListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setFMAmount(newVal.intValue()));
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
-                .ifPresent(d -> makeEdit(this.controller.getDrops(), d));
-
-        miscDropType.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                contentHBox.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                contentHBox.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+                .ifPresent(this::makeReplacement);
     }
 
-    private void bindVariables() {
-        potionVBox.getAmountSpinner().valueProperty().addListener(potionListener);
-        boostVBox.getAmountSpinner().valueProperty().addListener(boostListener);
-        taroVBox.getAmountSpinner().valueProperty().addListener(taroListener);
-        fmVBox.getAmountSpinner().valueProperty().addListener(fmListener);
+    @Override
+    public MainController getController() {
+        return controller;
     }
 
-    private void unbindVariables() {
-        potionVBox.getAmountSpinner().valueProperty().removeListener(potionListener);
-        boostVBox.getAmountSpinner().valueProperty().removeListener(boostListener);
-        taroVBox.getAmountSpinner().valueProperty().removeListener(taroListener);
-        fmVBox.getAmountSpinner().valueProperty().removeListener(fmListener);
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(contentHBox);
     }
 
     @Override
@@ -151,27 +110,54 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
 
     @Override
     public void setObservable(Data data) {
-        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-
         miscDropType.set((MiscDropType) data);
+    }
 
-        unbindVariables();
+    @Override
+    public void cleanUIState() {
+        DataComponent.super.cleanUIState();
 
-        if (miscDropType.isNull().get()) {
-            potionVBox.getAmountSpinner().getValueFactory().setValue(0);
-            boostVBox.getAmountSpinner().getValueFactory().setValue(0);
-            taroVBox.getAmountSpinner().getValueFactory().setValue(0);
-            fmVBox.getAmountSpinner().getValueFactory().setValue(0);
-        } else {
-            potionVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getPotionAmount());
-            boostVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getBoostAmount());
-            taroVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getTaroAmount());
-            fmVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getFMAmount());
+        potionVBox.getAmountSpinner().getValueFactory().setValue(0);
+        boostVBox.getAmountSpinner().getValueFactory().setValue(0);
+        taroVBox.getAmountSpinner().getValueFactory().setValue(0);
+        fmVBox.getAmountSpinner().getValueFactory().setValue(0);
+    }
 
-            bindVariables();
-        }
+    @Override
+    public void fillUIState() {
+        DataComponent.super.fillUIState();
 
+        potionVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getPotionAmount());
+        boostVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getBoostAmount());
+        taroVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getTaroAmount());
+        fmVBox.getAmountSpinner().getValueFactory().setValue(miscDropType.get().getFMAmount());
+    }
+
+    @Override
+    public void bindVariablesNonNull() {
+        potionVBox.getAmountSpinner().valueProperty().addListener(potionListener);
+        boostVBox.getAmountSpinner().valueProperty().addListener(boostListener);
+        taroVBox.getAmountSpinner().valueProperty().addListener(taroListener);
+        fmVBox.getAmountSpinner().valueProperty().addListener(fmListener);
+    }
+
+    @Override
+    public void bindVariablesNullable() {
         idLabel.addEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
+        idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
+        potionVBox.getAmountSpinner().valueProperty().removeListener(potionListener);
+        boostVBox.getAmountSpinner().valueProperty().removeListener(boostListener);
+        taroVBox.getAmountSpinner().valueProperty().removeListener(taroListener);
+        fmVBox.getAmountSpinner().valueProperty().removeListener(fmListener);
+    }
+
+    @Override
+    public DataComponent getParentComponent() {
+        return parent;
     }
 
     public double getBoxSpacing() {
@@ -214,32 +200,15 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         return contentScrollPane;
     }
 
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
-    }
-
-    @Override
-    public DataComponent getParentComponent() {
-        return parent;
-    }
-
     public static class TypeVBox extends VBox {
         private final StandardSpinner amountSpinner;
-        private final ImageView iconView;
+        private final StandardImageView iconView;
 
-        public TypeVBox(byte[] icon, double width) {
-            this(0, icon, width);
-        }
-
-        public TypeVBox(int amountValue, byte[] icon, double width) {
+        public TypeVBox(Map<String, byte[]> iconMap, int amountValue, String iconName, double width) {
             amountSpinner = new StandardSpinner(0, Integer.MAX_VALUE, amountValue);
 
-            iconView = new ImageView(new Image(new ByteArrayInputStream(icon)));
-            iconView.setFitWidth(64);
-            iconView.setFitHeight(64);
-            iconView.setPreserveRatio(true);
-            iconView.setCache(true);
+            iconView = new StandardImageView(iconMap, 64);
+            iconView.setImage(iconName);
 
             setSpacing(2);
             getChildren().addAll(amountSpinner, iconView);
@@ -252,7 +221,7 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
             return amountSpinner;
         }
 
-        public ImageView getIconView() {
+        public StandardImageView getIconView() {
             return iconView;
         }
     }

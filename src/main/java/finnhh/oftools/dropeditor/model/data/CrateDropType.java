@@ -32,7 +32,7 @@ public class CrateDropType extends Data {
 
     @Override
     public void constructBindings() {
-        malformed.bind(crateDropTypeID.lessThan(0)
+        malformed.bind(crateDropTypeID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(crateIDs.isNull())
                 .or(crateIDs.emptyProperty()));
 

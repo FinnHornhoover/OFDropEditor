@@ -16,6 +16,7 @@ import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class FilterListBox extends FlowPane {
     private final ListProperty<FilterCondition> filterConditionList;
@@ -45,10 +46,9 @@ public class FilterListBox extends FlowPane {
     public void clearFilters() {
         var children = getChildren().filtered(c -> c instanceof FilterBox);
 
-        for (int index = 0; index < children.size(); index++) {
-            FilterBox fb = (FilterBox) children.get(index);
-            fb.getRemoveButton().removeEventHandler(MouseEvent.MOUSE_CLICKED, removeHandlers.get(index));
-        }
+        IntStream.range(0, children.size())
+                .forEach(index -> ((FilterBox) children.get(index)).getRemoveButton()
+                        .removeEventHandler(MouseEvent.MOUSE_CLICKED, removeHandlers.get(index)));
 
         getChildren().clear();
         filterConditionList.clear();

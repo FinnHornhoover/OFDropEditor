@@ -2,22 +2,25 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.data.*;
+import finnhh.oftools.dropeditor.model.data.Crate;
+import finnhh.oftools.dropeditor.model.data.Data;
+import finnhh.oftools.dropeditor.model.data.Drops;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.util.Pair;
 
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class CrateComponent extends HBox implements RootDataComponent {
@@ -35,7 +38,7 @@ public class CrateComponent extends HBox implements RootDataComponent {
 
     private final EventHandler<MouseEvent> removeClickHandler;
 
-    public CrateComponent(MainController controller, ListView<Data> listView) {
+    public CrateComponent(MainController controller) {
         crate = new SimpleObjectProperty<>();
 
         this.controller = controller;
@@ -44,7 +47,7 @@ public class CrateComponent extends HBox implements RootDataComponent {
         rarityWeightsComponent = new RarityWeightsComponent(20.0, 120.0, controller, this);
         itemSetComponent = new ItemSetComponent(120.0, 2.0, controller, this);
 
-        itemSetComponent.prefWidthProperty().bind(listView.widthProperty()
+        itemSetComponent.prefWidthProperty().bind(this.controller.getMainListView().widthProperty()
                 .subtract(crateInfoComponent.widthProperty())
                 .subtract(rarityWeightsComponent.widthProperty())
                 .subtract(28));
@@ -66,33 +69,22 @@ public class CrateComponent extends HBox implements RootDataComponent {
         getChildren().addAll(crateBorderPane, rarityWeightsComponent, itemSetComponent);
         setHgrow(itemSetComponent, Priority.ALWAYS);
 
-        removeClickHandler = event -> {
-            this.controller.getDrops().remove(crate.get());
-            this.controller.getDrops().getReferenceMap().values().forEach(set -> set.remove(crate.get()));
-            listView.getItems().remove(crate.get());
-        };
+        removeClickHandler = event -> onRemoveClick();
+    }
 
-        idLabel.setText(getObservableClass().getSimpleName() + ": null");
-        crateInfoComponent.setDisable(true);
-        rarityWeightsComponent.setDisable(true);
-        itemSetComponent.setDisable(true);
-        setIdDisable(true);
+    @Override
+    public MainController getController() {
+        return controller;
+    }
 
-        crate.addListener((o, oldVal, newVal) -> {
-            if (Objects.isNull(newVal)) {
-                idLabel.setText(getObservableClass().getSimpleName() + ": null");
-                crateInfoComponent.setDisable(true);
-                rarityWeightsComponent.setDisable(true);
-                itemSetComponent.setDisable(true);
-                setIdDisable(true);
-            } else {
-                idLabel.setText(newVal.getIdBinding().getValueSafe());
-                crateInfoComponent.setDisable(false);
-                rarityWeightsComponent.setDisable(false);
-                itemSetComponent.setDisable(false);
-                setIdDisable(newVal.isMalformed());
-            }
-        });
+    @Override
+    public Label getIdLabel() {
+        return idLabel;
+    }
+
+    @Override
+    public List<Pane> getContentPanes() {
+        return List.of(crateInfoComponent, rarityWeightsComponent, itemSetComponent);
     }
 
     @Override
@@ -107,23 +99,37 @@ public class CrateComponent extends HBox implements RootDataComponent {
 
     @Override
     public void setObservable(Data data) {
-        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
-
         crate.set((Crate) data);
+    }
 
-        if (crate.isNull().get()) {
-            crateInfoComponent.setObservable(null);
-            rarityWeightsComponent.setObservable(null);
-            itemSetComponent.setObservable(null);
-        } else {
-            crateInfoComponent.setObservable(controller.getStaticDataStore().getItemInfoMap().get(
-                    new Pair<>(crate.get().getCrateID(), 9)));
-            rarityWeightsComponent.setObservable(controller.getDrops().getRarityWeights().get(
-                    crate.get().getRarityWeightID()));
-            itemSetComponent.setObservable(controller.getDrops().getItemSets().get(crate.get().getItemSetID()));
-        }
+    @Override
+    public void cleanUIState() {
+        RootDataComponent.super.cleanUIState();
 
+        crateInfoComponent.setObservableAndState(null);
+        rarityWeightsComponent.setObservableAndState(null);
+        itemSetComponent.setObservableAndState(null);
+    }
+
+    @Override
+    public void fillUIState() {
+        RootDataComponent.super.fillUIState();
+
+        crateInfoComponent.setObservableAndState(controller.getStaticDataStore().getItemInfoMap().get(
+                new Pair<>(crate.get().getCrateID(), Crate.TYPE)));
+        rarityWeightsComponent.setObservableAndState(controller.getDrops().getRarityWeights().get(
+                crate.get().getRarityWeightID()));
+        itemSetComponent.setObservableAndState(controller.getDrops().getItemSets().get(crate.get().getItemSetID()));
+    }
+
+    @Override
+    public void bindVariablesNullable() {
         removeButton.addEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
+    }
+
+    @Override
+    public void unbindVariables() {
+        removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
     }
 
     @Override
@@ -139,7 +145,7 @@ public class CrateComponent extends HBox implements RootDataComponent {
         allValues.addAll(getNestedSearchableValues(
                 crateInfoComponent.getSearchableValues(),
                 op -> op.map(o -> (Crate) o)
-                        .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), 9)))
+                        .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), Crate.TYPE)))
                         .stream().toList()
         ));
         allValues.addAll(getNestedSearchableValues(
@@ -159,21 +165,14 @@ public class CrateComponent extends HBox implements RootDataComponent {
     }
 
     @Override
-    public void refreshObservable(Drops drops) {
-        makeEditable(drops);
+    public void updateObservableFromUI(Drops drops) {
+        Optional.ofNullable(rarityWeightsComponent.getRarityWeights())
+                .filter(rw -> rw.getRarityWeightID() != crate.get().getRarityWeightID())
+                .ifPresent(rw -> crate.get().setRarityWeightID(rw.getRarityWeightID()));
 
-        RarityWeights newRarityWeights = rarityWeightsComponent.getRarityWeights();
-        ItemSet newItemSet = itemSetComponent.getItemSet();
-
-        if (Objects.nonNull(newRarityWeights) && newRarityWeights.getRarityWeightID() != crate.get().getRarityWeightID())
-            crate.get().setRarityWeightID(newRarityWeights.getRarityWeightID());
-        if (Objects.nonNull(newItemSet) && newItemSet.getItemSetID() != crate.get().getItemSetID())
-            crate.get().setItemSetID(newItemSet.getItemSetID());
-    }
-
-    @Override
-    public Label getIdLabel() {
-        return idLabel;
+        Optional.ofNullable(itemSetComponent.getItemSet())
+                .filter(is -> is.getItemSetID() != crate.get().getItemSetID())
+                .ifPresent(is -> crate.get().setItemSetID(is.getItemSetID()));
     }
 
     @Override
