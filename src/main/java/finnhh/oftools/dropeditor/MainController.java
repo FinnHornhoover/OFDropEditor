@@ -253,7 +253,7 @@ public class MainController {
     public TableView<ItemInfo> getCrateAdditionGraphic() {
         return getTableGraphic(
                 () -> staticDataStore.getItemInfoMap().values().stream()
-                        .filter(ii -> ii.type() == Crate.TYPE && !drops.cratesProperty().containsKey(ii.id()))
+                        .filter(ii -> ii.type() == ItemType.CRATE && !drops.cratesProperty().containsKey(ii.id()))
                         .toList(),
                 () -> getIconColumn(ItemInfo::iconName),
                 () -> getTableColumn("ID", 68.0, ItemInfo::id),
@@ -311,7 +311,7 @@ public class MainController {
                             .map(NanoCapsule::getCrateID)
                             .collect(Collectors.toSet());
                     return staticDataStore.getItemInfoMap().values().stream()
-                            .filter(ii -> ii.type() == Crate.TYPE && ii.name().contains("Nano")
+                            .filter(ii -> ii.type() == ItemType.CRATE && ii.name().contains("Nano")
                                     && ii.name().contains("Capsule") && !crateIDSet.contains(ii.id()))
                             .toList();
                 },
@@ -443,7 +443,7 @@ public class MainController {
                         .map(ii -> {
                             ItemReference itemReference = new ItemReference();
                             itemReference.setItemID(ii.id());
-                            itemReference.setType(ii.type());
+                            itemReference.setType(ii.type().getTypeID());
                             itemReference.constructBindings();
                             return itemReference;
                         }));

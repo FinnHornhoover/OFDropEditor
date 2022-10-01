@@ -33,32 +33,6 @@ public class JSONManager {
     public static final String[] CONSTANT_NAMES = new String[] {
             "areas",
     };
-    public static final String[] ITEM_TYPES = new String[] {
-            "m_pWeaponItemTable",
-            "m_pShirtsItemTable",
-            "m_pPantsItemTable",
-            "m_pShoesItemTable",
-            "m_pHatItemTable",
-            "m_pGlassItemTable",
-            "m_pBackItemTable",
-            "m_pGeneralItemTable",
-            "",
-            "m_pChestItemTable",
-            "m_pVehicleItemTable",
-    };
-    public static final String[] ITEM_ICON_NAMES = new String[] {
-            "wpnicon",
-            "cosicon",
-            "cosicon",
-            "cosicon",
-            "cosicon",
-            "cosicon",
-            "cosicon",
-            "generalitemicon",
-            "error",
-            "generalitemicon",
-            "vehicle",
-    };
     public static final String[] NPC_ICON_NAMES = new String[] {
             "error",
             "error",
@@ -191,11 +165,11 @@ public class JSONManager {
 
         Map<Pair<Integer, Integer>, ItemInfo> itemInfoMap = staticDataStore.getItemInfoMap();
 
-        for (int i = 0; i < ITEM_TYPES.length; i++) {
-            if (i == 8)
+        for (ItemType itemType : ItemType.values()) {
+            if (itemType == ItemType.NONE)
                 continue;
 
-            JsonObject typedItemObject = xdt.getAsJsonObject(ITEM_TYPES[i]);
+            JsonObject typedItemObject = xdt.getAsJsonObject(itemType.getXDTKey());
             JsonArray itemDataArray = typedItemObject.getAsJsonArray("m_pItemData");
             JsonArray itemStringArray = typedItemObject.getAsJsonArray("m_pItemStringData");
             JsonArray itemIconArray = typedItemObject.getAsJsonArray("m_pItemIconData");
@@ -208,7 +182,7 @@ public class JSONManager {
 
                 String name = itemStringData.get("m_strName").getAsString();
 
-                String comment = (i == 9) ?
+                String comment = (itemType == ItemType.CRATE) ?
                         itemStringData.get("m_strComment").getAsString() :
                         itemStringArray
                                 .get(itemData.get("m_iComment").getAsInt())
@@ -216,7 +190,7 @@ public class JSONManager {
                                 .get("m_strComment")
                                 .getAsString();
 
-                String iconName = ITEM_ICON_NAMES[i] + "_" + String.format("%02d", itemIconArray
+                String iconName = String.format("%s_%02d", itemType.getIconPrefix(), itemIconArray
                         .get(itemData.get("m_iIcon").getAsInt())
                         .getAsJsonObject()
                         .get("m_iIconNumber")
@@ -224,9 +198,10 @@ public class JSONManager {
 
                 int id = itemData.get("m_iItemNumber").getAsInt();
 
-                int requiredLevel = (i == 7 || i == 9) ? 0 : itemData.get("m_iMinReqLev").getAsInt();
+                int requiredLevel = (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                        0 : itemData.get("m_iMinReqLev").getAsInt();
                 int contentLevel = requiredLevel;
-                if (i == 9) {
+                if (itemType == ItemType.CRATE) {
                     try {
                         contentLevel = Integer.parseInt(name.split("Lv")[0]);
                     } catch (NumberFormatException ignored) {
@@ -235,27 +210,46 @@ public class JSONManager {
 
                 ItemInfo itemInfo = new ItemInfo(
                         id,
-                        i,
+                        itemType,
+                        WeaponType.forType((itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iTargetMode").getAsInt()),
                         itemData.get("m_iTradeAble").getAsInt() == 1,
                         itemData.get("m_iSellAble").getAsInt() == 1,
                         itemData.get("m_iItemPrice").getAsInt(),
                         itemData.get("m_iItemSellPrice").getAsInt(),
                         itemData.get("m_iStackNumber").getAsInt(),
-                        (i == 7 || i == 9) ? 1 : itemData.get("m_iRarity").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                1 : itemData.get("m_iRarity").getAsInt(),
                         requiredLevel,
                         contentLevel,
-                        (i == 7 || i == 9) ? 0 : itemData.get("m_iPointRat").getAsInt(),
-                        (i == 7 || i == 9) ? 0 : itemData.get("m_iGroupRat").getAsInt(),
-                        (i == 7 || i == 9) ? 0 : itemData.get("m_iDelayTime").getAsInt(),
-                        (i == 7 || i == 9) ? 0 : itemData.get("m_iDefenseRat").getAsInt(),
-                        (i == 7 || i == 9) ? 0 : itemData.get("m_iReqSex").getAsInt(),
-                        (i == 7 || i == 9) ? 0 : itemData.get("m_iEquipType").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iPointRat").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iGroupRat").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iInitalTime").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iDeliverTime").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iDelayTime").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iDurationTime").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iAtkRange").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iAtkAngle").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iTargetNumber").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iDefenseRat").getAsInt(),
+                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iReqSex").getAsInt(),
                         name,
                         comment,
                         iconName
                 );
 
-                itemInfoMap.put(new Pair<>(id, i), itemInfo);
+                itemInfoMap.put(new Pair<>(id, itemType.getTypeID()), itemInfo);
             }
         }
     }
@@ -823,7 +817,7 @@ public class JSONManager {
                 .flatMap(npcTypeInfo -> npcTypeInfo.vendorItems().stream())
                 .forEach(vii -> {
                     ItemInfo ii = vii.itemInfo();
-                    var key = new Pair<>(ii.id(), ii.type());
+                    var key = new Pair<>(ii.id(), ii.type().getTypeID());
                     vendorItemMap.putIfAbsent(key, new ArrayList<>());
                     vendorItemMap.get(key).add(vii);
                 });
@@ -831,7 +825,7 @@ public class JSONManager {
         missionInfoMap.values()
                 .forEach(missionInfo -> missionInfo.itemRewards()
                         .forEach(ii -> {
-                            var key = new Pair<>(ii.id(), ii.type());
+                            var key = new Pair<>(ii.id(), ii.type().getTypeID());
                             rewardMissionMap.putIfAbsent(key, new ArrayList<>());
                             rewardMissionMap.get(key).add(missionInfo);
                         }));

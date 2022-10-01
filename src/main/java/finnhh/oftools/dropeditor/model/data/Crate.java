@@ -7,7 +7,6 @@ import javafx.beans.property.SimpleIntegerProperty;
 @IdMeaningful
 public class Crate extends Data {
     public static final int INT_CRATE_PLACEHOLDER_ID = 0;
-    public static final int TYPE = 9;
 
     @Expose
     private final IntegerProperty crateID;

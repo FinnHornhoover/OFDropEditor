@@ -149,7 +149,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         @Override
         public void fillUIState() {
             ItemInfo ci = crateInfo.get();
-            arrangeMaps(ci.id(), ci.type());
+            arrangeMaps(ci.id(), ci.type().getTypeID());
         }
     }
 }

@@ -2,6 +2,7 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.ItemInfo;
+import finnhh.oftools.dropeditor.model.ItemType;
 import finnhh.oftools.dropeditor.model.MobTypeInfo;
 import finnhh.oftools.dropeditor.model.data.*;
 import javafx.geometry.Pos;
@@ -67,7 +68,7 @@ public class ImageSummaryBox extends StackPane {
                 setExtra(itemInfo.requiredLevel() + "Lv");
             }
         } else if (data instanceof Crate cr) {
-            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(cr.getCrateID(), Crate.TYPE));
+            ItemInfo itemInfo = itemInfoMap.get(new Pair<>(cr.getCrateID(), ItemType.CRATE.getTypeID()));
 
             if (Objects.nonNull(itemInfo)) {
                 iconView.setImage(itemInfo.iconName());

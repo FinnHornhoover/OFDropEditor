@@ -2,6 +2,7 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
+import finnhh.oftools.dropeditor.model.ItemType;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.Drops;
@@ -116,7 +117,7 @@ public class CrateComponent extends HBox implements RootDataComponent {
         RootDataComponent.super.fillUIState();
 
         crateInfoComponent.setObservableAndState(controller.getStaticDataStore().getItemInfoMap().get(
-                new Pair<>(crate.get().getCrateID(), Crate.TYPE)));
+                new Pair<>(crate.get().getCrateID(), ItemType.CRATE.getTypeID())));
         rarityWeightsComponent.setObservableAndState(controller.getDrops().getRarityWeights().get(
                 crate.get().getRarityWeightID()));
         itemSetComponent.setObservableAndState(controller.getDrops().getItemSets().get(crate.get().getItemSetID()));
@@ -145,7 +146,7 @@ public class CrateComponent extends HBox implements RootDataComponent {
         allValues.addAll(getNestedSearchableValues(
                 crateInfoComponent.getSearchableValues(),
                 op -> op.map(o -> (Crate) o)
-                        .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), Crate.TYPE)))
+                        .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), ItemType.CRATE.getTypeID())))
                         .stream().toList()
         ));
         allValues.addAll(getNestedSearchableValues(

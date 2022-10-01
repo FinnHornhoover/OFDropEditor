@@ -1,10 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
-import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.ItemInfo;
-import finnhh.oftools.dropeditor.model.NanoInfo;
-import finnhh.oftools.dropeditor.model.NanoPowerInfo;
+import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.NanoCapsule;
@@ -152,7 +149,7 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
             int crateID = nanoCapsule.get().getCrateID();
             nanoCapsuleBox.setObservableAndState(crateID == Crate.INT_CRATE_PLACEHOLDER_ID ?
                     null :
-                    controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(crateID, Crate.TYPE)));
+                    controller.getStaticDataStore().getItemInfoMap().get(new Pair<>(crateID, ItemType.CRATE.getTypeID())));
             nanoNameLabel.setText(nanoInfo.name());
             nanoIconView.setImage(nanoInfo.iconName());
             nanoTypeLabel.setText(nanoInfo.type());
@@ -212,8 +209,8 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
                 op -> op.map(o -> (NanoCapsule) o)
                         .map(NanoCapsule::getCrateID)
                         .stream()
-                        .filter(id -> itemInfoMap.containsKey(new Pair<>(id, Crate.TYPE)))
-                        .map(id -> itemInfoMap.get(new Pair<>(id, Crate.TYPE)))
+                        .filter(id -> itemInfoMap.containsKey(new Pair<>(id, ItemType.CRATE.getTypeID())))
+                        .map(id -> itemInfoMap.get(new Pair<>(id, ItemType.CRATE.getTypeID())))
                         .toList()
         ));
 
@@ -428,8 +425,6 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
 
         @Override
         public void fillUIState() {
-            var iconMap = controller.getIconManager().getIconMap();
-
             idLabel.setText("Capsule: " + capsuleItemInfo.get().id());
             contentVBox.setDisable(false);
             idLabel.getStyleClass().removeIf("disabled-id"::equals);
