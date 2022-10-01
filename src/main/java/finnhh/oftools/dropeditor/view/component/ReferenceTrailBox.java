@@ -8,11 +8,7 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
-
-import java.io.ByteArrayInputStream;
 
 public class ReferenceTrailBox extends VBox {
     private final ListProperty<Data> dataList;
@@ -43,8 +39,9 @@ public class ReferenceTrailBox extends VBox {
     public void constructView() {
         for (int i = 1; i < dataList.size(); i++) {
             if (i > 1) {
-                getChildren().add(new ImageView(new Image(new ByteArrayInputStream(
-                        controller.getIconManager().getIconMap().get("down")))));
+                StandardImageView iconView = new StandardImageView(controller.getIconManager().getIconMap());
+                iconView.setImage("down");
+                getChildren().add(iconView);
             }
             getChildren().add(new ImageSummaryBox(imageWidth, controller, dataList.get(i)));
         }

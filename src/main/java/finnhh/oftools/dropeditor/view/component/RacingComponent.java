@@ -59,7 +59,7 @@ public class RacingComponent extends HBox implements RootDataComponent {
         double boxSpacing = 60.0;
         boxWidth = 160.0;
 
-        racingInfoComponent = new RacingInfoComponent(160.0, controller);
+        racingInfoComponent = new RacingInfoComponent(256.0, controller);
 
         timeLimitLabel = new Label("Time Limit");
         timeLimitSpinner = new StandardSpinner(0, Integer.MAX_VALUE, 0);

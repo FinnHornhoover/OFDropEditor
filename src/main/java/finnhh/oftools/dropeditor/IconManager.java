@@ -44,8 +44,10 @@ public class IconManager {
         for (int i = 1; i < 34; i++) {
             if (i == 6) continue;
 
-            String name = String.format("ep_small_%02d", i);
-            iconMap.put(name, loadSingleEmbeddedImage("ep", name));
+            for (String type : List.of("small", "big")) {
+                String name = String.format("ep_%s_%02d", type, i);
+                iconMap.put(name, loadSingleEmbeddedImage("ep", name));
+            }
         }
 
         // minimap icons

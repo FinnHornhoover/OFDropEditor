@@ -1,6 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
+import finnhh.oftools.dropeditor.model.EventType;
 import finnhh.oftools.dropeditor.model.InstanceInfo;
 import finnhh.oftools.dropeditor.model.MapRegionInfo;
 import finnhh.oftools.dropeditor.model.MobTypeInfo;
@@ -8,6 +9,7 @@ import finnhh.oftools.dropeditor.model.data.*;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
 import javafx.util.Pair;
 
 import java.util.List;
@@ -104,6 +106,33 @@ public class MapContainerTooltipBox extends TilePane {
                 });
     }
 
+    private void addRacingLocationMaps(int EPID) {
+        var epInstanceMap = controller.getStaticDataStore().getEPInstanceMap();
+        var mapRegionList = controller.getStaticDataStore().getMapRegionInfoList();
+        var npcInfoMap = controller.getStaticDataStore().getNpcInfoMap();
+
+        Optional.ofNullable(epInstanceMap.get(EPID))
+                .ifPresent(ii -> ii.entryWarps().stream()
+                        .flatMap(wi -> Optional.ofNullable(npcInfoMap.get(wi.warpNPC())).stream())
+                        .flatMap(List::stream)
+                        .filter(npcInfo -> npcInfo.instanceID() == InstanceInfo.OVERWORLD_INSTANCE_ID
+                                && mapRegionList.stream().anyMatch(mri -> mri.coordinatesIncluded(npcInfo.x(), npcInfo.y())))
+                        .findFirst()
+                        .ifPresent(npcInfo -> {
+                            MapRegionInfo mri = mapRegionList.stream()
+                                    .filter(mri2 -> mri2.coordinatesIncluded(npcInfo.x(), npcInfo.y()))
+                                    .findFirst()
+                                    .get();
+
+                            MapTooltipBox mapTooltipBox = new MapTooltipBox(controller);
+
+                            mapTooltipBox.addLocations(ii.id(), mri);
+                            mapTooltipBox.addMarker(npcInfo.x(), npcInfo.y());
+
+                            getChildren().add(mapTooltipBox);
+                        }));
+    }
+
     private void addMobLocationMaps(int type, boolean showMobDropLabel) {
         var mobInstanceRegionGroupedMap = controller.getStaticDataStore().getMobInstanceRegionGroupedMap();
 
@@ -128,6 +157,7 @@ public class MapContainerTooltipBox extends TilePane {
         var crateMap = controller.getDrops().getCrates();
         var referenceMap = controller.getDrops().getReferenceMap();
         var mobTypeInfoMap = controller.getStaticDataStore().getMobTypeInfoMap();
+        var iconMap = controller.getIconManager().getIconMap();
 
         List<Data> droppers = Optional.ofNullable(crateMap.get(id)).stream()
                 .flatMap(crate -> referenceMap.getOrDefault(crate, Set.of()).stream())
@@ -145,9 +175,16 @@ public class MapContainerTooltipBox extends TilePane {
         droppers.stream()
                 .filter(d -> d instanceof Event)
                 .forEach(event -> {
-                    Label eventLabel = new Label("Event: " + ((Event) event).getEventID());
-                    eventLabel.getStyleClass().add("big-label");
-                    getChildren().add(eventLabel);
+                    int eventID = ((Event) event).getEventID();
+                    Label eventLabel = new Label("Event: " + eventID);
+
+                    StandardImageView iconView = new StandardImageView(iconMap, 64);
+                    iconView.setImage(EventType.forType(eventID).iconName());
+
+                    VBox vBox = new VBox(2, eventLabel, iconView);
+                    vBox.setAlignment(Pos.CENTER);
+
+                    getChildren().add(vBox);
                 });
     }
 
@@ -214,6 +251,10 @@ public class MapContainerTooltipBox extends TilePane {
 
     protected void arrangeMobLocationMaps(int type) {
         addMobLocationMaps(type, false);
+    }
+
+    protected void arrangeRacingLocationMaps(int EPID) {
+        addRacingLocationMaps(EPID);
     }
 
     protected void clearMaps() {

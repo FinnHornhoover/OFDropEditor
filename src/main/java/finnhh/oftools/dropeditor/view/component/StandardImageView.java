@@ -12,13 +12,17 @@ public class StandardImageView extends ImageView {
     private final Map<String, byte[]> iconMap;
 
     public StandardImageView(Map<String, byte[]> iconMap, double size) {
-        this.iconMap = iconMap;
+        this(iconMap);
 
         setFitWidth(size);
         setFitHeight(size);
+    }
+
+    public StandardImageView(Map<String, byte[]> iconMap) {
+        this.iconMap = iconMap;
+
         setPreserveRatio(true);
         setCache(true);
-        cleanImage();
     }
 
     public void setImage(String iconName) {
