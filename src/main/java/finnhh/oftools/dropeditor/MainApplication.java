@@ -55,7 +55,6 @@ public class MainApplication extends Application {
         return Optional.ofNullable(chooser.showDialog(stage));
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     private void userSetup(Stage stage) throws EditorInitializationException {
         // step 0: prompt for previous program preferences
         Optional<Preferences> preferences = jsonManager.readPreferences();
@@ -104,7 +103,7 @@ public class MainApplication extends Application {
                 "Choose Drops Directory");
 
         try {
-            jsonManager.setDropsDirectory(dropsDirectory.get());
+            jsonManager.setDropsDirectory(dropsDirectory.orElseThrow());
         } catch (NullPointerException | NoSuchElementException | JsonSyntaxException | IOException e) {
             throw new EditorInitializationException(e,
                     "Invalid Drops Directory",
@@ -124,7 +123,7 @@ public class MainApplication extends Application {
                     "Choose Patch Directory");
 
             try {
-                jsonManager.addPatchPath(patchDirectory.get());
+                jsonManager.addPatchPath(patchDirectory.orElseThrow());
             } catch (NoSuchElementException | IOException e) {
                 showAlert(Alert.AlertType.WARNING,
                         "Invalid Patch Folder",
@@ -153,7 +152,7 @@ public class MainApplication extends Application {
                 "Choose XDT File for Your Build");
 
         try {
-            jsonManager.setXDT(xdtFile.get(), staticDataStore);
+            jsonManager.setXDT(xdtFile.orElseThrow(), staticDataStore);
         } catch (NullPointerException
                 | NoSuchElementException
                 | IllegalStateException
@@ -185,7 +184,7 @@ public class MainApplication extends Application {
                 "Choose Save Directory");
 
         try {
-            jsonManager.setSavePreferences(saveDirectory.get(), standaloneSave);
+            jsonManager.setSavePreferences(saveDirectory.orElseThrow(), standaloneSave);
         } catch (NoSuchElementException | IllegalArgumentException e) {
             throw new EditorInitializationException(e,
                     "Invalid Save Directory",
@@ -220,8 +219,8 @@ public class MainApplication extends Application {
                     "Choose Icon Directory");
 
             try {
-                iconManager.setIconDirectory(iconDirectory.get());
-                jsonManager.setIconDirectory(iconDirectory.get());
+                iconManager.setIconDirectory(iconDirectory.orElseThrow());
+                jsonManager.setIconDirectory(iconDirectory.orElseThrow());
             } catch (NoSuchElementException | IOException e) {
                 throw new EditorInitializationException(e,
                         "Icons Not Loaded",

@@ -133,6 +133,10 @@
     -fx-text-fill: orange;
 }
 
+.mid-label {
+    -fx-font-size: 15px;
+}
+
 .big-label {
     -fx-font-size: 30px;
 }

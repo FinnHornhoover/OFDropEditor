@@ -15,7 +15,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 
 import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class MapTooltipBox extends VBox {
     public static final int TOOLTIP_TILE_PIXEL_SIZE = 256;
@@ -27,6 +29,8 @@ public class MapTooltipBox extends VBox {
 
     private final MainController controller;
 
+    private int hash;
+
     public MapTooltipBox(MainController controller) {
         this.controller = controller;
 
@@ -37,6 +41,8 @@ public class MapTooltipBox extends VBox {
         mapCanvas = new Canvas(TOOLTIP_TILE_PIXEL_SIZE, TOOLTIP_TILE_PIXEL_SIZE);
         mapGroup = new Group(mapCanvas);
 
+        hash = -1;
+
         setSpacing(2);
         setAlignment(Pos.CENTER);
         setFillWidth(false);
@@ -46,6 +52,7 @@ public class MapTooltipBox extends VBox {
     public void setMapImage(byte[] icon) {
         Image image = new Image(new ByteArrayInputStream(icon));
         mapCanvas.getGraphicsContext2D().drawImage(image, 0, 0, TOOLTIP_TILE_PIXEL_SIZE, TOOLTIP_TILE_PIXEL_SIZE);
+        hash = Objects.hash(hash, Arrays.hashCode(icon));
     }
 
     public void addMarker(int x, int y) {
@@ -57,6 +64,7 @@ public class MapTooltipBox extends VBox {
                 TOOLTIP_MARKER_PIXEL_SIZE,
                 TOOLTIP_MARKER_PIXEL_SIZE
         );
+        hash = Objects.hash(hash, x, y);
     }
 
     public void addLabel(String s) {
@@ -65,6 +73,7 @@ public class MapTooltipBox extends VBox {
         entryLabel.setTextAlignment(TextAlignment.CENTER);
 
         getChildren().add(getChildren().size() - 1, entryLabel);
+        hash = Objects.hash(hash, s);
     }
 
     public Label getTooltipLabel() {
@@ -77,6 +86,16 @@ public class MapTooltipBox extends VBox {
 
     public Group getMapGroup() {
         return mapGroup;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof MapTooltipBox && this.hash == ((MapTooltipBox) o).hash;
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
     }
 
     public void addLocations(long instanceID, MapRegionInfo mri) {
@@ -93,6 +112,7 @@ public class MapTooltipBox extends VBox {
             InstanceInfo ii = instanceInfoMap.get(instanceID);
 
             tooltipLabel.setText(ii.name());
+            hash = Objects.hash(hash, ii.name());
 
             ii.entryTask()
                     .map(mto -> "Required: " + mto.missionTypeName() + " - " + mto.missionName())

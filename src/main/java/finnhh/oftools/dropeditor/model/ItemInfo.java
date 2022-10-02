@@ -7,6 +7,11 @@ public record ItemInfo(int id, ItemType type, WeaponType weaponType, boolean tra
                        int groupDamage, int fireInitialTime, int fireDeliverTime, int fireDelayTime,
                        int fireDurationTime, int fireRange, int attackAngle, int numberOfTargets, int defense,
                        int gender, String name, String comment, String iconName) implements InfoEnum {
+
+    public String getTypeString() {
+        return type == ItemType.WEAPON ? weaponType.getName() : type.getName();
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(id, type);

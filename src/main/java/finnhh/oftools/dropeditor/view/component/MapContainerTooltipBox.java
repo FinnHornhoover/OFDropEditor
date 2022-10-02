@@ -1,28 +1,29 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
-import finnhh.oftools.dropeditor.model.EventType;
-import finnhh.oftools.dropeditor.model.InstanceInfo;
-import finnhh.oftools.dropeditor.model.MapRegionInfo;
-import finnhh.oftools.dropeditor.model.MobTypeInfo;
+import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.*;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.util.Pair;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class MapContainerTooltipBox extends TilePane {
     public static final int TILE_LIMIT = 9;
+    public static final int SOURCE_LIMIT = 4 * TILE_LIMIT;
 
     protected final MainController controller;
 
+    private final LinkedHashMap<Integer, Node> childMap;
+
     public MapContainerTooltipBox(MainController controller) {
         this.controller = controller;
+
+        childMap = new LinkedHashMap<>();
 
         setVgap(2);
         setHgap(2);
@@ -41,6 +42,9 @@ public class MapContainerTooltipBox extends TilePane {
                 .forEach(vii -> Optional.ofNullable(npcInstanceRegionGroupedMap.get(vii.npc()))
                         .ifPresent(npcInstanceRegionGroup -> npcInstanceRegionGroup.forEach((instanceID, withinInstanceNPCs) ->
                                 withinInstanceNPCs.forEach((mri, npcInfoList) -> {
+                                    if (childMap.size() > SOURCE_LIMIT)
+                                        return;
+
                                     MapTooltipBox mapTooltipBox = new MapTooltipBox(controller);
 
                                     mapTooltipBox.addLabel(String.format("Vendor: %s - %d Taros",
@@ -51,26 +55,30 @@ public class MapContainerTooltipBox extends TilePane {
                                     mapTooltipBox.addLocations(instanceID, mri);
                                     npcInfoList.forEach(npci -> mapTooltipBox.addMarker(npci.x(), npci.y()));
 
-                                    getChildren().add(mapTooltipBox);
+                                    childMap.put(mapTooltipBox.hashCode(), mapTooltipBox);
                                 }))));
     }
 
-    private void addEggMaps(int id) {
+    private void addEggCrateMaps(int id) {
         var eggInstanceRegionGroupedMap = controller.getStaticDataStore().getEggInstanceRegionGroupedMap();
 
         Optional.ofNullable(eggInstanceRegionGroupedMap.get(id))
                 .ifPresent(eggInstanceRegionGroup -> eggInstanceRegionGroup.forEach((instanceID, withinInstanceEggs) ->
                         withinInstanceEggs.forEach((mri, eggInfoList) -> {
+                            if (childMap.size() > SOURCE_LIMIT)
+                                return;
+
                             MapTooltipBox mapTooltipBox = new MapTooltipBox(controller);
 
+                            mapTooltipBox.addLabel("Egg Find");
                             mapTooltipBox.addLocations(instanceID, mri);
                             eggInfoList.forEach(ei -> mapTooltipBox.addMarker(ei.x(), ei.y()));
 
-                            getChildren().add(mapTooltipBox);
+                            childMap.put(mapTooltipBox.hashCode(), mapTooltipBox);
                         })));
     }
 
-    private void addRacingMaps(int id) {
+    private void addRacingCrateMaps(int id) {
         var racingMap = controller.getDrops().getRacing();
         var epInstanceMap = controller.getStaticDataStore().getEPInstanceMap();
         var mapRegionList = controller.getStaticDataStore().getMapRegionInfoList();
@@ -89,10 +97,13 @@ public class MapContainerTooltipBox extends TilePane {
                                     && mapRegionList.stream().anyMatch(mri -> mri.coordinatesIncluded(npcInfo.x(), npcInfo.y())))
                             .findFirst()
                             .ifPresent(npcInfo -> {
+                                if (childMap.size() > SOURCE_LIMIT)
+                                    return;
+
                                 MapRegionInfo mri = mapRegionList.stream()
                                         .filter(mri2 -> mri2.coordinatesIncluded(npcInfo.x(), npcInfo.y()))
                                         .findFirst()
-                                        .get();
+                                        .orElseThrow();
 
                                 MapTooltipBox mapTooltipBox = new MapTooltipBox(controller);
 
@@ -101,7 +112,7 @@ public class MapContainerTooltipBox extends TilePane {
                                 mapTooltipBox.addLocations(ii.id(), mri);
                                 mapTooltipBox.addMarker(npcInfo.x(), npcInfo.y());
 
-                                getChildren().add(mapTooltipBox);
+                                childMap.put(mapTooltipBox.hashCode(), mapTooltipBox);
                             });
                 });
     }
@@ -119,17 +130,20 @@ public class MapContainerTooltipBox extends TilePane {
                                 && mapRegionList.stream().anyMatch(mri -> mri.coordinatesIncluded(npcInfo.x(), npcInfo.y())))
                         .findFirst()
                         .ifPresent(npcInfo -> {
+                            if (childMap.size() > SOURCE_LIMIT)
+                                return;
+
                             MapRegionInfo mri = mapRegionList.stream()
                                     .filter(mri2 -> mri2.coordinatesIncluded(npcInfo.x(), npcInfo.y()))
                                     .findFirst()
-                                    .get();
+                                    .orElseThrow();
 
                             MapTooltipBox mapTooltipBox = new MapTooltipBox(controller);
 
                             mapTooltipBox.addLocations(ii.id(), mri);
                             mapTooltipBox.addMarker(npcInfo.x(), npcInfo.y());
 
-                            getChildren().add(mapTooltipBox);
+                            childMap.put(mapTooltipBox.hashCode(), mapTooltipBox);
                         }));
     }
 
@@ -139,6 +153,9 @@ public class MapContainerTooltipBox extends TilePane {
         Optional.ofNullable(mobInstanceRegionGroupedMap.get(type))
                 .ifPresent(mobInstanceRegionGroup -> mobInstanceRegionGroup.forEach((instanceID, withinInstanceMobs) ->
                         withinInstanceMobs.forEach((mri, mobInfoList) -> {
+                            if (childMap.size() > SOURCE_LIMIT)
+                                return;
+
                             MapTooltipBox mapTooltipBox = new MapTooltipBox(controller);
 
                             if (showMobDropLabel && !mobInfoList.isEmpty()) {
@@ -149,11 +166,11 @@ public class MapContainerTooltipBox extends TilePane {
                             mapTooltipBox.addLocations(instanceID, mri);
                             mobInfoList.forEach(mi -> mapTooltipBox.addMarker(mi.x(), mi.y()));
 
-                            getChildren().add(mapTooltipBox);
+                            childMap.put(mapTooltipBox.hashCode(), mapTooltipBox);
                         })));
     }
 
-    private void addMobAndEventMaps(int id) {
+    private void addMobAndEventCrateMaps(int id) {
         var crateMap = controller.getDrops().getCrates();
         var referenceMap = controller.getDrops().getReferenceMap();
         var mobTypeInfoMap = controller.getStaticDataStore().getMobTypeInfoMap();
@@ -175,6 +192,9 @@ public class MapContainerTooltipBox extends TilePane {
         droppers.stream()
                 .filter(d -> d instanceof Event)
                 .forEach(event -> {
+                    if (childMap.size() > SOURCE_LIMIT)
+                        return;
+
                     int eventID = ((Event) event).getEventID();
                     Label eventLabel = new Label("Event: " + eventID);
 
@@ -184,7 +204,7 @@ public class MapContainerTooltipBox extends TilePane {
                     VBox vBox = new VBox(2, eventLabel, iconView);
                     vBox.setAlignment(Pos.CENTER);
 
-                    getChildren().add(vBox);
+                    childMap.put(Objects.hashCode(eventID), vBox);
                 });
     }
 
@@ -198,6 +218,9 @@ public class MapContainerTooltipBox extends TilePane {
                 .forEach(mi -> Optional.ofNullable(npcInstanceRegionGroupedMap.get(mi.npc()))
                         .ifPresent(npcInstanceRegionGroup -> npcInstanceRegionGroup.forEach((instanceID, withinInstanceNPCs) ->
                                 withinInstanceNPCs.forEach((mri, npcInfoList) -> {
+                                    if (childMap.size() > SOURCE_LIMIT)
+                                        return;
+
                                     MapTooltipBox mapTooltipBox = new MapTooltipBox(controller);
 
                                     mapTooltipBox.addLabel(String.format("%s: %s - %s",
@@ -207,21 +230,47 @@ public class MapContainerTooltipBox extends TilePane {
                                     mapTooltipBox.addLocations(instanceID, mri);
                                     npcInfoList.forEach(npci -> mapTooltipBox.addMarker(npci.x(), npci.y()));
 
-                                    getChildren().add(mapTooltipBox);
+                                    childMap.put(mapTooltipBox.hashCode(), mapTooltipBox);
                                 }))));
     }
 
-    private void addMaps(int id, int type) {
-        var key = new Pair<>(id, type);
+    private void addCodeItemGraphics(Pair<Integer, Integer> key) {
+        var codeItemMap = controller.getDrops().getCodeItems();
+        var itemReferenceMap = controller.getDrops().getItemReferences();
 
-        addVendorMaps(key);
-        addEggMaps(id);
-        addRacingMaps(id);
-        addMobAndEventMaps(id);
-        addMissionRewardMaps(key);
+        codeItemMap.values().stream()
+                .filter(codeItem -> codeItem.getItemReferenceIDs().stream()
+                        .flatMap(id -> Optional.ofNullable(itemReferenceMap.get(id)).stream())
+                        .anyMatch(itemReference -> itemReference.getItemID() == key.getKey()
+                                && itemReference.getType() == key.getValue()))
+                .forEach(codeItem -> {
+                    if (childMap.size() > SOURCE_LIMIT)
+                        return;
+
+                    Label codeItemLabel = new Label("Code Item");
+                    Label codeLabel = new Label(codeItem.getCode());
+                    codeLabel.getStyleClass().add("mid-label");
+
+                    VBox vBox = new VBox(2, codeItemLabel, codeLabel);
+                    vBox.setAlignment(Pos.CENTER);
+
+                    childMap.put(Objects.hashCode(codeItem.getCode()), vBox);
+                });
     }
 
-    private void addNestedCrateMaps(int id, int type) {
+    private void addCrateMaps(int id, boolean includeMissionCrates) {
+        var key = new Pair<>(id, ItemType.CRATE.getTypeID());
+
+        addCodeItemGraphics(key);
+        addVendorMaps(key);
+        addEggCrateMaps(id);
+        addRacingCrateMaps(id);
+        addMobAndEventCrateMaps(id);
+        if (includeMissionCrates)
+            addMissionRewardMaps(key);
+    }
+
+    private void addCrateItemMaps(int id, int type) {
         var itemReferenceMap = controller.getDrops().getItemReferences();
         var referenceMap = controller.getDrops().getReferenceMap();
 
@@ -232,32 +281,56 @@ public class MapContainerTooltipBox extends TilePane {
                 .flatMap(itemSet -> referenceMap.getOrDefault(itemSet, Set.of()).stream())
                 .filter(d -> d instanceof Crate)
                 .map(d -> (Crate) d)
-                .forEach(crate -> addMaps(crate.getCrateID(), type));
+                .forEach(crate -> {
+                    addCrateMaps(crate.getCrateID(), type == ItemType.CRATE.getTypeID());
+                    if (type != ItemType.CRATE.getTypeID())
+                        addCrateItemMaps(crate.getCrateID(), ItemType.CRATE.getTypeID());
+                });
     }
 
-    protected void arrangeMaps(int id, int type) {
-        addMaps(id, type);
-        addNestedCrateMaps(id, type);
+    private void displayMaps() {
+        getChildren().addAll(childMap.values());
+        if (childMap.size() > TILE_LIMIT) {
+            getChildren().subList(TILE_LIMIT - 1, childMap.size()).clear();
 
-        int prevSize = getChildren().size();
-        if (prevSize > TILE_LIMIT) {
-            getChildren().subList(TILE_LIMIT - 1, prevSize).clear();
-
-            Label plusLabel = new Label("+" + (prevSize - TILE_LIMIT + 1) + " more");
+            String countString = (childMap.size() > SOURCE_LIMIT) ?
+                    "" :
+                    String.valueOf(childMap.size() - TILE_LIMIT + 1);
+            Label plusLabel = new Label("+" + countString + " more");
             plusLabel.getStyleClass().add("big-label");
             getChildren().add(plusLabel);
         }
     }
 
+    protected void arrangeCrateMaps(int id) {
+        addCrateMaps(id, true);
+        // do this for crates inside crates
+        addCrateItemMaps(id, ItemType.CRATE.getTypeID());
+        displayMaps();
+    }
+
+    protected void arrangeItemMaps(int id, int type) {
+        var key = new Pair<>(id ,type);
+
+        addCodeItemGraphics(key);
+        addVendorMaps(key);
+        addMissionRewardMaps(key);
+        addCrateItemMaps(id, type);
+        displayMaps();
+    }
+
     protected void arrangeMobLocationMaps(int type) {
         addMobLocationMaps(type, false);
+        displayMaps();
     }
 
     protected void arrangeRacingLocationMaps(int EPID) {
         addRacingLocationMaps(EPID);
+        displayMaps();
     }
 
     protected void clearMaps() {
+        childMap.clear();
         getChildren().clear();
     }
 }

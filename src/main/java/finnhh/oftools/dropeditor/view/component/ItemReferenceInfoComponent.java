@@ -12,35 +12,35 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
-public class CrateInfoComponent extends VBox implements ObservableComponent<ItemInfo> {
-    private final ObjectProperty<ItemInfo> crateInfo;
+public class ItemReferenceInfoComponent extends VBox implements ObservableComponent<ItemInfo> {
+    private final ObjectProperty<ItemInfo> itemInfo;
 
     private final MainController controller;
 
-    private final CrateInfoTooltipComponent crateInfoTooltipComponent;
+    private final ItemReferenceInfoTooltipComponent itemReferenceInfoTooltipComponent;
     private final Label nameLabel;
-    private final Label commentLabel;
+    private final Label typeLabel;
     private final StandardImageView iconView;
 
-    public CrateInfoComponent(double width, MainController controller) {
-        crateInfo = new SimpleObjectProperty<>();
+    public ItemReferenceInfoComponent(double width, MainController controller) {
+        itemInfo = new SimpleObjectProperty<>();
 
         this.controller = controller;
 
-        crateInfoTooltipComponent = new CrateInfoTooltipComponent(controller);
+        itemReferenceInfoTooltipComponent = new ItemReferenceInfoTooltipComponent(controller);
         Tooltip tooltip = new Tooltip();
         tooltip.setShowDelay(Duration.ZERO);
-        tooltip.setGraphic(crateInfoTooltipComponent);
+        tooltip.setGraphic(itemReferenceInfoTooltipComponent);
 
         nameLabel = new Label();
         nameLabel.setWrapText(true);
         nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setTooltip(tooltip);
 
-        commentLabel = new Label();
-        commentLabel.setWrapText(true);
-        commentLabel.setTextAlignment(TextAlignment.CENTER);
-        commentLabel.setTooltip(tooltip);
+        typeLabel = new Label();
+        typeLabel.setWrapText(true);
+        typeLabel.setTextAlignment(TextAlignment.CENTER);
+        typeLabel.setTooltip(tooltip);
 
         iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
         Tooltip.install(iconView, tooltip);
@@ -49,7 +49,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         setAlignment(Pos.CENTER);
         setMinWidth(width);
         setMaxWidth(width);
-        getChildren().addAll(nameLabel, commentLabel, iconView);
+        getChildren().addAll(nameLabel, typeLabel, iconView);
         getStyleClass().add("bordered-pane");
     }
 
@@ -65,60 +65,60 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     @Override
     public ReadOnlyObjectProperty<ItemInfo> getObservable() {
-        return crateInfo;
+        return itemInfo;
     }
 
     @Override
     public void setObservable(ItemInfo data) {
-        crateInfo.set(data);
+        itemInfo.set(data);
     }
 
     @Override
     public void cleanUIState() {
-        crateInfoTooltipComponent.setObservableAndState(null);
+        itemReferenceInfoTooltipComponent.setObservableAndState(null);
         nameLabel.setText("UNKNOWN");
-        commentLabel.setText("Unknown Crate");
+        typeLabel.setText("None");
         iconView.cleanImage();
     }
 
     @Override
     public void fillUIState() {
-        crateInfoTooltipComponent.setObservableAndState(crateInfo.get());
-        nameLabel.setText(crateInfo.get().name());
-        commentLabel.setText(crateInfo.get().comment());
-        iconView.setImage(crateInfo.get().iconName());
+        itemReferenceInfoTooltipComponent.setObservableAndState(itemInfo.get());
+        nameLabel.setText(itemInfo.get().name());
+        typeLabel.setText(itemInfo.get().getTypeString());
+        iconView.setImage(itemInfo.get().iconName());
     }
 
-    public ItemInfo getCrateInfo() {
-        return crateInfo.get();
+    public ItemInfo getItemInfo() {
+        return itemInfo.get();
     }
 
-    public ReadOnlyObjectProperty<ItemInfo> crateInfoProperty() {
-        return crateInfo;
+    public ReadOnlyObjectProperty<ItemInfo> itemInfoProperty() {
+        return itemInfo;
     }
 
-    public CrateInfoTooltipComponent getCrateInfoTooltipComponent() {
-        return crateInfoTooltipComponent;
+    public ItemReferenceInfoTooltipComponent getItemReferenceInfoTooltipComponent() {
+        return itemReferenceInfoTooltipComponent;
     }
 
     public Label getNameLabel() {
         return nameLabel;
     }
 
-    public Label getCommentLabel() {
-        return commentLabel;
+    public Label getTypeLabel() {
+        return typeLabel;
     }
 
     public StandardImageView getIconView() {
         return iconView;
     }
 
-    public static class CrateInfoTooltipComponent extends MapContainerTooltipBox implements ObservableComponent<ItemInfo> {
-        private final ObjectProperty<ItemInfo> crateInfo;
+    public static class ItemReferenceInfoTooltipComponent extends MapContainerTooltipBox implements ObservableComponent<ItemInfo> {
+        private final ObjectProperty<ItemInfo> itemInfo;
 
-        public CrateInfoTooltipComponent(MainController controller) {
+        public ItemReferenceInfoTooltipComponent(MainController controller) {
             super(controller);
-            crateInfo = new SimpleObjectProperty<>();
+            itemInfo = new SimpleObjectProperty<>();
         }
 
         @Override
@@ -133,12 +133,12 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
         @Override
         public ReadOnlyObjectProperty<ItemInfo> getObservable() {
-            return crateInfo;
+            return itemInfo;
         }
 
         @Override
         public void setObservable(ItemInfo data) {
-            crateInfo.set(data);
+            itemInfo.set(data);
         }
 
         @Override
@@ -148,8 +148,8 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
         @Override
         public void fillUIState() {
-            ItemInfo ci = crateInfo.get();
-            arrangeCrateMaps(ci.id());
+            ItemInfo ci = itemInfo.get();
+            arrangeItemMaps(ci.id(), ci.type().getTypeID());
         }
     }
 }

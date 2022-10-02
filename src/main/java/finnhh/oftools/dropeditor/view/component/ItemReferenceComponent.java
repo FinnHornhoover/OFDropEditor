@@ -25,7 +25,7 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
 
     private final MainController controller;
 
-    private final StandardImageView iconView;
+    private final ItemReferenceInfoComponent itemReferenceInfoComponent;
     private final FlowPane infoFlowPane;
     private final HBox contentHBox;
     private final Label idLabel;
@@ -40,14 +40,15 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
 
         this.controller = controller;
 
-        iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
+        itemReferenceInfoComponent = new ItemReferenceInfoComponent(160.0, controller);
 
-        infoFlowPane = new FlowPane(iconView);
+
+        infoFlowPane = new FlowPane();
         infoFlowPane.setHgap(2);
         infoFlowPane.setVgap(2);
         HBox.setHgrow(infoFlowPane, Priority.ALWAYS);
 
-        contentHBox = new HBox(2, iconView, infoFlowPane);
+        contentHBox = new HBox(2, itemReferenceInfoComponent, infoFlowPane);
         contentHBox.setAlignment(Pos.CENTER);
         contentHBox.getStyleClass().add("bordered-pane");
 
@@ -102,7 +103,7 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
         RootDataComponent.super.cleanUIState();
 
         infoFlowPane.getChildren().clear();
-        iconView.cleanImage();
+        itemReferenceInfoComponent.setObservableAndState(null);
     }
 
     @Override
@@ -128,7 +129,7 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
                                 objectString));
                     })
                     .forEach(infoFlowPane.getChildren()::add);
-            iconView.setImage(itemInfo.iconName());
+            itemReferenceInfoComponent.setObservableAndState(itemInfo);
         }
     }
 
@@ -187,8 +188,8 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
         return itemReference;
     }
 
-    public StandardImageView getIconView() {
-        return iconView;
+    public ItemReferenceInfoComponent getItemReferenceInfoComponent() {
+        return itemReferenceInfoComponent;
     }
 
     public FlowPane getInfoFlowPane() {
