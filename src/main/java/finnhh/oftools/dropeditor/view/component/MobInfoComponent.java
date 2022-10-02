@@ -17,7 +17,7 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     private final MainController controller;
 
-    private final MobInfoTooltipComponent mobInfoTooltipComponent;
+    private final TooltipBoxContainer mobInfoTooltipBoxContainer;
     private final Label mobNameLabel;
     private final StandardImageView iconView;
 
@@ -26,10 +26,10 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
         this.controller = controller;
 
-        mobInfoTooltipComponent = new MobInfoTooltipComponent(controller);
+        mobInfoTooltipBoxContainer = new TooltipBoxContainer(9, 36, controller);
         Tooltip tooltip = new Tooltip();
         tooltip.setShowDelay(Duration.ZERO);
-        tooltip.setGraphic(mobInfoTooltipComponent);
+        tooltip.setGraphic(mobInfoTooltipBoxContainer);
 
         mobNameLabel = new Label();
         mobNameLabel.setWrapText(true);
@@ -69,14 +69,14 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     @Override
     public void cleanUIState() {
-        mobInfoTooltipComponent.setObservableAndState(null);
+        mobInfoTooltipBoxContainer.clearGraphics();
         mobNameLabel.setText("Unknown Mob");
         iconView.cleanImage();
     }
 
     @Override
     public void fillUIState() {
-        mobInfoTooltipComponent.setObservableAndState(mobTypeInfo.get());
+        mobInfoTooltipBoxContainer.arrangeMobLocationMaps(mobTypeInfo.get().type());
         mobNameLabel.setText(mobTypeInfo.get().name());
         iconView.setImage(mobTypeInfo.get().iconName());
     }
@@ -89,8 +89,8 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
         return mobTypeInfo;
     }
 
-    public MobInfoTooltipComponent getMobInfoTooltipComponent() {
-        return mobInfoTooltipComponent;
+    public TooltipBoxContainer getMobInfoTooltipBoxContainer() {
+        return mobInfoTooltipBoxContainer;
     }
 
     public Label getMobNameLabel() {
@@ -99,44 +99,5 @@ public class MobInfoComponent extends VBox implements ObservableComponent<MobTyp
 
     public StandardImageView getIconView() {
         return iconView;
-    }
-
-    public static class MobInfoTooltipComponent extends MapContainerTooltipBox implements ObservableComponent<MobTypeInfo> {
-        private final ObjectProperty<MobTypeInfo> mobTypeInfo;
-
-        public MobInfoTooltipComponent(MainController controller) {
-            super(controller);
-            mobTypeInfo = new SimpleObjectProperty<>();
-        }
-
-        @Override
-        public MainController getController() {
-            return controller;
-        }
-
-        @Override
-        public Class<MobTypeInfo> getObservableClass() {
-            return MobTypeInfo.class;
-        }
-
-        @Override
-        public ReadOnlyObjectProperty<MobTypeInfo> getObservable() {
-            return mobTypeInfo;
-        }
-
-        @Override
-        public void setObservable(MobTypeInfo data) {
-            mobTypeInfo.set(data);
-        }
-
-        @Override
-        public void cleanUIState() {
-            clearMaps();
-        }
-
-        @Override
-        public void fillUIState() {
-            arrangeMobLocationMaps(mobTypeInfo.get().type());
-        }
     }
 }

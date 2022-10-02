@@ -17,7 +17,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     private final MainController controller;
 
-    private final CrateInfoTooltipComponent crateInfoTooltipComponent;
+    private final TooltipBoxContainer crateInfoTooltipBoxContainer;
     private final Label nameLabel;
     private final Label commentLabel;
     private final StandardImageView iconView;
@@ -27,10 +27,10 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
         this.controller = controller;
 
-        crateInfoTooltipComponent = new CrateInfoTooltipComponent(controller);
+        crateInfoTooltipBoxContainer = new TooltipBoxContainer(9, 36, controller);
         Tooltip tooltip = new Tooltip();
         tooltip.setShowDelay(Duration.ZERO);
-        tooltip.setGraphic(crateInfoTooltipComponent);
+        tooltip.setGraphic(crateInfoTooltipBoxContainer);
 
         nameLabel = new Label();
         nameLabel.setWrapText(true);
@@ -75,7 +75,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     @Override
     public void cleanUIState() {
-        crateInfoTooltipComponent.setObservableAndState(null);
+        crateInfoTooltipBoxContainer.clearGraphics();
         nameLabel.setText("UNKNOWN");
         commentLabel.setText("Unknown Crate");
         iconView.cleanImage();
@@ -83,7 +83,7 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     @Override
     public void fillUIState() {
-        crateInfoTooltipComponent.setObservableAndState(crateInfo.get());
+        crateInfoTooltipBoxContainer.arrangeCrateSourceMaps(crateInfo.get().id());
         nameLabel.setText(crateInfo.get().name());
         commentLabel.setText(crateInfo.get().comment());
         iconView.setImage(crateInfo.get().iconName());
@@ -97,8 +97,8 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
         return crateInfo;
     }
 
-    public CrateInfoTooltipComponent getCrateInfoTooltipComponent() {
-        return crateInfoTooltipComponent;
+    public TooltipBoxContainer getCrateInfoTooltipBoxContainer() {
+        return crateInfoTooltipBoxContainer;
     }
 
     public Label getNameLabel() {
@@ -111,45 +111,5 @@ public class CrateInfoComponent extends VBox implements ObservableComponent<Item
 
     public StandardImageView getIconView() {
         return iconView;
-    }
-
-    public static class CrateInfoTooltipComponent extends MapContainerTooltipBox implements ObservableComponent<ItemInfo> {
-        private final ObjectProperty<ItemInfo> crateInfo;
-
-        public CrateInfoTooltipComponent(MainController controller) {
-            super(controller);
-            crateInfo = new SimpleObjectProperty<>();
-        }
-
-        @Override
-        public MainController getController() {
-            return controller;
-        }
-
-        @Override
-        public Class<ItemInfo> getObservableClass() {
-            return ItemInfo.class;
-        }
-
-        @Override
-        public ReadOnlyObjectProperty<ItemInfo> getObservable() {
-            return crateInfo;
-        }
-
-        @Override
-        public void setObservable(ItemInfo data) {
-            crateInfo.set(data);
-        }
-
-        @Override
-        public void cleanUIState() {
-            clearMaps();
-        }
-
-        @Override
-        public void fillUIState() {
-            ItemInfo ci = crateInfo.get();
-            arrangeCrateMaps(ci.id());
-        }
     }
 }

@@ -11,11 +11,13 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import javafx.util.Pair;
 
 import java.util.HashSet;
@@ -29,6 +31,7 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
     private final MainController controller;
     private final DataComponent parent;
 
+    private final TooltipBoxContainer crateTypeBoxTooltipBoxContainer;
     private final Label nameLabel;
     private final Label commentLabel;
     private final StandardImageView iconView;
@@ -47,10 +50,20 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
 
         this.controller = controller;
         this.parent = parent;
+
+        crateTypeBoxTooltipBoxContainer = new TooltipBoxContainer(25, 100, controller);
+        Tooltip tooltip = new Tooltip();
+        tooltip.setShowDelay(Duration.ZERO);
+        tooltip.setGraphic(crateTypeBoxTooltipBoxContainer);
+
         nameLabel = new Label();
+        nameLabel.setTooltip(tooltip);
+
         commentLabel = new Label();
+        commentLabel.setTooltip(tooltip);
 
         iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
+        Tooltip.install(iconView, tooltip);
 
         contentVBox = new VBox(2, nameLabel, commentLabel, iconView);
         contentVBox.setAlignment(Pos.CENTER);
@@ -109,6 +122,7 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
     public void cleanUIState() {
         DataComponent.super.cleanUIState();
 
+        crateTypeBoxTooltipBoxContainer.clearGraphics();
         nameLabel.setText("<INVALID>");
         commentLabel.setText("<INVALID>");
         iconView.cleanImage();
@@ -122,6 +136,7 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
                 crate.get().getCrateID(), ItemType.CRATE.getTypeID()));
 
         if (Objects.nonNull(itemInfo)) {
+            crateTypeBoxTooltipBoxContainer.arrangeItemContentMaps(itemInfo.id());
             nameLabel.setText(itemInfo.name());
             commentLabel.setText(itemInfo.comment());
             iconView.setImage(itemInfo.iconName());
@@ -197,6 +212,10 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
 
     public ReadOnlyObjectProperty<Crate> crateProperty() {
         return crate;
+    }
+
+    public TooltipBoxContainer getCrateTypeBoxTooltipBoxContainer() {
+        return crateTypeBoxTooltipBoxContainer;
     }
 
     public Label getNameLabel() {

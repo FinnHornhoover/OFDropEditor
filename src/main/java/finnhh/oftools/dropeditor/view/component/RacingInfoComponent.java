@@ -20,7 +20,7 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
 
     private final MainController controller;
 
-    private final RacingInfoTooltipComponent racingInfoTooltipComponent;
+    private final TooltipBoxContainer racingInfoTooltipBoxContainer;
     private final Label izNameLabel;
     private final StandardImageView iconView;
     private final Label entryLabel;
@@ -30,10 +30,10 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
 
         this.controller = controller;
 
-        racingInfoTooltipComponent = new RacingInfoTooltipComponent(controller);
+        racingInfoTooltipBoxContainer = new TooltipBoxContainer(9, 36, controller);
         Tooltip tooltip = new Tooltip();
         tooltip.setShowDelay(Duration.ZERO);
-        tooltip.setGraphic(racingInfoTooltipComponent);
+        tooltip.setGraphic(racingInfoTooltipBoxContainer);
 
         izNameLabel = new Label();
         izNameLabel.setWrapText(true);
@@ -78,7 +78,7 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
 
     @Override
     public void cleanUIState() {
-        racingInfoTooltipComponent.setObservableAndState(null);
+        racingInfoTooltipBoxContainer.clearGraphics();
         izNameLabel.setText("Unknown");
         entryLabel.setText(MapRegionInfo.UNKNOWN.areaName() + " - " + MapRegionInfo.UNKNOWN.zoneName());
         iconView.cleanImage();
@@ -93,14 +93,14 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
                         ).stream().findFirst())
                 .orElse(MapRegionInfo.UNKNOWN);
 
-        racingInfoTooltipComponent.setObservableAndState(instanceInfo.get());
+        racingInfoTooltipBoxContainer.arrangeRacingLocationMaps(instanceInfo.get().EPID());
         izNameLabel.setText(instanceInfo.get().name());
         entryLabel.setText(entryRegion.areaName() + " - " + entryRegion.zoneName());
         iconView.setImage(String.format("ep_big_%02d", instanceInfo.get().EPID()));
     }
 
-    public RacingInfoTooltipComponent getRacingInfoTooltipComponent() {
-        return racingInfoTooltipComponent;
+    public TooltipBoxContainer getRacingInfoTooltipBoxContainer() {
+        return racingInfoTooltipBoxContainer;
     }
 
     public InstanceInfo getInstanceInfo() {
@@ -121,44 +121,5 @@ public class RacingInfoComponent extends VBox implements ObservableComponent<Ins
 
     public Label getEntryLabel() {
         return entryLabel;
-    }
-
-    public static class RacingInfoTooltipComponent extends MapContainerTooltipBox implements ObservableComponent<InstanceInfo> {
-        private final ObjectProperty<InstanceInfo> instanceInfo;
-
-        public RacingInfoTooltipComponent(MainController controller) {
-            super(controller);
-            instanceInfo = new SimpleObjectProperty<>();
-        }
-
-        @Override
-        public MainController getController() {
-            return controller;
-        }
-
-        @Override
-        public Class<InstanceInfo> getObservableClass() {
-            return InstanceInfo.class;
-        }
-
-        @Override
-        public ReadOnlyObjectProperty<InstanceInfo> getObservable() {
-            return instanceInfo;
-        }
-
-        @Override
-        public void setObservable(InstanceInfo data) {
-            instanceInfo.set(data);
-        }
-
-        @Override
-        public void cleanUIState() {
-            clearMaps();
-        }
-
-        @Override
-        public void fillUIState() {
-            arrangeRacingLocationMaps(instanceInfo.get().EPID());
-        }
     }
 }
