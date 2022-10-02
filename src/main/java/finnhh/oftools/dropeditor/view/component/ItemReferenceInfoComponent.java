@@ -2,6 +2,7 @@ package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.ItemInfo;
+import finnhh.oftools.dropeditor.model.ItemType;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -77,14 +78,14 @@ public class ItemReferenceInfoComponent extends VBox implements ObservableCompon
     public void cleanUIState() {
         itemReferenceInfoTooltipComponent.setObservableAndState(null);
         nameLabel.setText("UNKNOWN");
-        typeLabel.setText("None");
+        typeLabel.setText(ItemType.NONE.getName());
         iconView.cleanImage();
     }
 
     @Override
     public void fillUIState() {
         itemReferenceInfoTooltipComponent.setObservableAndState(itemInfo.get());
-        nameLabel.setText(itemInfo.get().name());
+        nameLabel.setText(String.format("%s (%d)", itemInfo.get().name(), itemInfo.get().id()));
         typeLabel.setText(itemInfo.get().getTypeString());
         iconView.setImage(itemInfo.get().iconName());
     }

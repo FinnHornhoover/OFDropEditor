@@ -7,16 +7,16 @@ public enum Rarity {
     RARE(3, "Rare"),
     ULTRA_RARE(4, "Ultra Rare");
 
-    private final int type;
+    private final int typeID;
     private final String name;
 
-    Rarity(int type, String name) {
-        this.type = type;
+    Rarity(int typeID, String name) {
+        this.typeID = typeID;
         this.name = name;
     }
 
-    public int getType() {
-        return type;
+    public int getTypeID() {
+        return typeID;
     }
 
     public String getName() {
@@ -32,8 +32,8 @@ public enum Rarity {
         return name;
     }
 
-    public static Rarity forType(int type) {
+    public static Rarity forType(int typeID) {
         Rarity[] rarities = values();
-        return (type > -1 && type < rarities.length) ? rarities[type] : ANY;
+        return (typeID > -1 && typeID < rarities.length) ? rarities[typeID] : ANY;
     }
 }

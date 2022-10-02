@@ -1,10 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
-import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.ItemInfo;
-import finnhh.oftools.dropeditor.model.ItemType;
-import finnhh.oftools.dropeditor.model.WeaponType;
+import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.Data;
 import javafx.beans.property.ObjectProperty;
@@ -167,6 +164,22 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
                 op -> op.map(o -> (Crate) o)
                         .map(c -> itemInfoMap.get(new Pair<>(c.getCrateID(), ItemType.CRATE.getTypeID())))
                         .map(ItemInfo::weaponType)
+                        .stream().toList()
+        ));
+
+        allValues.addAll(getNestedSearchableValues(
+                ObservableComponent.getSearchableValuesFor(Rarity.class),
+                op -> op.map(o -> (Crate) o)
+                        .map(ir -> itemInfoMap.get(new Pair<>(ir.getCrateID(), ItemType.CRATE.getTypeID())))
+                        .map(ItemInfo::rarity)
+                        .stream().toList()
+        ));
+
+        allValues.addAll(getNestedSearchableValues(
+                ObservableComponent.getSearchableValuesFor(Gender.class),
+                op -> op.map(o -> (Crate) o)
+                        .map(ir -> itemInfoMap.get(new Pair<>(ir.getCrateID(), ItemType.CRATE.getTypeID())))
+                        .map(ItemInfo::gender)
                         .stream().toList()
         ));
 

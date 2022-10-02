@@ -244,8 +244,10 @@ public class JSONManager {
                         itemData.get("m_iItemPrice").getAsInt(),
                         itemData.get("m_iItemSellPrice").getAsInt(),
                         itemData.get("m_iStackNumber").getAsInt(),
-                        (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
-                                1 : itemData.get("m_iRarity").getAsInt(),
+                        Rarity.forType((itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                1 : itemData.get("m_iRarity").getAsInt()),
+                        Gender.forType((itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
+                                0 : itemData.get("m_iReqSex").getAsInt()),
                         requiredLevel,
                         contentLevel,
                         (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
@@ -269,7 +271,7 @@ public class JSONManager {
                         (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
                                 0 : itemData.get("m_iDefenseRat").getAsInt(),
                         (itemType == ItemType.GENERAL_ITEM || itemType == ItemType.CRATE) ?
-                                0 : itemData.get("m_iReqSex").getAsInt(),
+                                0 : itemData.get("m_iUp_runSpeed").getAsInt(),
                         name,
                         comment,
                         iconName

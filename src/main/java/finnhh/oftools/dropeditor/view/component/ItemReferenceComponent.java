@@ -1,16 +1,14 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
-import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.ItemInfo;
-import finnhh.oftools.dropeditor.model.ItemType;
-import finnhh.oftools.dropeditor.model.WeaponType;
+import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.ItemReference;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -18,7 +16,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.util.Pair;
 
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class ItemReferenceComponent extends VBox implements RootDataComponent {
     private final ObjectProperty<ItemReference> itemReference;
@@ -26,14 +26,13 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
     private final MainController controller;
 
     private final ItemReferenceInfoComponent itemReferenceInfoComponent;
-    private final FlowPane infoFlowPane;
+    private final GridPane infoGridPane;
     private final HBox contentHBox;
     private final Label idLabel;
     private final Button removeButton;
     private final HBox idHBox;
 
     private final EventHandler<MouseEvent> removeClickHandler;
-
 
     public ItemReferenceComponent(MainController controller) {
         itemReference = new SimpleObjectProperty<>();
@@ -42,13 +41,22 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
 
         itemReferenceInfoComponent = new ItemReferenceInfoComponent(160.0, controller);
 
+        infoGridPane = new GridPane();
+        IntStream.range(0, 4).forEach(i -> {
+            ColumnConstraints nameColumn = new ColumnConstraints();
+            nameColumn.setPercentWidth(15);
+            nameColumn.setFillWidth(true);
 
-        infoFlowPane = new FlowPane();
-        infoFlowPane.setHgap(2);
-        infoFlowPane.setVgap(2);
-        HBox.setHgrow(infoFlowPane, Priority.ALWAYS);
+            ColumnConstraints dataColumn = new ColumnConstraints();
+            dataColumn.setPercentWidth(10);
+            dataColumn.setFillWidth(true);
 
-        contentHBox = new HBox(2, itemReferenceInfoComponent, infoFlowPane);
+            infoGridPane.getColumnConstraints().addAll(nameColumn, dataColumn);
+        });
+        infoGridPane.setAlignment(Pos.CENTER);
+        HBox.setHgrow(infoGridPane, Priority.ALWAYS);
+
+        contentHBox = new HBox(2, itemReferenceInfoComponent, infoGridPane);
         contentHBox.setAlignment(Pos.CENTER);
         contentHBox.getStyleClass().add("bordered-pane");
 
@@ -66,6 +74,26 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
         getChildren().addAll(idHBox, contentHBox);
 
         removeClickHandler = event -> onRemoveClick();
+    }
+
+    private Label fillGrid(String name, String data, String cssData, int column, int row) {
+        String nameTitle = name.substring(0, 1).toUpperCase(Locale.ENGLISH) +
+                name.substring(1).replaceAll("([A-Z])", " $1") + ":";
+        Label nameLabel = new Label(nameTitle);
+        nameLabel.getStyleClass().add("grid-label");
+        nameLabel.setAlignment(Pos.CENTER_RIGHT);
+        nameLabel.setPadding(new Insets(0, 4, 0, 4));
+        GridPane.setConstraints(nameLabel, column, row);
+
+        Label dataLabel = new Label(data);
+        dataLabel.getStyleClass().add(cssData.isEmpty() ? "data-grid-label" : cssData);
+        dataLabel.getStyleClass().add("grid-label");
+        dataLabel.setPadding(new Insets(0, 4, 0, 4));
+        dataLabel.setAlignment(Pos.CENTER);
+        GridPane.setConstraints(dataLabel, column + 1, row);
+
+        infoGridPane.getChildren().addAll(nameLabel, dataLabel);
+        return dataLabel;
     }
 
     @Override
@@ -102,7 +130,7 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
     public void cleanUIState() {
         RootDataComponent.super.cleanUIState();
 
-        infoFlowPane.getChildren().clear();
+        infoGridPane.getChildren().clear();
         itemReferenceInfoComponent.setObservableAndState(null);
     }
 
@@ -114,21 +142,34 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
                 itemReference.get().getItemID(), itemReference.get().getType()));
 
         if (Objects.nonNull(itemInfo)) {
-            Arrays.stream(ItemInfo.class.getDeclaredFields())
-                    .map(f -> {
-                        String objectString = "<INVALID>";
-                        try {
-                            f.setAccessible(true);
-                            objectString = f.get(itemInfo).toString();
-                        } catch (IllegalAccessException | IllegalArgumentException ignored) {
-                        }
+            Set<String> unwantedNames = Set.of("id", "type", "weaponType", "name", "comment", "iconName");
+            List<Field> fields = Arrays.stream(ItemInfo.class.getDeclaredFields())
+                    .filter(f -> !unwantedNames.contains(f.getName()))
+                    .toList();
 
-                        return new Label(String.format("%s%s: %s",
-                                f.getName().substring(0, 1).toUpperCase(Locale.ENGLISH),
-                                f.getName().substring(1).replaceAll("([A-Z])", " $1"),
-                                objectString));
-                    })
-                    .forEach(infoFlowPane.getChildren()::add);
+            try {
+                for (int i = 0; i < fields.size(); i++) {
+                    Field f = fields.get(i);
+
+                    f.setAccessible(true);
+                    Object obj = f.get(itemInfo);
+
+                    fillGrid(f.getName(),
+                            (obj instanceof Boolean b) ?
+                                    (b ? "Yes" : "No") :
+                                    obj.toString(),
+                            (obj instanceof Boolean b) ?
+                                    b + "-grid-label" :
+                                    "",
+                            2 * (i / 5), i % 5);
+                }
+            } catch (IllegalAccessException | IllegalArgumentException ignored) {
+            }
+
+            Label commentLabel = fillGrid("Comment", itemInfo.comment(), "", 0, 5);
+            GridPane.setColumnSpan(commentLabel, 7);
+            commentLabel.setAlignment(Pos.CENTER_LEFT);
+
             itemReferenceInfoComponent.setObservableAndState(itemInfo);
         }
     }
@@ -172,6 +213,22 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
                         .stream().toList()
         ));
 
+        allValues.addAll(getNestedSearchableValues(
+                ObservableComponent.getSearchableValuesFor(Rarity.class),
+                op -> op.map(o -> (ItemReference) o)
+                        .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                        .map(ItemInfo::rarity)
+                        .stream().toList()
+        ));
+
+        allValues.addAll(getNestedSearchableValues(
+                ObservableComponent.getSearchableValuesFor(Gender.class),
+                op -> op.map(o -> (ItemReference) o)
+                        .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                        .map(ItemInfo::gender)
+                        .stream().toList()
+        ));
+
         return allValues;
     }
 
@@ -192,8 +249,8 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
         return itemReferenceInfoComponent;
     }
 
-    public FlowPane getInfoFlowPane() {
-        return infoFlowPane;
+    public GridPane getInfoGridPane() {
+        return infoGridPane;
     }
 
     public HBox getContentHBox() {

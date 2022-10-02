@@ -5,16 +5,16 @@ public enum Gender {
     BOY(1, "Boy"),
     GIRL(2, "Girl");
 
-    private final int type;
+    private final int typeID;
     private final String name;
 
-    Gender(int type, String name) {
-        this.type = type;
+    Gender(int typeID, String name) {
+        this.typeID = typeID;
         this.name = name;
     }
 
-    public int getType() {
-        return type;
+    public int getTypeID() {
+        return typeID;
     }
 
     public String getName() {
@@ -30,8 +30,8 @@ public enum Gender {
         return name;
     }
 
-    public static Gender forType(int type) {
+    public static Gender forType(int typeID) {
         Gender[] genders = values();
-        return (type > -1 && type < genders.length) ? genders[type] : ANY;
+        return (typeID > -1 && typeID < genders.length) ? genders[typeID] : ANY;
     }
 }

@@ -129,6 +129,28 @@
     -fx-text-fill: red;
 }
 
+.grid-label {
+    -fx-background-radius: 0, 0;
+    -fx-border-radius: 0, 0;
+    -fx-border-color: transparent;
+    -fx-max-width: Infinity;
+}
+
+.false-grid-label {
+    -fx-background-color: #ccffff;
+    -fx-text-fill: red;
+}
+
+.true-grid-label {
+    -fx-background-color: #ccffff;
+    -fx-text-fill: #00cc00;
+}
+
+.data-grid-label {
+    -fx-background-color: #ccffff;
+    -fx-text-fill: black;
+}
+
 .id-label:hover {
     -fx-text-fill: orange;
 }

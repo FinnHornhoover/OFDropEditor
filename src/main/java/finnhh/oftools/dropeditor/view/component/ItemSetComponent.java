@@ -217,8 +217,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                             var alterRarityMap = itemSet.get().getAlterRarityMap();
 
                             alterRarityMap.remove(idr.getItemReferenceID());
-                            if (Objects.isNull(itemInfo) || newVal != Rarity.forType(itemInfo.rarity()))
-                                alterRarityMap.put(idr.getItemReferenceID(), newVal.getType());
+                            if (Objects.isNull(itemInfo) || newVal != itemInfo.rarity())
+                                alterRarityMap.put(idr.getItemReferenceID(), newVal.getTypeID());
                         }
                 );
                 genderHandler = event -> handleEvent(
@@ -232,8 +232,8 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                             var alterGenderMap = itemSet.get().getAlterGenderMap();
 
                             alterGenderMap.remove(idr.getItemReferenceID());
-                            if (Objects.isNull(itemInfo) || newVal != Gender.forType(itemInfo.gender()))
-                                alterGenderMap.put(idr.getItemReferenceID(), newVal.getType());
+                            if (Objects.isNull(itemInfo) || newVal != itemInfo.gender())
+                                alterGenderMap.put(idr.getItemReferenceID(), newVal.getTypeID());
                         }
                 );
 
@@ -375,12 +375,12 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             idr.setWeight(weightAlterations.getOrDefault(
                     idr.getItemReferenceID(),
                     itemSet.getDefaultItemWeight()));
-            idr.setRarity(Rarity.forType(rarityAlterations.getOrDefault(
-                    idr.getItemReferenceID(),
-                    itemInfo.rarity())));
-            idr.setGender(Gender.forType(genderAlterations.getOrDefault(
-                    idr.getItemReferenceID(),
-                    itemInfo.gender())));
+            idr.setRarity(Optional.ofNullable(rarityAlterations.get(idr.getItemReferenceID()))
+                    .map(Rarity::forType)
+                    .orElse(itemInfo.rarity()));
+            idr.setGender(Optional.ofNullable(genderAlterations.get(idr.getItemReferenceID()))
+                    .map(Gender::forType)
+                    .orElse(itemInfo.gender()));
         }
 
         return idr;
@@ -825,6 +825,22 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                     op -> op.map(o -> (ItemReference) o)
                             .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
                             .map(ItemInfo::weaponType)
+                            .stream().toList()
+            ));
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(Rarity.class),
+                    op -> op.map(o -> (ItemReference) o)
+                            .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .map(ItemInfo::rarity)
+                            .stream().toList()
+            ));
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(Gender.class),
+                    op -> op.map(o -> (ItemReference) o)
+                            .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .map(ItemInfo::gender)
                             .stream().toList()
             ));
 

@@ -27,7 +27,7 @@ public enum WeaponType {
 
     @Override
     public String toString() {
-        return getName();
+        return  String.format("%s (%d - %d)", getName(), ItemType.WEAPON.getTypeID(), getTypeID());
     }
 
     public static WeaponType forType(int typeID) {

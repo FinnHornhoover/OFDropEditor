@@ -3,13 +3,13 @@ package finnhh.oftools.dropeditor.model;
 import java.util.Objects;
 
 public record ItemInfo(int id, ItemType type, WeaponType weaponType, boolean tradeable, boolean sellable, int buyPrice,
-                       int sellPrice, int stackSize, int rarity, int requiredLevel, int contentLevel, int pointDamage,
-                       int groupDamage, int fireInitialTime, int fireDeliverTime, int fireDelayTime,
+                       int sellPrice, int stackSize, Rarity rarity, Gender gender, int requiredLevel, int contentLevel,
+                       int pointDamage, int groupDamage, int fireInitialTime, int fireDeliverTime, int fireDelayTime,
                        int fireDurationTime, int fireRange, int attackAngle, int numberOfTargets, int defense,
-                       int gender, String name, String comment, String iconName) implements InfoEnum {
+                       int vehicleClass, String name, String comment, String iconName) implements InfoEnum {
 
     public String getTypeString() {
-        return type == ItemType.WEAPON ? weaponType.getName() : type.getName();
+        return type == ItemType.WEAPON ? weaponType.toString() : type.toString();
     }
 
     @Override

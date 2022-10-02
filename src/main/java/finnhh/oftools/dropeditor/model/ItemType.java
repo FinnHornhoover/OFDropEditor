@@ -31,7 +31,7 @@ public enum ItemType {
 
     @Override
     public String toString() {
-        return getName();
+        return String.format("%s (%d)", getName(), getTypeID());
     }
 
     public static ItemType forType(int typeID) {

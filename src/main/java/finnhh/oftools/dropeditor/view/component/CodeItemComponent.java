@@ -1,10 +1,7 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import finnhh.oftools.dropeditor.MainController;
-import finnhh.oftools.dropeditor.model.FilterChoice;
-import finnhh.oftools.dropeditor.model.ItemInfo;
-import finnhh.oftools.dropeditor.model.ItemType;
-import finnhh.oftools.dropeditor.model.WeaponType;
+import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.CodeItem;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.ItemReference;
@@ -405,6 +402,22 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
                     op -> op.map(o -> (ItemReference) o)
                             .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
                             .map(ItemInfo::weaponType)
+                            .stream().toList()
+            ));
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(Rarity.class),
+                    op -> op.map(o -> (ItemReference) o)
+                            .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .map(ItemInfo::rarity)
+                            .stream().toList()
+            ));
+
+            allValues.addAll(getNestedSearchableValues(
+                    ObservableComponent.getSearchableValuesFor(Gender.class),
+                    op -> op.map(o -> (ItemReference) o)
+                            .map(ir -> itemInfoMap.get(new Pair<>(ir.getItemID(), ir.getType())))
+                            .map(ItemInfo::gender)
                             .stream().toList()
             ));
 
