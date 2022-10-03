@@ -56,6 +56,7 @@ public class MainController {
     @FXML
     protected void onNewButtonPressed() {
         viewModeChoiceBox.getValue().getNewDataAdder().apply(this).ifPresent(data -> {
+            data.constructBindings();
             drops.add(data);
             data.registerReferences(drops);
             refreshList();
@@ -100,6 +101,11 @@ public class MainController {
         saveTimeline = new Timeline(new KeyFrame(Duration.minutes(1), event -> saveService.restart()));
         saveTimeline.setCycleCount(Timeline.INDEFINITE);
         saveTimeline.play();
+
+        autoSaveSwitch.selectedProperty().addListener((o, oldVal, newVal) -> {
+            if (newVal)
+                saveService.restart();
+        });
 
         viewModeChoiceBox.getItems().addAll(ViewMode.values());
         viewModeChoiceBox.setValue(ViewMode.MONSTER);
@@ -176,7 +182,8 @@ public class MainController {
             refreshList();
         });
 
-        filterListBox.filterConditionListProperty().addListener((ListChangeListener<FilterCondition>) change -> refreshList());
+        filterListBox.filterConditionListProperty().addListener(
+                (ListChangeListener<FilterCondition>) change -> refreshList());
 
         refreshList();
     }
@@ -282,6 +289,7 @@ public class MainController {
         return getTableGraphic(
                 () -> staticDataStore.getMobTypeInfoMap().values().stream()
                         .filter(mti -> !drops.mobsProperty().containsKey(mti.type()))
+                        .sorted(Comparator.comparingInt(MobTypeInfo::level).thenComparing(MobTypeInfo::type))
                         .toList(),
                 () -> getIconColumn(MobTypeInfo::iconName),
                 () -> getTableColumn("Type ID", 68.0, MobTypeInfo::type),
@@ -294,6 +302,7 @@ public class MainController {
         return getTableGraphic(
                 () -> staticDataStore.getItemInfoMap().values().stream()
                         .filter(ii -> ii.type() == ItemType.CRATE && !drops.cratesProperty().containsKey(ii.id()))
+                        .sorted(Comparator.comparingInt(ItemInfo::id))
                         .toList(),
                 () -> getIconColumn(ItemInfo::iconName),
                 () -> getTableColumn("ID", 68.0, ItemInfo::id),
@@ -307,6 +316,7 @@ public class MainController {
         return getTableGraphic(
                 () -> staticDataStore.getEPInstanceMap().values().stream()
                         .filter(ii -> !drops.racingProperty().containsKey(ii.EPID()))
+                        .sorted(Comparator.comparingInt(InstanceInfo::EPID))
                         .toList(),
                 () -> getIconColumn(ii -> String.format("ep_small_%02d", ii.EPID())),
                 () -> getTableColumn("EPID", 68.0, InstanceInfo::EPID),
@@ -332,11 +342,13 @@ public class MainController {
                                     .get(new Pair<>(ir.getItemID(), ir.getType()))).stream())
                             .forEach(itemInfoSet::remove);
 
-                    return new ArrayList<>(itemInfoSet);
+                    return itemInfoSet.stream()
+                            .sorted(Comparator.comparing(ItemInfo::type).thenComparing(ItemInfo::id))
+                            .toList();
                 },
                 () -> getIconColumn(ItemInfo::iconName),
                 () -> getTableColumn("ID", 68.0, ItemInfo::id),
-                () -> getTableColumn("Type", 68.0, ItemInfo::type),
+                () -> getTableColumn("Type", 100.0, ItemInfo::type),
                 () -> getTableColumn("Level", 68.0, ItemInfo::requiredLevel),
                 () -> getTableColumn("Content Level", 132.0, ItemInfo::contentLevel),
                 () -> getTableColumn("Name", -1.0, ItemInfo::name),
@@ -353,6 +365,7 @@ public class MainController {
                     return staticDataStore.getItemInfoMap().values().stream()
                             .filter(ii -> ii.type() == ItemType.CRATE && ii.name().contains("Nano")
                                     && ii.name().contains("Capsule") && !crateIDSet.contains(ii.id()))
+                            .sorted(Comparator.comparingInt(ItemInfo::id))
                             .toList();
                 },
                 () -> getIconColumn(ItemInfo::iconName),
@@ -370,6 +383,7 @@ public class MainController {
                             .collect(Collectors.toSet());
                     return staticDataStore.getNanoInfoMap().values().stream()
                             .filter(ni -> !nanoIDSet.contains(ni.id()))
+                            .sorted(Comparator.comparingInt(NanoInfo::id))
                             .toList();
                 },
                 () -> getIconColumn(NanoInfo::iconName),
@@ -384,7 +398,8 @@ public class MainController {
     public TableView<EventType> getEventAdditionGraphic() {
         return getTableGraphic(
                 () -> Arrays.stream(EventType.values())
-                        .filter(et -> et != EventType.NO_EVENT && !drops.getEvents().containsKey(et.getType()))
+                        .filter(et -> et != EventType.NO_EVENT && !drops.getEvents().containsKey(et.getTypeID()))
+                        .sorted(Comparator.comparingInt(EventType::getTypeID))
                         .toList(),
                 () -> getIconColumn(EventType::iconName),
                 () -> getTableColumn("Name", -1.0, EventType::getName)
@@ -425,7 +440,6 @@ public class MainController {
                         .map(mti -> {
                             Mob mob = new Mob();
                             mob.setMobID(mti.type());
-                            mob.constructBindings();
                             return mob;
                         }));
     }
@@ -439,7 +453,6 @@ public class MainController {
                         .map(ii -> {
                             Crate crate = new Crate();
                             crate.setCrateID(ii.id());
-                            crate.constructBindings();
                             return crate;
                         }));
     }
@@ -453,7 +466,6 @@ public class MainController {
                         .map(ii -> {
                             Racing racing = new Racing();
                             racing.setEPID(ii.EPID());
-                            racing.constructBindings();
                             return racing;
                         }));
     }
@@ -469,7 +481,6 @@ public class MainController {
                         .map(text -> {
                             CodeItem codeItem = new CodeItem();
                             codeItem.setCode(text.replaceAll("[^A-Za-z0-9]+", "").toLowerCase(Locale.ENGLISH));
-                            codeItem.constructBindings();
                             return codeItem;
                         }));
     }
@@ -484,7 +495,6 @@ public class MainController {
                             ItemReference itemReference = new ItemReference();
                             itemReference.setItemID(ii.id());
                             itemReference.setType(ii.type().getTypeID());
-                            itemReference.constructBindings();
                             return itemReference;
                         }));
     }
@@ -498,7 +508,6 @@ public class MainController {
                         .map(ii -> {
                             NanoCapsule nanoCapsule = new NanoCapsule();
                             nanoCapsule.setCrateID(ii.id());
-                            nanoCapsule.constructBindings();
                             return nanoCapsule;
                         })
         );
@@ -513,7 +522,6 @@ public class MainController {
                         .map(ni -> {
                             NanoCapsule nanoCapsule = new NanoCapsule();
                             nanoCapsule.setNano(ni.id());
-                            nanoCapsule.constructBindings();
                             return nanoCapsule;
                         }));
     }
@@ -528,8 +536,7 @@ public class MainController {
                             Event event = new Event();
                             event.setEventID((et == EventType.CUSTOM_EVENT) ?
                                     Math.max(EventType.nextId(), drops.eventsProperty().getNextTrueID()) :
-                                    et.getType());
-                            event.constructBindings();
+                                    et.getTypeID());
                             return event;
                         }));
     }

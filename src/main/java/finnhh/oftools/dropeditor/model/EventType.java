@@ -16,16 +16,16 @@ public enum EventType {
     THANKSGIVING(10, "Thanksgiving"),
     CUSTOM_EVENT(-1, "Custom Event");  // leave this as the last event type
 
-    private final int type;
+    private final int typeID;
     private final String name;
 
-    EventType(int type, String name) {
-        this.type = type;
+    EventType(int typeID, String name) {
+        this.typeID = typeID;
         this.name = name;
     }
 
-    public int getType() {
-        return type;
+    public int getTypeID() {
+        return typeID;
     }
 
     public String getName() {
@@ -36,14 +36,14 @@ public enum EventType {
         return name().toLowerCase(Locale.ENGLISH);
     }
 
-    public static EventType forType(int type) {
+    public static EventType forType(int typeID) {
         EventType[] gameEvents = values();
-        return (type > -1 && type < gameEvents.length) ?
-                gameEvents[type] :
-                (type < 0) ? NO_EVENT : CUSTOM_EVENT;
+        return (typeID > -1 && typeID < gameEvents.length) ?
+                gameEvents[typeID] :
+                (typeID < 0) ? NO_EVENT : CUSTOM_EVENT;
     }
 
     public static int nextId() {
-        return values()[CUSTOM_EVENT.ordinal() - 1].getType() + 1;
+        return values()[CUSTOM_EVENT.ordinal() - 1].getTypeID() + 1;
     }
 }
