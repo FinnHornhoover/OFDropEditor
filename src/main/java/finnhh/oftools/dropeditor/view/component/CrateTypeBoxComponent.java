@@ -136,7 +136,7 @@ public class CrateTypeBoxComponent extends BorderPane implements DataComponent {
                 crate.get().getCrateID(), ItemType.CRATE.getTypeID()));
 
         if (Objects.nonNull(itemInfo)) {
-            crateTypeBoxTooltipBoxContainer.arrangeItemContentMaps(itemInfo.id());
+            crateTypeBoxTooltipBoxContainer.arrangeCrateContentGraphics(itemInfo.id());
             nameLabel.setText(itemInfo.name());
             commentLabel.setText(itemInfo.comment());
             iconView.setImage(itemInfo.iconName());

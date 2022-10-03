@@ -260,7 +260,7 @@ public class TooltipBoxContainer extends TilePane {
                 });
     }
 
-    private void addItemContentGraphics(int crateID) {
+    private void addCrateContentGraphics(int crateID) {
         var crateMap = controller.getDrops().getCrates();
         var itemSetMap = controller.getDrops().getItemSets();
         var itemReferenceMap = controller.getDrops().getItemReferences();
@@ -282,6 +282,35 @@ public class TooltipBoxContainer extends TilePane {
                     iconView.setImage(itemInfo.iconName());
 
                     VBox vBox = new VBox(2, nameLabel, iconView);
+                    vBox.setAlignment(Pos.CENTER);
+
+                    childMap.put(Objects.hashCode(itemInfo), vBox);
+                });
+    }
+
+    private void addItemSourceCrateGraphics(Pair<Integer, Integer> key) {
+        var itemReferenceMap = controller.getDrops().getItemReferences();
+        var referenceMap = controller.getDrops().getReferenceMap();
+        var itemInfoMap = controller.getStaticDataStore().getItemInfoMap();
+
+        itemReferenceMap.values().stream()
+                .filter(itemReference -> itemReference.getItemID() == key.getKey() && itemReference.getType() == key.getValue())
+                .flatMap(itemReference -> referenceMap.getOrDefault(itemReference, Set.of()).stream())
+                .filter(d -> d instanceof ItemSet)
+                .flatMap(itemSet -> referenceMap.getOrDefault(itemSet, Set.of()).stream())
+                .filter(d -> d instanceof Crate)
+                .map(d -> (Crate) d)
+                .flatMap(crate -> Optional.ofNullable(itemInfoMap.get(new Pair<>(crate.getCrateID(), ItemType.CRATE.getTypeID()))).stream())
+                .forEach(itemInfo -> {
+                    if (childMap.size() > itemLimit)
+                        return;
+
+                    Label nameLabel = new Label(String.format("%s (%d)", itemInfo.name(), itemInfo.id()));
+                    Label commentLabel = new Label(itemInfo.comment());
+                    StandardImageView iconView = new StandardImageView(controller.getIconManager().getIconMap(), 64);
+                    iconView.setImage(itemInfo.iconName());
+
+                    VBox vBox = new VBox(2, nameLabel, commentLabel, iconView);
                     vBox.setAlignment(Pos.CENTER);
 
                     childMap.put(Objects.hashCode(itemInfo), vBox);
@@ -349,8 +378,13 @@ public class TooltipBoxContainer extends TilePane {
         displayGraphics();
     }
 
-    public void arrangeItemContentMaps(int crateID) {
-        addItemContentGraphics(crateID);
+    public void arrangeItemSourceCrateGraphics(int id, int type) {
+        addItemSourceCrateGraphics(new Pair<>(id, type));
+        displayGraphics();
+    }
+
+    public void arrangeCrateContentGraphics(int crateID) {
+        addCrateContentGraphics(crateID);
         displayGraphics();
     }
 

@@ -28,6 +28,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import javafx.util.Pair;
 import org.controlsfx.control.ToggleSwitch;
 
@@ -660,6 +661,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         private final MainController controller;
         private final ItemSetComponent parent;
 
+        private final TooltipBoxContainer itemDropTooltipBoxContainer;
         private final StandardImageView iconView;
         private final Label nameLabel;
         private final StandardSpinner spinner;
@@ -684,9 +686,17 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             this.controller = controller;
             this.parent = parent;
 
+            itemDropTooltipBoxContainer = new TooltipBoxContainer(25, 100, controller);
+            Tooltip tooltip = new Tooltip();
+            tooltip.setShowDelay(Duration.ZERO);
+            tooltip.setGraphic(itemDropTooltipBoxContainer);
+
             iconView = new StandardImageView(this.controller.getIconManager().getIconMap(), 64);
+            Tooltip.install(iconView, tooltip);
 
             nameLabel = new Label();
+            nameLabel.setTooltip(tooltip);
+
             spinner = new StandardSpinner(0, Integer.MAX_VALUE, 0);
 
             percentageLabel = new Label();
@@ -763,6 +773,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         public void cleanUIState() {
             DataComponent.super.cleanUIState();
 
+            itemDropTooltipBoxContainer.clearGraphics();
             spinner.getValueFactory().setValue(0);
             rarityChoiceBox.setValue(Rarity.ANY);
             genderChoiceBox.setValue(Gender.ANY);
@@ -775,6 +786,7 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
         public void fillUIState() {
             DataComponent.super.fillUIState();
 
+            itemDropTooltipBoxContainer.arrangeItemSourceCrateGraphics(itemDrop.get().getItemID(), itemDrop.get().getType());
             spinner.getValueFactory().setValue(itemDrop.get().getWeight());
             rarityChoiceBox.setValue(itemDrop.get().getRarity());
             genderChoiceBox.setValue(itemDrop.get().getGender());
@@ -858,6 +870,10 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
 
         public ReadOnlyObjectProperty<ItemDrop> itemDropProperty() {
             return itemDrop;
+        }
+
+        public TooltipBoxContainer getItemDropTooltipBoxContainer() {
+            return itemDropTooltipBoxContainer;
         }
 
         public StandardImageView getIconView() {
