@@ -4,14 +4,21 @@ import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.*;
 import finnhh.oftools.dropeditor.view.component.*;
 import finnhh.oftools.dropeditor.view.util.NoSelectionModel;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.util.Duration;
 import javafx.util.Pair;
+import org.controlsfx.control.ToggleSwitch;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -27,8 +34,14 @@ public class MainController {
     protected ListView<Data> mainListView;
     @FXML
     protected Label infoLabel;
+    @FXML
+    protected Label lastSavedLabel;
+    @FXML
+    protected ToggleSwitch autoSaveSwitch;
 
     protected Map<ViewMode, ObservableComponent<?>> rootPrototypeMap;
+    protected Service<Boolean> saveService;
+    protected Timeline saveTimeline;
     protected Drops drops;
     protected JSONManager jsonManager;
     protected IconManager iconManager;
@@ -50,20 +63,43 @@ public class MainController {
         });
     }
 
-    @FXML
-    protected void onSettingsButtonPressed() {
-        // TODO
-    }
-
-    @FXML
-    protected void onSaveButtonPressed() {
-        // TODO
-    }
-
     public void setup() {
         rootPrototypeMap = new HashMap<>();
         for (ViewMode viewMode : ViewMode.values())
             rootPrototypeMap.put(viewMode, viewMode.getComponentConstructor().apply(this));
+
+        saveService = new Service<>() {
+            @Override
+            protected Task<Boolean> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected Boolean call() throws Exception {
+                        if (autoSaveSwitch.isSelected())
+                            jsonManager.save(drops);
+                        return autoSaveSwitch.isSelected();
+                    }
+
+                    @Override
+                    protected void succeeded() {
+                        super.succeeded();
+                        if (getValue()) {
+                            Platform.runLater(() -> {
+                                LocalDateTime time = LocalDateTime.now();
+                                lastSavedLabel.setText(String.format("Last Saved: %02d:%02d",
+                                        time.getHour(), time.getMinute()));
+                            });
+                        }
+                    }
+                };
+            }
+        };
+
+        LocalDateTime time = LocalDateTime.now();
+        lastSavedLabel.setText(String.format("Last Saved: %02d:%02d", time.getHour(), time.getMinute()));
+
+        saveTimeline = new Timeline(new KeyFrame(Duration.minutes(1), event -> saveService.restart()));
+        saveTimeline.setCycleCount(Timeline.INDEFINITE);
+        saveTimeline.play();
 
         viewModeChoiceBox.getItems().addAll(ViewMode.values());
         viewModeChoiceBox.setValue(ViewMode.MONSTER);
@@ -143,6 +179,10 @@ public class MainController {
         filterListBox.filterConditionListProperty().addListener((ListChangeListener<FilterCondition>) change -> refreshList());
 
         refreshList();
+    }
+
+    public void stop() {
+        saveTimeline.stop();
     }
 
     public void refreshList() {

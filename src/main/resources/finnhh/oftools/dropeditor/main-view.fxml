@@ -4,6 +4,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import org.controlsfx.control.ToggleSwitch?>
 <VBox alignment="CENTER" minHeight="600.0" minWidth="800.0" spacing="10.0" xmlns:fx="http://javafx.com/fxml/1"
       xmlns="http://javafx.com/javafx/17" fx:controller="finnhh.oftools.dropeditor.MainController">
     <padding>
@@ -11,19 +12,14 @@
     </padding>
     <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="5.0">
         <Button onAction="#onNewButtonPressed" mnemonicParsing="false" text="Add Object" styleClass="add-button"/>
+        <Button onAction="#onAddFilter" mnemonicParsing="false" text="Add Filter"/>
         <ChoiceBox fx:id="viewModeChoiceBox" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
-        <Separator orientation="VERTICAL"/>
-        <Button onAction="#onAddFilter" mnemonicParsing="false" text="Add Filter" styleClass="add-button"/>
     </HBox>
     <FilterListBox fx:id="filterListBox"/>
     <ListView fx:id="mainListView" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS"/>
-    <HBox prefWidth="200.0">
-        <Label fx:id="infoLabel"/>
-        <ButtonBar HBox.hgrow="ALWAYS">
-            <buttons>
-                <Button onAction="#onSettingsButtonPressed" mnemonicParsing="false" text="Settings"/>
-                <Button onAction="#onSaveButtonPressed" mnemonicParsing="false" text="Save"/>
-            </buttons>
-        </ButtonBar>
+    <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="20.0">
+        <Label fx:id="infoLabel" styleClass="grid-label" HBox.hgrow="ALWAYS"/>
+        <Label fx:id="lastSavedLabel" styleClass="grid-label"/>
+        <ToggleSwitch fx:id="autoSaveSwitch" selected="true" text="Auto Save"/>
     </HBox>
 </VBox>

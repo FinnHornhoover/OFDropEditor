@@ -32,6 +32,7 @@ public class MainApplication extends Application {
     private Drops drops;
     private JSONManager jsonManager;
     private IconManager iconManager;
+    private MainController controller;
 
     private Optional<ButtonType> showAlert(Alert.AlertType alertType, String title, String body) {
         Alert alert = new Alert(alertType);
@@ -302,7 +303,7 @@ public class MainApplication extends Application {
             throw e;
         }
 
-        MainController controller = fxmlLoader.getController();
+        controller = fxmlLoader.getController();
         controller.setJSONManager(jsonManager);
         controller.setIconManager(iconManager);
         controller.setDrops(drops);
@@ -315,7 +316,8 @@ public class MainApplication extends Application {
 
     @Override
     public void stop() throws Exception {
-        jsonManager.save(drops);  // TODO save prompt
+        controller.stop();
+        jsonManager.save(drops);
         super.stop();
     }
 
