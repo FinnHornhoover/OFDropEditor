@@ -26,10 +26,10 @@ public class IconManager {
                 IconManager.class.getResource(pathString)).getFile()).getPath()));
     }
 
-    public void setIconDirectory(File iconDirectory) throws IOException {
+    public void setIconDirectory(String iconDirectory) throws IOException {
         iconMap.clear();
 
-        try (Stream<Path> pathStream = Files.list(iconDirectory.toPath())) {
+        try (Stream<Path> pathStream = Files.list(Paths.get(iconDirectory))) {
             for (Path path : pathStream.toList()) {
                 String name = path.getFileName().toString().split("\\.")[0];
                 iconMap.put(name, Files.readAllBytes(path));

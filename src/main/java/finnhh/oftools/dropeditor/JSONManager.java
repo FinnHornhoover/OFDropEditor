@@ -8,7 +8,6 @@ import finnhh.oftools.dropeditor.model.data.Preferences;
 import javafx.util.Pair;
 import org.hildan.fxgson.FxGson;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -78,15 +77,13 @@ public class JSONManager {
             "Nano Mission",
             "World Mission"
     };
+    public static final String VALIDATION_ERR = "[ERR]";
+    public static final String VALIDATION_WARN = "[WARN]";
 
     private final Gson gson;
 
     private final Map<String, JsonObject> prePatchObjects;
     private final Map<String, JsonObject> postPatchObjects;
-
-    private final List<File> patchDirectories;
-    private File saveDirectory;
-    private boolean standaloneSave;
 
     private Preferences preferences;
 
@@ -99,8 +96,6 @@ public class JSONManager {
                 .create();
         prePatchObjects = new HashMap<>();
         postPatchObjects = new HashMap<>();
-        patchDirectories = new ArrayList<>();
-        standaloneSave = true;
         preferences = new Preferences();
     }
 
@@ -700,10 +695,121 @@ public class JSONManager {
         }
     }
 
-    public Optional<Preferences> readPreferences() {
-        File preferenceFile = new File(PREFERENCE_PATH);
+    public String validateDropDirectory() {
+        Path dropPath = Paths.get(preferences.getDropDirectory());
 
-        try (FileReader fileReader = new FileReader(preferenceFile)) {
+        if (preferences.getDropDirectory().isBlank() || !Files.exists(dropPath))
+            return VALIDATION_ERR + " Drops directory does not exist here.";
+
+        if (!Files.isDirectory(dropPath))
+            return VALIDATION_ERR + " Drops directory path does not point to a directory.";
+
+        for (String name : PATCH_NAMES) {
+            Path patchablePath = dropPath.resolve(name + ".json");
+
+            if (!Files.exists(patchablePath))
+                return VALIDATION_ERR + " Directory does not contain \"" + name + ".json\".";
+
+            if (!Files.isRegularFile(patchablePath))
+                return VALIDATION_ERR + " Directory contains \"" + name + ".json\", but not as a file.";
+        }
+
+        return "";
+    }
+
+    public String validatePatchDirectories() {
+        for (String patchDirectoryName : preferences.getPatchDirectories()) {
+            Path patchPath = Paths.get(patchDirectoryName);
+
+            if (patchDirectoryName.isBlank() || !Files.exists(patchPath))
+                return VALIDATION_ERR + " \"" + patchDirectoryName + "\" does not exist.";
+
+            if (!Files.isDirectory(patchPath))
+                return VALIDATION_ERR + " \"" + patchDirectoryName + "\" does not point to a directory.";
+
+            if (Arrays.stream(PATCH_NAMES).noneMatch(name -> Files.isRegularFile(patchPath.resolve(name + ".json"))))
+                return VALIDATION_ERR + " No files to patch the current files with in \"" + patchDirectoryName + "\".";
+        }
+
+        return "";
+    }
+
+    public String validateXDTFile() {
+        Path xdtPath = Paths.get(preferences.getXDTFile());
+
+        if (preferences.getXDTFile().isBlank() || !Files.exists(xdtPath))
+            return VALIDATION_ERR + " XDT file does not exist here.";
+
+        if (!Files.isRegularFile(xdtPath))
+            return VALIDATION_ERR + " XDT file path does not point to a file.";
+
+        if (!xdtPath.getFileName().toString().matches("xdt.*\\.json"))
+            return VALIDATION_ERR + " The path should point to a file that matches \"xdt*.json\".";
+
+        return "";
+    }
+
+    public String validateSaveDirectory() {
+        Path savePath = Paths.get(preferences.getSaveDirectory());
+
+        if (preferences.getSaveDirectory().isBlank() || !Files.exists(savePath))
+            return VALIDATION_ERR + " Save directory does not exist here.";
+
+        if (!Files.isDirectory(savePath))
+            return VALIDATION_ERR + " Save directory path does not point to a directory.";
+
+        int index = preferences.getPatchDirectories().indexOf(preferences.getSaveDirectory());
+        if (preferences.isStandaloneSave()) {
+            if (index > -1)
+                return VALIDATION_WARN + " You will overwrite the data in a patch directory this way.";
+
+            if (preferences.getDropDirectory().equals(preferences.getSaveDirectory()))
+                return VALIDATION_WARN + " You will overwrite the data in the drops directory this way.";
+        } else {
+            if (index > -1 && index < preferences.getPatchDirectories().size() - 1)
+                return VALIDATION_ERR + " Save directory can only be the last patch directory or an unrelated directory unless in" +
+                        " standalone save mode.";
+
+            if (preferences.getDropDirectory().equals(preferences.getSaveDirectory()))
+                return VALIDATION_ERR + " Save directory cannot be the drop directory unless in standalone save mode.";
+
+            if (index > -1 && index == preferences.getPatchDirectories().size() - 1)
+                return VALIDATION_WARN + " You will overwrite the data in the last patch directory this way.";
+        }
+
+        return "";
+    }
+
+    public String validateIconDirectory() {
+        Path iconPath = Paths.get(preferences.getIconDirectory());
+
+        if (preferences.getIconDirectory().isBlank() || !Files.exists(iconPath))
+            return VALIDATION_WARN + " Icons directory does not exist here.";
+
+        if (!Files.isDirectory(iconPath))
+            return VALIDATION_WARN + " Icons directory path does not point to a directory.";
+
+        if (!Files.isRegularFile(iconPath.resolve("cosicon_00.png")))
+            return VALIDATION_WARN + " Icons directory does not contain icons (e.g. \"cosicon_00.png\").";
+
+        return "";
+    }
+
+    public void throwForInvalid(String errorString) throws IOException {
+        if (errorString.startsWith(VALIDATION_ERR))
+            throw new IOException(errorString.substring(VALIDATION_ERR.length() + 1));
+    }
+
+    public void setPreferences(Preferences preferences) throws NullPointerException {
+        this.preferences = Objects.requireNonNull(preferences, "Cannot set a null preference object.");
+    }
+
+    public Preferences getPreferences() {
+        return preferences;
+    }
+
+    public Optional<Preferences> readPreferences() {
+        try (FileReader fileReader = new FileReader(PREFERENCE_PATH)) {
             return Optional.ofNullable(gson.fromJson(fileReader, Preferences.class));
         } catch (JsonSyntaxException | IOException e) {
             return Optional.empty();
@@ -714,27 +820,26 @@ public class JSONManager {
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException,
             URISyntaxException, IOException {
 
-        setDropsDirectory(new File(preferences.getDropDirectory()));
+        throwForInvalid(validateDropDirectory());
+        setDropsDirectory(preferences.getDropDirectory());
 
+        throwForInvalid(validatePatchDirectories());
         for (String patchName : preferences.getPatchDirectories())
-            addPatchPath(new File(patchName));
+            addPatchPath(patchName);
 
-        setXDT(new File(preferences.getXDTFile()), staticDataStore);
+        throwForInvalid(validateXDTFile());
+        setXDT(preferences.getXDTFile(), staticDataStore);
 
-        File saveDirectory = new File(preferences.getSaveDirectory());
-        setSavePreferences(saveDirectory, preferences.isStandaloneSave());
-        setConstantDataDirectory(saveDirectory, staticDataStore);
+        throwForInvalid(validateSaveDirectory());
+        setConstantDataDirectory(preferences.getSaveDirectory(), staticDataStore);
 
         fillDerivativeMaps(staticDataStore);
 
-        if (Objects.nonNull(preferences.getIconDirectory()))
-            setIconDirectory(new File(preferences.getIconDirectory()));
-
-        this.preferences = preferences;
+        throwForInvalid(validateIconDirectory());
     }
 
-    public void setDropsDirectory(File dropsDirectory) throws NullPointerException, JsonSyntaxException, IOException {
-        Path dropsPath = dropsDirectory.toPath();
+    public void setDropsDirectory(String dropsDirectory) throws NullPointerException, JsonSyntaxException, IOException {
+        Path dropsPath = Paths.get(dropsDirectory);
 
         for (String name : PATCH_NAMES) {
             try (FileReader fileReader = new FileReader(dropsPath.resolve(name + ".json").toFile())) {
@@ -745,15 +850,13 @@ public class JSONManager {
                 postPatchObjects.put(name, jsonObject.deepCopy());
             }
         }
-
-        preferences.setDropDirectory(dropsDirectory.getAbsolutePath());
     }
 
-    public void addPatchPath(File patchDirectory) throws IOException {
+    public void addPatchPath(String patchDirectory) throws IOException {
         boolean patchedOnce = false;
 
         for (String name : PATCH_NAMES) {
-            try (FileReader fileReader = new FileReader(patchDirectory.toPath().resolve(name + ".json").toFile())) {
+            try (FileReader fileReader = new FileReader(Paths.get(patchDirectory).resolve(name + ".json").toFile())) {
                 JsonObject jsonObject = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class));
 
                 patch(postPatchObjects.get(name), jsonObject);
@@ -762,15 +865,11 @@ public class JSONManager {
             }
         }
 
-        if (patchedOnce) {
-            patchDirectories.add(patchDirectory);
-            preferences.getPatchDirectories().add(patchDirectory.getAbsolutePath());
-        } else {
+        if (!patchedOnce)
             throw new IOException("No valid patch files present.");
-        }
     }
 
-    public void setXDT(File xdtFile, StaticDataStore staticDataStore)
+    public void setXDT(String xdtFile, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException, IOException {
 
         try (FileReader fileReader = new FileReader(xdtFile)) {
@@ -785,37 +884,23 @@ public class JSONManager {
             readInstanceData(xdt, staticDataStore);
             readNanoData(xdt, staticDataStore);
         }
-
-        preferences.setXDTFile(xdtFile.getAbsolutePath());
     }
 
-    public void setSavePreferences(File saveDirectory, boolean standaloneSave) throws IllegalArgumentException {
-        if (!standaloneSave && patchDirectories.contains(saveDirectory))
-            throw new IllegalArgumentException("Cannot save edits to a loaded patch folder without standalone mode.");
-
-        this.saveDirectory = saveDirectory;
-        this.standaloneSave = standaloneSave;
-
-        preferences.setSaveDirectory(saveDirectory.getAbsolutePath());
-        preferences.setStandaloneSave(standaloneSave);
-    }
-
-    public void setConstantDataDirectory(File constantDataDirectory, StaticDataStore staticDataStore)
+    public void setConstantDataDirectory(String constantDataDirectory, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException,
             URISyntaxException, IOException {
 
         Map<String, JsonObject> constantDataMap = new HashMap<>();
 
         for (String constantName : CONSTANT_NAMES) {
-            Path constantDataFilePath = Paths.get(constantDataDirectory.getPath(), constantName + ".json");
-            File constantDataFile = constantDataFilePath.toFile();
+            Path constantDataFilePath = Paths.get(constantDataDirectory, constantName + ".json");
 
-            if (!constantDataFile.isFile()) {
+            if (!Files.isRegularFile(constantDataFilePath)) {
                 Files.copy(Paths.get(Objects.requireNonNull(JSONManager.class.getResource(constantName + ".json")).toURI()),
                         constantDataFilePath);
             }
 
-            try (FileReader fileReader = new FileReader(constantDataFile)) {
+            try (FileReader fileReader = new FileReader(constantDataFilePath.toFile())) {
                 constantDataMap.put(constantName,
                         Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                                 "Could not read a file which was supposed to be provided by the program."));
@@ -930,22 +1015,6 @@ public class JSONManager {
         });
     }
 
-    public void setIconDirectory(File iconDirectory) {
-        preferences.setIconDirectory(iconDirectory.getAbsolutePath());
-    }
-
-    public boolean isStandaloneSave() {
-        return standaloneSave;
-    }
-
-    public void setStandaloneSave(boolean standaloneSave) {
-        this.standaloneSave = standaloneSave;
-    }
-
-    public List<File> getPatchDirectories() {
-        return patchDirectories;
-    }
-
     public <T> T getPatchedObject(String name, Class<T> tClass) throws JsonSyntaxException {
         return gson.fromJson(postPatchObjects.get(name), tClass);
     }
@@ -953,10 +1022,10 @@ public class JSONManager {
     public void save(Drops drops) throws IOException {
         for (String name : PATCH_NAMES) {
             // shortcut
-            if (!standaloneSave && !name.equals("drops"))
+            if (!preferences.isStandaloneSave() && !name.equals("drops"))
                 continue;
 
-            JsonObject baseObject = standaloneSave ?
+            JsonObject baseObject = preferences.isStandaloneSave() ?
                     prePatchObjects.get(name) :
                     postPatchObjects.get(name);
 
@@ -967,7 +1036,8 @@ public class JSONManager {
             JsonObject objectToSave = getChangedTree(baseObject, changedObject);
 
             if (objectToSave.size() > 0) {
-                try (FileWriter writer = new FileWriter(saveDirectory.toPath().resolve(name + ".json").toFile())) {
+                try (FileWriter writer = new FileWriter(Paths.get(preferences.getSaveDirectory())
+                        .resolve(name + ".json").toFile())) {
                     JsonWriter jsonWriter = gson.newJsonWriter(writer);
                     jsonWriter.setIndent("    ");
                     gson.toJson(objectToSave, jsonWriter);
@@ -978,7 +1048,9 @@ public class JSONManager {
 
     public void savePreferences() throws IOException {
         try (FileWriter writer = new FileWriter(PREFERENCE_PATH)) {
-            gson.toJson(preferences, writer);
+            JsonWriter jsonWriter = gson.newJsonWriter(writer);
+            jsonWriter.setIndent("    ");
+            gson.toJson(preferences, Preferences.class, jsonWriter);
         }
     }
 }

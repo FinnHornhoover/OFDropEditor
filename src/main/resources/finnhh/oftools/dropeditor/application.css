@@ -125,6 +125,14 @@
     -fx-border-radius: 3, 2;
 }
 
+.malformed-field {
+    -fx-border-color: red;
+}
+
+.warning-field {
+    -fx-border-color: orange;
+}
+
 .disabled-id {
     -fx-text-fill: red;
 }
