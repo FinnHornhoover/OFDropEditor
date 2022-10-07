@@ -14,12 +14,13 @@
         <Button onAction="#onNewButtonPressed" mnemonicParsing="false" text="Add Object" styleClass="add-button"/>
         <Button onAction="#onAddFilter" mnemonicParsing="false" text="Add Filter"/>
         <ChoiceBox fx:id="viewModeChoiceBox" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+        <Separator orientation="VERTICAL"/>
+        <ToggleSwitch fx:id="autoSaveSwitch" selected="true" text="Auto Save"/>
     </HBox>
     <FilterListBox fx:id="filterListBox"/>
     <ListView fx:id="mainListView" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS"/>
-    <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="20.0">
+    <HBox alignment="CENTER_LEFT" prefWidth="200.0">
         <Label fx:id="infoLabel" styleClass="grid-label" HBox.hgrow="ALWAYS"/>
         <Label fx:id="lastSavedLabel" styleClass="grid-label"/>
-        <ToggleSwitch fx:id="autoSaveSwitch" selected="true" text="Auto Save"/>
     </HBox>
 </VBox>

@@ -44,8 +44,9 @@ public class MapTooltipBox extends VBox {
         hash = -1;
 
         setSpacing(2);
-        setAlignment(Pos.CENTER);
-        setFillWidth(false);
+        setAlignment(Pos.BOTTOM_CENTER);
+        setMinWidth(TOOLTIP_TILE_PIXEL_SIZE);
+        setMaxWidth(TOOLTIP_TILE_PIXEL_SIZE);
         getChildren().addAll(tooltipLabel, mapGroup);
     }
 

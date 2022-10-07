@@ -3,8 +3,6 @@ module finnhh.oftools.dropeditor {
     requires javafx.fxml;
 
     requires org.controlsfx.controls;
-    requires com.dlsc.formsfx;
-    requires org.kordamp.ikonli.javafx;
     requires com.google.gson;
     requires org.hildan.fxgson;
 

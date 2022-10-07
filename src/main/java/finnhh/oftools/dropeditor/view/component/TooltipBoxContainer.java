@@ -6,13 +6,17 @@ import finnhh.oftools.dropeditor.model.data.*;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 import javafx.util.Pair;
 
 import java.util.*;
 
 public class TooltipBoxContainer extends TilePane {
+    public static final int MISC_TOOLTIP_TILE_PIXEL_SIZE = 96;
+
     protected final int tileLimit;
     protected final int itemLimit;
 
@@ -199,12 +203,16 @@ public class TooltipBoxContainer extends TilePane {
 
                     int eventID = ((Event) event).getEventID();
                     Label eventLabel = new Label("Event: " + eventID);
+                    eventLabel.setWrapText(true);
+                    eventLabel.setTextAlignment(TextAlignment.CENTER);
 
                     StandardImageView iconView = new StandardImageView(iconMap, 64);
                     iconView.setImage(EventType.forType(eventID).iconName());
 
                     VBox vBox = new VBox(2, eventLabel, iconView);
                     vBox.setAlignment(Pos.CENTER);
+                    vBox.setMinWidth(MapTooltipBox.TOOLTIP_TILE_PIXEL_SIZE);
+                    vBox.setMaxWidth(MapTooltipBox.TOOLTIP_TILE_PIXEL_SIZE);
 
                     childMap.put(Objects.hashCode(eventID), vBox);
                 });
@@ -250,11 +258,19 @@ public class TooltipBoxContainer extends TilePane {
                         return;
 
                     Label codeItemLabel = new Label("Code Item");
+                    codeItemLabel.setWrapText(true);
+                    codeItemLabel.setTextAlignment(TextAlignment.CENTER);
+
+
                     Label codeLabel = new Label(codeItem.getCode());
+                    codeLabel.setWrapText(true);
+                    codeLabel.setTextAlignment(TextAlignment.CENTER);
                     codeLabel.getStyleClass().add("mid-label");
 
                     VBox vBox = new VBox(2, codeItemLabel, codeLabel);
                     vBox.setAlignment(Pos.CENTER);
+                    vBox.setMinWidth(MapTooltipBox.TOOLTIP_TILE_PIXEL_SIZE);
+                    vBox.setMaxWidth(MapTooltipBox.TOOLTIP_TILE_PIXEL_SIZE);
 
                     childMap.put(Objects.hashCode(codeItem.getCode()), vBox);
                 });
@@ -278,11 +294,16 @@ public class TooltipBoxContainer extends TilePane {
                         return;
 
                     Label nameLabel = new Label(itemInfo.name());
+                    nameLabel.setWrapText(true);
+                    nameLabel.setTextAlignment(TextAlignment.CENTER);
+
                     StandardImageView iconView = new StandardImageView(controller.getIconManager().getIconMap(), 64);
                     iconView.setImage(itemInfo.iconName());
 
                     VBox vBox = new VBox(2, nameLabel, iconView);
-                    vBox.setAlignment(Pos.CENTER);
+                    vBox.setAlignment(Pos.BOTTOM_CENTER);
+                    vBox.setMinWidth(MISC_TOOLTIP_TILE_PIXEL_SIZE);
+                    vBox.setMaxWidth(MISC_TOOLTIP_TILE_PIXEL_SIZE);
 
                     childMap.put(Objects.hashCode(itemInfo), vBox);
                 });
@@ -306,12 +327,20 @@ public class TooltipBoxContainer extends TilePane {
                         return;
 
                     Label nameLabel = new Label(String.format("%s (%d)", itemInfo.name(), itemInfo.id()));
+                    nameLabel.setWrapText(true);
+                    nameLabel.setTextAlignment(TextAlignment.CENTER);
+
                     Label commentLabel = new Label(itemInfo.comment());
+                    commentLabel.setWrapText(true);
+                    commentLabel.setTextAlignment(TextAlignment.CENTER);
+
                     StandardImageView iconView = new StandardImageView(controller.getIconManager().getIconMap(), 64);
                     iconView.setImage(itemInfo.iconName());
 
                     VBox vBox = new VBox(2, nameLabel, commentLabel, iconView);
-                    vBox.setAlignment(Pos.CENTER);
+                    vBox.setAlignment(Pos.BOTTOM_CENTER);
+                    vBox.setMinWidth(MISC_TOOLTIP_TILE_PIXEL_SIZE);
+                    vBox.setMaxWidth(MISC_TOOLTIP_TILE_PIXEL_SIZE);
 
                     childMap.put(Objects.hashCode(itemInfo), vBox);
                 });
@@ -356,7 +385,11 @@ public class TooltipBoxContainer extends TilePane {
                     "" :
                     String.valueOf(childMap.size() - tileLimit + 1);
             Label plusLabel = new Label("+" + countString + " more");
-            plusLabel.getStyleClass().add("big-label");
+            plusLabel.getStyleClass().add(getChildren().stream()
+                    .filter(n -> n instanceof Region)
+                    .anyMatch(n -> ((Region) n).getMaxWidth() == MISC_TOOLTIP_TILE_PIXEL_SIZE) ?
+                    "mid-label" :
+                    "big-label");
             getChildren().add(plusLabel);
         }
     }
