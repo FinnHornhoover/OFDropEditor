@@ -96,9 +96,9 @@
                             <executable>
                                 ${user.home}/.jdks/openjdk-17.0.2/bin/java.exe
                             </executable>
-                            <launcher>app</launcher>
-                            <jlinkZipName>app</jlinkZipName>
-                            <jlinkImageName>app</jlinkImageName>
+                            <launcher>OFDropEditor</launcher>
+                            <jlinkZipName>ofdropeditor</jlinkZipName>
+                            <jlinkImageName>ofdropeditor</jlinkImageName>
                             <noManPages>true</noManPages>
                             <stripDebug>true</stripDebug>
                             <noHeaderFiles>true</noHeaderFiles>
