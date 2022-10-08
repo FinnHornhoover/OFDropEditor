@@ -12,6 +12,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -809,7 +810,7 @@ public class JSONManager {
     }
 
     public Optional<Preferences> readPreferences() {
-        try (FileReader fileReader = new FileReader(PREFERENCE_PATH)) {
+        try (FileReader fileReader = new FileReader(PREFERENCE_PATH, StandardCharsets.UTF_8)) {
             return Optional.ofNullable(gson.fromJson(fileReader, Preferences.class));
         } catch (JsonSyntaxException | IOException e) {
             return Optional.empty();
@@ -839,10 +840,9 @@ public class JSONManager {
     }
 
     public void setDropsDirectory(String dropsDirectory) throws NullPointerException, JsonSyntaxException, IOException {
-        Path dropsPath = Paths.get(dropsDirectory);
-
         for (String name : PATCH_NAMES) {
-            try (FileReader fileReader = new FileReader(dropsPath.resolve(name + ".json").toFile())) {
+            try (FileReader fileReader = new FileReader(Paths.get(dropsDirectory, name + ".json").toFile(),
+                    StandardCharsets.UTF_8)) {
                 JsonObject jsonObject = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                         "Object in file \"" + name + "\" must be a JSON object.");
 
@@ -856,7 +856,8 @@ public class JSONManager {
         boolean patchedOnce = false;
 
         for (String name : PATCH_NAMES) {
-            try (FileReader fileReader = new FileReader(Paths.get(patchDirectory).resolve(name + ".json").toFile())) {
+            try (FileReader fileReader = new FileReader(Paths.get(patchDirectory, name + ".json").toFile(),
+                    StandardCharsets.UTF_8)) {
                 JsonObject jsonObject = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class));
 
                 patch(postPatchObjects.get(name), jsonObject);
@@ -872,7 +873,7 @@ public class JSONManager {
     public void setXDT(String xdtFile, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException, IOException {
 
-        try (FileReader fileReader = new FileReader(xdtFile)) {
+        try (FileReader fileReader = new FileReader(xdtFile, StandardCharsets.UTF_8)) {
             JsonObject xdt = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                     "Invalid XDT file.");
 
@@ -888,7 +889,7 @@ public class JSONManager {
 
     public void setConstantDataDirectory(String constantDataDirectory, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException,
-            URISyntaxException, IOException {
+            IOException {
 
         Map<String, JsonObject> constantDataMap = new HashMap<>();
 
@@ -896,11 +897,11 @@ public class JSONManager {
             Path constantDataFilePath = Paths.get(constantDataDirectory, constantName + ".json");
 
             if (!Files.isRegularFile(constantDataFilePath)) {
-                Files.copy(Paths.get(Objects.requireNonNull(JSONManager.class.getResource(constantName + ".json")).toURI()),
+                Files.copy(Objects.requireNonNull(JSONManager.class.getResourceAsStream(constantName + ".json")),
                         constantDataFilePath);
             }
 
-            try (FileReader fileReader = new FileReader(constantDataFilePath.toFile())) {
+            try (FileReader fileReader = new FileReader(constantDataFilePath.toFile(), StandardCharsets.UTF_8)) {
                 constantDataMap.put(constantName,
                         Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                                 "Could not read a file which was supposed to be provided by the program."));
@@ -1036,8 +1037,8 @@ public class JSONManager {
             JsonObject objectToSave = getChangedTree(baseObject, changedObject);
 
             if (objectToSave.size() > 0) {
-                try (FileWriter writer = new FileWriter(Paths.get(preferences.getSaveDirectory())
-                        .resolve(name + ".json").toFile())) {
+                try (FileWriter writer = new FileWriter(Paths.get(preferences.getSaveDirectory(), name + ".json")
+                        .toFile(), StandardCharsets.UTF_8)) {
                     JsonWriter jsonWriter = gson.newJsonWriter(writer);
                     jsonWriter.setIndent("    ");
                     gson.toJson(objectToSave, jsonWriter);
@@ -1047,7 +1048,7 @@ public class JSONManager {
     }
 
     public void savePreferences() throws IOException {
-        try (FileWriter writer = new FileWriter(PREFERENCE_PATH)) {
+        try (FileWriter writer = new FileWriter(PREFERENCE_PATH, StandardCharsets.UTF_8)) {
             JsonWriter jsonWriter = gson.newJsonWriter(writer);
             jsonWriter.setIndent("    ");
             gson.toJson(preferences, Preferences.class, jsonWriter);

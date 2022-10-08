@@ -2,8 +2,8 @@ package finnhh.oftools.dropeditor;
 
 import finnhh.oftools.dropeditor.model.EventType;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,8 +22,9 @@ public class IconManager {
 
     private byte[] loadSingleEmbeddedImage(String directory, String name) throws IOException {
         String pathString = (directory.equals(".") ? "" : directory + "/") + name + ".png";
-        return Files.readAllBytes(Paths.get(new File(Objects.requireNonNull(
-                IconManager.class.getResource(pathString)).getFile()).getPath()));
+        try (InputStream inputStream = Objects.requireNonNull(IconManager.class.getResourceAsStream(pathString))) {
+            return inputStream.readAllBytes();
+        }
     }
 
     public void setIconDirectory(String iconDirectory) throws IOException {
