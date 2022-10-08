@@ -11,6 +11,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <junit.version>5.9.0</junit.version>
     </properties>
 
@@ -48,6 +49,11 @@
             <version>2.9.0</version>
         </dependency>
         <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>23.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.hildan.fxgson</groupId>
             <artifactId>fx-gson</artifactId>
             <version>4.0.1</version>
@@ -55,6 +61,10 @@
                 <exclusion>
                     <groupId>org.openjfx</groupId>
                     <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains</groupId>
+                    <artifactId>annotations</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -83,6 +93,9 @@
                             <mainClass>
                                 finnhh.oftools.dropeditor/finnhh.oftools.dropeditor.MainApplication
                             </mainClass>
+                            <executable>
+                                ${user.home}/.jdks/openjdk-17.0.2/bin/java.exe
+                            </executable>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
