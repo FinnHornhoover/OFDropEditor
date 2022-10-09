@@ -37,6 +37,8 @@ public class MainController {
     @FXML
     protected Label lastSavedLabel;
     @FXML
+    protected ToggleSwitch cloneObjectsSwitch;
+    @FXML
     protected ToggleSwitch autoSaveSwitch;
 
     protected Map<ViewMode, ObservableComponent<?>> rootPrototypeMap;
@@ -105,6 +107,8 @@ public class MainController {
         autoSaveSwitch.selectedProperty().addListener((o, oldVal, newVal) -> {
             if (newVal)
                 saveService.restart();
+            else
+                saveService.cancel();
         });
 
         viewModeChoiceBox.getItems().addAll(ViewMode.values());
@@ -539,6 +543,10 @@ public class MainController {
                                     et.getTypeID());
                             return event;
                         }));
+    }
+
+    public boolean cloneObjectsBeforeEditing() {
+        return cloneObjectsSwitch.isSelected();
     }
 
     public ListView<Data> getMainListView() {

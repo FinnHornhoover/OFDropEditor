@@ -11,11 +11,30 @@
         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
     </padding>
     <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="5.0">
-        <Button onAction="#onNewButtonPressed" mnemonicParsing="false" text="Add Object" styleClass="add-button"/>
-        <Button onAction="#onAddFilter" mnemonicParsing="false" text="Add Filter"/>
-        <ChoiceBox fx:id="viewModeChoiceBox" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+        <Button onAction="#onNewButtonPressed" mnemonicParsing="false" text="Add Object" maxHeight="Infinity" styleClass="add-button">
+            <tooltip>
+                <Tooltip text="Add a new object of whatever is in the view mode." showDelay="0s"/>
+            </tooltip>
+        </Button>
+        <Button onAction="#onAddFilter" mnemonicParsing="false" text="Add Filter" maxHeight="Infinity">
+            <tooltip>
+                <Tooltip text="Filter the objects in the view to find something more easily." showDelay="0s"/>
+            </tooltip>
+        </Button>
+        <ChoiceBox fx:id="viewModeChoiceBox" maxWidth="Infinity" maxHeight="Infinity" HBox.hgrow="ALWAYS"/>
         <Separator orientation="VERTICAL"/>
-        <ToggleSwitch fx:id="autoSaveSwitch" selected="true" text="Auto Save"/>
+        <VBox alignment="CENTER_RIGHT">
+            <ToggleSwitch fx:id="cloneObjectsSwitch" selected="true" text="Clone Objects Before Editing">
+                <tooltip>
+                    <Tooltip text="Turn OFF to edit something and have that edited object change everywhere." showDelay="0s"/>
+                </tooltip>
+            </ToggleSwitch>
+            <ToggleSwitch fx:id="autoSaveSwitch" selected="true" text="Auto Save">
+                <tooltip>
+                    <Tooltip text="Turn OFF to stop saving your progress every minute." showDelay="0s"/>
+                </tooltip>
+            </ToggleSwitch>
+        </VBox>
     </HBox>
     <FilterListBox fx:id="filterListBox"/>
     <ListView fx:id="mainListView" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS"/>

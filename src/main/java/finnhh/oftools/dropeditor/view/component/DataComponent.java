@@ -42,7 +42,8 @@ public interface DataComponent extends ObservableComponent<Data> {
         DataComponent parent = getParentComponent();
 
         // if not safe to edit object
-        if (drops.getReferenceModeFor(oldObject) == ReferenceMode.MULTIPLE) {
+        if (getController().cloneObjectsBeforeEditing()
+                && drops.getReferenceModeFor(oldObject) == ReferenceMode.MULTIPLE) {
             // 1. clone object
             // the cloned object has no set id field, but the values are identical to the old object
             Data newObject = oldObject.getEditableClone();
