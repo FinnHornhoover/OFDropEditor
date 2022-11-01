@@ -3,7 +3,6 @@ package finnhh.oftools.dropeditor.view.component;
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.MobDrop;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -19,7 +18,6 @@ import javafx.scene.layout.VBox;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public class MobDropComponent extends BorderPane implements DataComponent {
@@ -141,25 +139,6 @@ public class MobDropComponent extends BorderPane implements DataComponent {
     @Override
     public void unbindVariables() {
         idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
-    }
-
-    @Override
-    public void updateObservableFromUI(Drops drops) {
-        Optional.ofNullable(crateDropChanceComponent.getCrateDropChance())
-                .filter(cdc -> cdc.getCrateDropChanceID() != mobDrop.get().getCrateDropChanceID())
-                .ifPresent(cdc -> mobDrop.get().setCrateDropChanceID(cdc.getCrateDropChanceID()));
-
-        Optional.ofNullable(crateDropTypeComponent.getCrateDropType())
-                .filter(cdt -> cdt.getCrateDropTypeID() != mobDrop.get().getCrateDropTypeID())
-                .ifPresent(cdt -> mobDrop.get().setCrateDropTypeID(cdt.getCrateDropTypeID()));
-
-        Optional.ofNullable(miscDropChanceComponent.getMiscDropChance())
-                .filter(mdc -> mdc.getMiscDropChanceID() != mobDrop.get().getMiscDropChanceID())
-                .ifPresent(mdc -> mobDrop.get().setMiscDropChanceID(mdc.getMiscDropChanceID()));
-
-        Optional.ofNullable(miscDropTypeComponent.getMiscDropType())
-                .filter(mdt -> mdt.getMiscDropTypeID() != mobDrop.get().getMiscDropTypeID())
-                .ifPresent(mdt -> mobDrop.get().setMiscDropTypeID(mdt.getMiscDropTypeID()));
     }
 
     @Override

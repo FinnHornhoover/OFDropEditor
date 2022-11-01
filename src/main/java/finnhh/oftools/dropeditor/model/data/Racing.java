@@ -46,6 +46,15 @@ public class Racing extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        Racing other = (Racing) data;
+        this.EPID.set(other.EPID.get());
+        this.rankScores.set(FXCollections.observableArrayList(other.rankScores.get()));
+        this.rewards.set(FXCollections.observableArrayList(other.rewards.get()));
+        this.timeLimit.set(other.timeLimit.get());
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(EPID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(rankScores.isNull())

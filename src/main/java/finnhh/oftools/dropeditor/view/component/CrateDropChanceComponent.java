@@ -82,17 +82,17 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
                 .ifPresent(this::makeReplacement);
     }
 
-    public void crateDropAdded() {
-        makeEdit(() -> crateDropChance.get().getCrateTypeDropWeights().add(0));
+    public void crateDropAdded(long key) {
+        makeEdit(key, data -> ((CrateDropChance) data).getCrateTypeDropWeights().add(0));
     }
 
-    public void crateDropRemoved(int index) {
-        makeEdit(() -> crateDropChance.get().getCrateTypeDropWeights().remove(index));
+    public void crateDropRemoved(long key, int index) {
+        makeEdit(key, data -> ((CrateDropChance) data).getCrateTypeDropWeights().remove(index));
     }
 
-    public void crateDropPermuted(List<Integer> indexList) {
-        makeEdit(() -> {
-            var dropWeights = crateDropChance.get().getCrateTypeDropWeights();
+    public void crateDropPermuted(long key, List<Integer> indexList) {
+        makeEdit(key, data -> {
+            var dropWeights = ((CrateDropChance) data).getCrateTypeDropWeights();
             var newDropWeights = IntStream.range(0, dropWeights.size())
                     .mapToObj(i -> dropWeights.get(indexList.get(i)))
                     .toList();
@@ -182,8 +182,8 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
                                     .asString(Locale.US, "%.5f%%")
                     );
 
-                    valueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
-                            crateDropChance.get().getCrateTypeDropWeights().set(index, newVal)));
+                    valueListeners.add((o, oldVal, newVal) -> makeEdit(data ->
+                            ((CrateDropChance) data).getCrateTypeDropWeights().set(index, newVal)));
                     cvb.getSpinner().valueProperty().addListener(valueListeners.get(index));
                 });
     }

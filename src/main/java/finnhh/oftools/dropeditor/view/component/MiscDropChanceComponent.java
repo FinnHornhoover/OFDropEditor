@@ -78,22 +78,22 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         setCenter(contentScrollPane);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
-        potionChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setPotionDropChance(newVal.intValue()));
-        potionChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setPotionDropChanceTotal(newVal.intValue()));
-        boostChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setBoostDropChance(newVal.intValue()));
-        boostChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setBoostDropChanceTotal(newVal.intValue()));
-        taroChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setTaroDropChance(newVal.intValue()));
-        taroChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setTaroDropChanceTotal(newVal.intValue()));
-        fmChanceListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setFMDropChance(newVal.intValue()));
-        fmChanceTotalListener = (o, oldVal, newVal) -> makeEdit(() ->
-                miscDropChance.get().setFMDropChanceTotal(newVal.intValue()));
+        potionChanceListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setPotionDropChance(newVal.intValue()));
+        potionChanceTotalListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setPotionDropChanceTotal(newVal.intValue()));
+        boostChanceListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setBoostDropChance(newVal.intValue()));
+        boostChanceTotalListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setBoostDropChanceTotal(newVal.intValue()));
+        taroChanceListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setTaroDropChance(newVal.intValue()));
+        taroChanceTotalListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setTaroDropChanceTotal(newVal.intValue()));
+        fmChanceListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setFMDropChance(newVal.intValue()));
+        fmChanceTotalListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropChance) data).setFMDropChanceTotal(newVal.intValue()));
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                 .ifPresent(this::makeReplacement);
     }

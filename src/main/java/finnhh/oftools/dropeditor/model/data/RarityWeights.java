@@ -30,6 +30,13 @@ public class RarityWeights extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        RarityWeights other = (RarityWeights) data;
+        this.rarityWeightID.set(other.rarityWeightID.get());
+        this.weights.set(FXCollections.observableArrayList(other.weights.get()));
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(rarityWeightID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(weights.isNull())

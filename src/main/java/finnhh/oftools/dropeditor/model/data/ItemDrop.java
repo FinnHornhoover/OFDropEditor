@@ -38,6 +38,16 @@ public class ItemDrop extends ItemReference {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        super.setFieldsFromData(data);
+
+        ItemDrop other = (ItemDrop) data;
+        this.rarity.set(other.rarity.get());
+        this.gender.set(other.gender.get());
+        this.weight.set(other.weight.get());
+    }
+
+    @Override
     public void constructBindings() {
         super.constructBindings();
         malformed.unbind();

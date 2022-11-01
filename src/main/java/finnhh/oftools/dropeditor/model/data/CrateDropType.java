@@ -31,6 +31,13 @@ public class CrateDropType extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        CrateDropType other = (CrateDropType) data;
+        this.crateDropTypeID.set(other.crateDropTypeID.get());
+        this.crateIDs.set(FXCollections.observableArrayList(other.crateIDs.get()));
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(crateDropTypeID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(crateIDs.isNull())

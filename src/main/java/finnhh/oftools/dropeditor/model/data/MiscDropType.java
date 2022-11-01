@@ -40,6 +40,16 @@ public class MiscDropType extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        MiscDropType other = (MiscDropType) data;
+        this.miscDropTypeID.set(other.miscDropTypeID.get());
+        this.potionAmount.set(other.potionAmount.get());
+        this.boostAmount.set(other.boostAmount.get());
+        this.taroAmount.set(other.taroAmount.get());
+        this.fmAmount.set(other.fmAmount.get());
+    }
+
+    @Override
     public void constructBindings() {
         potionAmount.addListener((o, oldVal, newVal) -> potionAmount.set(Math.max(0, newVal.intValue())));
         boostAmount.addListener((o, oldVal, newVal) -> boostAmount.set(Math.max(0, newVal.intValue())));

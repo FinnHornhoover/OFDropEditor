@@ -38,6 +38,28 @@ public class MobDrop extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        MobDrop other = (MobDrop) data;
+        this.mobDropID.set(other.mobDropID.get());
+        this.crateDropChanceID.set(other.crateDropChanceID.get());
+        this.crateDropTypeID.set(other.crateDropTypeID.get());
+        this.miscDropChanceID.set(other.miscDropChanceID.get());
+        this.miscDropTypeID.set(other.miscDropTypeID.get());
+    }
+
+    @Override
+    public void setChildData(Data data) {
+        if (data instanceof CrateDropChance crateDropChance)
+            crateDropChanceID.set(crateDropChance.getCrateDropChanceID());
+        else if (data instanceof CrateDropType crateDropType)
+            crateDropTypeID.set(crateDropType.getCrateDropTypeID());
+        else if (data instanceof MiscDropChance miscDropChance)
+            miscDropChanceID.set(miscDropChance.getMiscDropChanceID());
+        else if (data instanceof MiscDropType miscDropType)
+            miscDropTypeID.set(miscDropType.getMiscDropTypeID());
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(mobDropID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(crateDropChanceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID))

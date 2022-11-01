@@ -75,10 +75,14 @@ public class MiscDropTypeComponent extends BorderPane implements DataComponent {
         setCenter(contentScrollPane);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
-        potionListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setPotionAmount(newVal.intValue()));
-        boostListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setBoostAmount(newVal.intValue()));
-        taroListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setTaroAmount(newVal.intValue()));
-        fmListener = (o, oldVal, newVal) -> makeEdit(() -> miscDropType.get().setFMAmount(newVal.intValue()));
+        potionListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropType) data).setPotionAmount(newVal.intValue()));
+        boostListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropType) data).setBoostAmount(newVal.intValue()));
+        taroListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropType) data).setTaroAmount(newVal.intValue()));
+        fmListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((MiscDropType) data).setFMAmount(newVal.intValue()));
         idClickHandler = event -> this.controller.showSelectionMenuForResult(getObservableClass())
                 .ifPresent(this::makeReplacement);
     }

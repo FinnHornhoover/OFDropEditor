@@ -5,7 +5,6 @@ import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.ItemType;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -21,7 +20,6 @@ import javafx.util.Pair;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public class CrateComponent extends HBox implements RootDataComponent {
@@ -163,17 +161,6 @@ public class CrateComponent extends HBox implements RootDataComponent {
         ));
 
         return allValues;
-    }
-
-    @Override
-    public void updateObservableFromUI(Drops drops) {
-        Optional.ofNullable(rarityWeightsComponent.getRarityWeights())
-                .filter(rw -> rw.getRarityWeightID() != crate.get().getRarityWeightID())
-                .ifPresent(rw -> crate.get().setRarityWeightID(rw.getRarityWeightID()));
-
-        Optional.ofNullable(itemSetComponent.getItemSet())
-                .filter(is -> is.getItemSetID() != crate.get().getItemSetID())
-                .ifPresent(is -> crate.get().setItemSetID(is.getItemSetID()));
     }
 
     @Override

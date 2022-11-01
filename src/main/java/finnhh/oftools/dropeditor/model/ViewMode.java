@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 public enum ViewMode {
     MONSTER("Monsters",
+            Mob.class,
             MobComponent::new,
             MainController::showAddMobMenuForResult,
             drops -> drops.getMobs()
@@ -18,6 +19,7 @@ public enum ViewMode {
                     .sorted(Comparator.comparingInt(Mob::getMobID))
                     .toList()),
     CRATE("Crates",
+            Crate.class,
             CrateComponent::new,
             MainController::showAddCrateMenuForResult,
             drops -> drops.getCrates()
@@ -25,6 +27,7 @@ public enum ViewMode {
                     .sorted(Comparator.comparingInt(Crate::getCrateID))
                     .toList()),
     RACING("Racing",
+            Racing.class,
             RacingComponent::new,
             MainController::showAddRacingMenuForResult,
             drops -> drops.getRacing()
@@ -32,6 +35,7 @@ public enum ViewMode {
                     .sorted(Comparator.comparingInt(Racing::getEPID))
                     .toList()),
     CODE_ITEM("Code Items",
+            CodeItem.class,
             CodeItemComponent::new,
             MainController::showAddCodeItemMenuForResult,
             drops -> drops.getCodeItems()
@@ -39,6 +43,7 @@ public enum ViewMode {
                     .sorted(Comparator.comparing(CodeItem::getCode))
                     .toList()),
     ITEM_REFERENCE("Item References",
+            ItemReference.class,
             ItemReferenceComponent::new,
             MainController::showAddItemReferenceMenuForResult,
             drops -> drops.getItemReferences()
@@ -46,6 +51,7 @@ public enum ViewMode {
                     .sorted(Comparator.comparingInt(ItemReference::getItemReferenceID))
                     .toList()),
     NANO_CAPSULE("Nano Capsules",
+            NanoCapsule.class,
             NanoCapsuleComponent::new,
             MainController::showAddNanoCapsuleMenuForResult,
             drops -> drops.getNanoCapsules()
@@ -53,6 +59,7 @@ public enum ViewMode {
                     .sorted(Comparator.comparingInt(NanoCapsule::getNano))
                     .toList()),
     EVENT("Events",
+            Event.class,
             EventComponent::new,
             MainController::showAddEventMenuForResult,
             drops -> drops.getEvents()
@@ -61,15 +68,18 @@ public enum ViewMode {
                     .toList());
 
     private final String modeString;
+    private final Class<? extends Data> dataClass;
     private final Function<MainController, ObservableComponent<?>> componentConstructor;
     private final Function<MainController, Optional<Data>> newDataAdder;
     private final Function<Drops, Collection<? extends Data>> dataGetter;
 
     ViewMode(String modeString,
+             Class<? extends Data> dataClass,
              Function<MainController, ObservableComponent<?>> componentConstructor,
              Function<MainController, Optional<Data>> newDataAdder,
              Function<Drops, Collection<? extends Data>> dataGetter) {
         this.modeString = modeString;
+        this.dataClass = dataClass;
         this.componentConstructor = componentConstructor;
         this.newDataAdder = newDataAdder;
         this.dataGetter = dataGetter;
@@ -77,6 +87,10 @@ public enum ViewMode {
 
     public String getModeString() {
         return modeString;
+    }
+
+    public Class<? extends Data> getDataClass() {
+        return dataClass;
     }
 
     public Function<MainController, ObservableComponent<?>> getComponentConstructor() {

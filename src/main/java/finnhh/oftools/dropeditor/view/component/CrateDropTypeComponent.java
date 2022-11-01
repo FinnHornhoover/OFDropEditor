@@ -5,7 +5,6 @@ import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Crate;
 import finnhh.oftools.dropeditor.model.data.CrateDropType;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -102,23 +101,28 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         dragReleasedHandlers = new ArrayList<>();
     }
 
+    // TODO: these fail horribly with object cloning off
+
     public void crateDropAdded(int newCrateID) {
-        makeEdit(() -> crateDropType.get().getCrateIDs().add(newCrateID));
+        long key = controller.getDrops().generateActionKey();
+        makeEdit(key, data -> ((CrateDropType) data).getCrateIDs().add(newCrateID));
         Optional.ofNullable(parent)
                 .map(MobDropComponent::getCrateDropChanceComponent)
-                .ifPresent(CrateDropChanceComponent::crateDropAdded);
+                .ifPresent(cdcc -> cdcc.crateDropAdded(key));
     }
 
     public void crateDropRemoved(int index) {
-        makeEdit(() -> crateDropType.get().getCrateIDs().remove(index));
+        long key = controller.getDrops().generateActionKey();
+        makeEdit(key, data -> ((CrateDropType) data).getCrateIDs().remove(index));
         Optional.ofNullable(parent)
                 .map(MobDropComponent::getCrateDropChanceComponent)
-                .ifPresent(cdcc -> cdcc.crateDropRemoved(index));
+                .ifPresent(cdcc -> cdcc.crateDropRemoved(key, index));
     }
 
     public void crateDropPermuted(List<Integer> indexList) {
-        makeEdit(() -> {
-            var crateIDs = crateDropType.get().getCrateIDs();
+        long key = controller.getDrops().generateActionKey();
+        makeEdit(key, data -> {
+            var crateIDs = ((CrateDropType) data).getCrateIDs();
             var newCrateIDs = IntStream.range(0, crateIDs.size())
                     .mapToObj(i -> crateIDs.get(indexList.get(i)))
                     .toList();
@@ -128,7 +132,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         });
         Optional.ofNullable(parent)
                 .map(MobDropComponent::getCrateDropChanceComponent)
-                .ifPresent(cdcc -> cdcc.crateDropPermuted(indexList));
+                .ifPresent(cdcc -> cdcc.crateDropPermuted(key, indexList));
     }
 
     @Override
@@ -199,8 +203,8 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
                 .forEach(index -> {
                     CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) children.get(index);
 
-                    valueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
-                            crateDropType.get().getCrateIDs().set(index, newVal.getCrateID())));
+                    valueListeners.add((o, oldVal, newVal) -> makeEdit(data ->
+                            ((CrateDropType) data).getCrateIDs().set(index, newVal.getCrateID())));
                     removeClickHandlers.add(event -> crateDropRemoved(index));
                     dragDetectedHandlers.add(event -> ctb.startFullDrag());
                     dragEnteredHandlers.add(event -> {
@@ -267,16 +271,6 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         dragEnteredHandlers.clear();
         dragExitedHandlers.clear();
         dragReleasedHandlers.clear();
-    }
-
-    @Override
-    public void updateObservableFromUI(Drops drops) {
-        var children = listHBox.getChildren().filtered(c -> c instanceof CrateTypeBoxComponent);
-
-        IntStream.range(0, children.size())
-                .forEach(index -> Optional.ofNullable(((CrateTypeBoxComponent) children.get(index)).getCrate())
-                        .filter(c -> c.getCrateID() != crateDropType.get().getCrateIDs().get(index))
-                        .ifPresent(c -> crateDropType.get().getCrateIDs().set(index, c.getCrateID())));
     }
 
     @Override

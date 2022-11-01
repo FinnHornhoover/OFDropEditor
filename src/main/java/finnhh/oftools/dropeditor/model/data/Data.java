@@ -26,6 +26,11 @@ public abstract class Data implements BindingConstructor {
 
     public abstract Data getEditableClone();
 
+    public abstract void setFieldsFromData(Data data);
+
+    public void setChildData(Data data) {
+    }
+
     public void registerReferences(Drops drops) {
     }
 

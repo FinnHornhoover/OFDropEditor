@@ -57,6 +57,20 @@ public class MiscDropChance extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        MiscDropChance other = (MiscDropChance) data;
+        this.miscDropChanceID.set(other.miscDropChanceID.get());
+        this.potionDropChance.set(other.potionDropChance.get());
+        this.potionDropChanceTotal.set(other.potionDropChanceTotal.get());
+        this.boostDropChance.set(other.boostDropChance.get());
+        this.boostDropChanceTotal.set(other.boostDropChanceTotal.get());
+        this.taroDropChance.set(other.taroDropChance.get());
+        this.taroDropChanceTotal.set(other.taroDropChanceTotal.get());
+        this.fmDropChance.set(other.fmDropChance.get());
+        this.fmDropChanceTotal.set(other.fmDropChanceTotal.get());
+    }
+
+    @Override
     public void constructBindings() {
         potionDropChanceTotal.addListener((o, oldVal, newVal) ->
                 potionDropChanceTotal.set(Math.max(1, newVal.intValue())));

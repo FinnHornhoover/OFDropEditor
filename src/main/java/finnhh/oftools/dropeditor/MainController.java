@@ -13,7 +13,11 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.util.Duration;
 import javafx.util.Pair;
 import org.controlsfx.control.ToggleSwitch;
@@ -26,6 +30,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class MainController {
+    @FXML
+    protected Button undoButton;
+    @FXML
+    protected Button redoButton;
     @FXML
     protected ChoiceBox<ViewMode> viewModeChoiceBox;
     @FXML
@@ -61,12 +69,40 @@ public class MainController {
             data.constructBindings();
             drops.add(data);
             data.registerReferences(drops);
-            refreshList();
+            reloadList();
             mainListView.scrollTo(data);
         });
     }
 
-    public void setup() {
+    @FXML
+    protected void onUndoButtonPressed() {
+        drops.runUndo().ifPresent(root -> {
+            Arrays.stream(ViewMode.values())
+                    .filter(vm -> root.getClass().isAssignableFrom(vm.getDataClass())
+                            && !vm.getDataClass().isAssignableFrom(viewModeChoiceBox.getValue().getDataClass()))
+                    .findFirst()
+                    .ifPresent(viewModeChoiceBox.getSelectionModel()::select);
+
+            mainListView.scrollTo(root);
+            mainListView.getItems().set(mainListView.getItems().indexOf(root), root);
+        });
+    }
+
+    @FXML
+    protected void onRedoButtonPressed() {
+        drops.runRedo().ifPresent(root -> {
+            Arrays.stream(ViewMode.values())
+                    .filter(vm -> root.getClass().isAssignableFrom(vm.getDataClass())
+                            && !vm.getDataClass().isAssignableFrom(viewModeChoiceBox.getValue().getDataClass()))
+                    .findFirst()
+                    .ifPresent(viewModeChoiceBox.getSelectionModel()::select);
+
+            mainListView.scrollTo(root);
+            mainListView.getItems().set(mainListView.getItems().indexOf(root), root);
+        });
+    }
+
+    public void setup(Scene scene) {
         rootPrototypeMap = new HashMap<>();
         for (ViewMode viewMode : ViewMode.values())
             rootPrototypeMap.put(viewMode, viewMode.getComponentConstructor().apply(this));
@@ -110,6 +146,16 @@ public class MainController {
             else
                 saveService.cancel();
         });
+
+        drops.cloneObjectsBeforeEditingProperty().bind(cloneObjectsSwitch.selectedProperty());
+
+        undoButton.disableProperty().bind(drops.undoStackProperty().emptyProperty());
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN),
+                this::onUndoButtonPressed);
+
+        redoButton.disableProperty().bind(drops.redoStackProperty().emptyProperty());
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
+                this::onRedoButtonPressed);
 
         viewModeChoiceBox.getItems().addAll(ViewMode.values());
         viewModeChoiceBox.setValue(ViewMode.MONSTER);
@@ -183,20 +229,20 @@ public class MainController {
 
         viewModeChoiceBox.valueProperty().addListener((o, oldVal, newVal) -> {
             filterListBox.clearFilters();
-            refreshList();
+            reloadList();
         });
 
         filterListBox.filterConditionListProperty().addListener(
-                (ListChangeListener<FilterCondition>) change -> refreshList());
+                (ListChangeListener<FilterCondition>) change -> reloadList());
 
-        refreshList();
+        reloadList();
     }
 
     public void stop() {
         saveTimeline.stop();
     }
 
-    public void refreshList() {
+    public void reloadList() {
         mainListView.getItems().clear();
         var dataList = viewModeChoiceBox.getValue().getDataGetter().apply(drops);
         mainListView.getItems().addAll(dataList.stream()

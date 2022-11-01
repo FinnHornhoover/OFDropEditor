@@ -176,7 +176,7 @@ public class MainApplication extends Application {
         controller.setDrops(drops);
         controller.setStaticDataStore(staticDataStore);
         controller.setApplication(this);
-        controller.setup();
+        controller.setup(scene);
 
         stage.show();
     }

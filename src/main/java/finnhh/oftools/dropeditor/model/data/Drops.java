@@ -2,11 +2,14 @@ package finnhh.oftools.dropeditor.model.data;
 
 import com.google.gson.annotations.Expose;
 import finnhh.oftools.dropeditor.model.ReferenceMode;
+import finnhh.oftools.dropeditor.model.ReversibleAction;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Drops extends Data {
     @Expose
@@ -38,6 +41,9 @@ public class Drops extends Data {
     @Expose
     private final AlternateMapProperty<CodeItem> codeItems;
 
+    private final BooleanProperty cloneObjectsBeforeEditing;
+    private final ListProperty<ReversibleAction> undoStack;
+    private final ListProperty<ReversibleAction> redoStack;
     private final MapProperty<Data, Set<Data>> referenceMap;
 
     public Drops() {
@@ -56,6 +62,9 @@ public class Drops extends Data {
         nanoCapsules = new AlternateMapProperty<>();
         codeItems = new AlternateMapProperty<>();
 
+        cloneObjectsBeforeEditing = new SimpleBooleanProperty(true);
+        undoStack = new SimpleListProperty<>(FXCollections.observableArrayList());
+        redoStack = new SimpleListProperty<>(FXCollections.observableArrayList());
         referenceMap = new SimpleMapProperty<>(FXCollections.observableMap(new LinkedHashMap<>()));
     }
 
@@ -63,6 +72,11 @@ public class Drops extends Data {
     public Drops getEditableClone() {
         // do not clone
         return this;
+    }
+
+    @Override
+    public void setFieldsFromData(Data data) {
+        // do not set fields
     }
 
     @Override
@@ -210,6 +224,189 @@ public class Drops extends Data {
             return null;
     }
 
+    public List<Data> makeEditable(List<Data> objectChain, int index, long key) {
+        List<Data> currentObjectChain = objectChain;
+        Data oldObject = currentObjectChain.get(index);
+        Data parentObject = currentObjectChain.size() > index + 1 ? currentObjectChain.get(index + 1) : null;
+
+        // if safe to edit object, do nothing
+        if (!cloneObjectsBeforeEditing.get() || getReferenceModeFor(oldObject) != ReferenceMode.MULTIPLE)
+            return currentObjectChain;
+
+        // 1. clone object
+        // the cloned object has no set id field, but the values are identical to the old object
+        Data newObject = oldObject.getEditableClone();
+
+        // 2. make bindings for the clone object, the id field is now identical to the old object
+        newObject.constructBindings();
+
+        // 3. add new object to the drops, the new object is given the first available unique id here
+        add(newObject);
+
+        // 4. register other object ids that the new object references
+        // also construct change listeners that handle other object id changes
+        newObject.registerReferences(this);
+
+        // 5. update the object chain
+        currentObjectChain.set(index, newObject);
+
+        // if component has a parent
+        if (Objects.nonNull(parentObject)) {
+            // 6?. make the parent editable as well
+            currentObjectChain = makeEditable(currentObjectChain, index + 1, key);
+            parentObject = currentObjectChain.get(index + 1);
+
+            // 7?. update fields of parent to reflect new object's new id
+            parentObject.setChildData(newObject);
+
+            // 8?. remove the reference map ties of old object
+            parentObject.unregisterReferenced(referenceMap, oldObject);
+
+            // 9?. tie the new object in the reference map
+            parentObject.registerReferenced(referenceMap, newObject);
+        }
+
+        // 10. register undo
+        final Data finalParentObject = parentObject;
+        registerUndo(new ReversibleAction(key,
+                currentObjectChain.get(currentObjectChain.size() - 1),
+                () -> {
+                    add(newObject);
+                    newObject.registerReferences(this);
+
+                    if (Objects.nonNull(finalParentObject)) {
+                        finalParentObject.setChildData(newObject);
+                        finalParentObject.unregisterReferenced(referenceMap, oldObject);
+                        finalParentObject.registerReferenced(referenceMap, newObject);
+                    }
+                },
+                () -> {
+                    remove(newObject);
+                    newObject.unregisterReferences(this);
+
+                    if (Objects.nonNull(finalParentObject)) {
+                        finalParentObject.setChildData(oldObject);
+                        finalParentObject.unregisterReferenced(referenceMap, newObject);
+                        finalParentObject.registerReferenced(referenceMap, oldObject);
+                    }
+                }));
+
+        return objectChain;
+    }
+
+    public void makeReplacement(List<Data> objectChain, long key, Data newObject) {
+        List<Data> currentObjectChain = objectChain;
+        Data oldObject = currentObjectChain.get(0);
+        Data parentObject = currentObjectChain.size() > 1 ? currentObjectChain.get(1) : null;
+
+        // do nothing if the edit is done with the same object, or if component has no parent
+        if ((Objects.nonNull(oldObject) && oldObject.idEquals(newObject)) || Objects.isNull(parentObject))
+            return;
+
+        // 1. clear redo registry
+        clearRedoRegistry();
+
+        // 2. make the parent editable
+        currentObjectChain = makeEditable(objectChain, 1, key);
+        parentObject = currentObjectChain.get(1);
+
+        // 3. update fields of parent to reflect new object's new id
+        parentObject.setChildData(newObject);
+
+        // 4. remove the reference map ties of old object
+        parentObject.unregisterReferenced(referenceMap, oldObject);
+
+        // 5. tie the new object in the reference map
+        parentObject.registerReferenced(referenceMap, newObject);
+
+        // 6. register undo
+        final Data finalParentObject = parentObject;
+        registerUndo(new ReversibleAction(key,
+                currentObjectChain.get(currentObjectChain.size() - 1),
+                () -> {
+                    finalParentObject.setChildData(newObject);
+                    finalParentObject.unregisterReferenced(referenceMap, oldObject);
+                    finalParentObject.registerReferenced(referenceMap, newObject);
+                },
+                () -> {
+                    finalParentObject.setChildData(oldObject);
+                    finalParentObject.unregisterReferenced(referenceMap, newObject);
+                    finalParentObject.registerReferenced(referenceMap, oldObject);
+                }));
+    }
+
+    public void makeEdit(List<Data> objectChain, long key, Consumer<Data> editor) {
+        // 1. make sure the observable is editable
+        List<Data> currentObjectChain = makeEditable(objectChain, 0, key);
+        Data source = currentObjectChain.get(0);
+
+        // 2. backup before edit
+        Data backup = source.getEditableClone();
+
+        // 3. clear redo registry
+        clearRedoRegistry();
+
+        // 4. run the edit
+        editor.accept(source);
+
+        // 5. register undo
+        registerUndo(new ReversibleAction(key,
+                currentObjectChain.get(currentObjectChain.size() - 1),
+                () -> editor.accept(source),
+                () -> source.setFieldsFromData(backup)));
+    }
+
+    public long generateActionKey() {
+        return System.currentTimeMillis();
+    }
+
+    public void registerUndo(ReversibleAction reversibleAction) {
+        undoStack.add(0, reversibleAction);
+    }
+
+    public void registerRedo(ReversibleAction reversibleAction) {
+        redoStack.add(0, reversibleAction);
+    }
+
+    public void clearRedoRegistry() {
+        redoStack.clear();
+    }
+
+    public Optional<Data> runUndo() {
+        if (undoStack.isEmpty())
+            return Optional.empty();
+
+        ReversibleAction reversibleAction = undoStack.remove(0);
+        long key = reversibleAction.key();
+        reversibleAction.undo().run();
+        registerRedo(reversibleAction);
+
+        while (!undoStack.isEmpty() && undoStack.get(0).key() == key) {
+            reversibleAction = undoStack.remove(0);
+            reversibleAction.undo().run();
+            registerRedo(reversibleAction);
+        }
+        return Optional.of(reversibleAction.rootData());
+    }
+
+    public Optional<Data> runRedo() {
+        if (redoStack.isEmpty())
+            return Optional.empty();
+
+        ReversibleAction reversibleAction = redoStack.remove(0);
+        long key = reversibleAction.key();
+        reversibleAction.redo().run();
+        registerUndo(reversibleAction);
+
+        while (!redoStack.isEmpty() && redoStack.get(0).key() == key) {
+            reversibleAction = redoStack.remove(0);
+            reversibleAction.redo().run();
+            registerUndo(reversibleAction);
+        }
+
+        return Optional.of(reversibleAction.rootData());
+    }
+
     public ObservableMap<Integer, CrateDropChance> getCrateDropChances() {
         return crateDropChances.getTrueMap();
     }
@@ -320,6 +517,34 @@ public class Drops extends Data {
 
     public AlternateMapProperty<CodeItem> codeItemsProperty() {
         return codeItems;
+    }
+
+    public boolean isCloneObjectsBeforeEditing() {
+        return cloneObjectsBeforeEditing.get();
+    }
+
+    public BooleanProperty cloneObjectsBeforeEditingProperty() {
+        return cloneObjectsBeforeEditing;
+    }
+
+    public void setCloneObjectsBeforeEditing(boolean cloneObjectsBeforeEditing) {
+        this.cloneObjectsBeforeEditing.set(cloneObjectsBeforeEditing);
+    }
+
+    public ObservableList<ReversibleAction> getUndoStack() {
+        return undoStack.get();
+    }
+
+    public ReadOnlyListProperty<ReversibleAction> undoStackProperty() {
+        return undoStack;
+    }
+
+    public ObservableList<ReversibleAction> getRedoStack() {
+        return redoStack.get();
+    }
+
+    public ReadOnlyListProperty<ReversibleAction> redoStackProperty() {
+        return redoStack;
     }
 
     public ObservableMap<Data, Set<Data>> getReferenceMap() {
@@ -474,16 +699,7 @@ public class Drops extends Data {
         }
 
         public V remove(V data) {
-            if (!mapsSynced.get())
-                return null;
-
-            int trueKey = Integer.parseInt(data.getId());
-            V value = trueMap.remove(trueKey);
-            String key = keyMap.get(trueKey);
-
-            keyMap.remove(trueKey);
-            remove(key);
-            return value;
+            return remove(Integer.parseInt(data.getId()));
         }
 
         public boolean containsKey(int trueKey) {

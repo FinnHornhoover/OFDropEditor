@@ -39,6 +39,15 @@ public class CrateDropChance extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        CrateDropChance other = (CrateDropChance) data;
+        this.crateDropChanceID.set(other.crateDropChanceID.get());
+        this.dropChance.set(other.dropChance.get());
+        this.dropChanceTotal.set(other.dropChanceTotal.get());
+        this.crateTypeDropWeights.set(FXCollections.observableArrayList(other.crateTypeDropWeights.get()));
+    }
+
+    @Override
     public void constructBindings() {
         dropChanceTotal.addListener((o, oldVal, newVal) ->
                 dropChanceTotal.set(Math.max(1, newVal.intValue())));

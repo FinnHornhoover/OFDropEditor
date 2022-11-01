@@ -27,6 +27,19 @@ public class Event extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        Event other = (Event) data;
+        this.eventID.set(other.eventID.get());
+        this.mobDropID.set(other.mobDropID.get());
+    }
+
+    @Override
+    public void setChildData(Data data) {
+        if (data instanceof MobDrop mobDrop)
+            mobDropID.set(mobDrop.getMobDropID());
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(eventID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(mobDropID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)));

@@ -33,6 +33,14 @@ public class CodeItem extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        CodeItem other = (CodeItem) data;
+        this.codeID.set(other.codeID.get());
+        this.code.set(other.code.get());
+        this.itemReferenceIDs.set(FXCollections.observableArrayList(other.itemReferenceIDs.get()));
+    }
+
+    @Override
     public void constructBindings() {
         codeID.set(Objects.hashCode(code.get()) - 1);
         code.addListener((o, oldVal, newVal) -> codeID.set(Objects.hashCode(newVal) - 1));

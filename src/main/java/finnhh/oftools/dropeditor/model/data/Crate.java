@@ -33,6 +33,22 @@ public class Crate extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        Crate other = (Crate) data;
+        this.crateID.set(other.crateID.get());
+        this.itemSetID.set(other.itemSetID.get());
+        this.rarityWeightID.set(other.rarityWeightID.get());
+    }
+
+    @Override
+    public void setChildData(Data data) {
+        if (data instanceof ItemSet itemSet)
+            itemSetID.set(itemSet.getItemSetID());
+        else if (data instanceof RarityWeights rarityWeights)
+            rarityWeightID.set(rarityWeights.getRarityWeightID());
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(crateID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(itemSetID.lessThanOrEqualTo(INT_PLACEHOLDER_ID))

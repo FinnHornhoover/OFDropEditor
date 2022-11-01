@@ -91,10 +91,10 @@ public class NanoCapsuleComponent extends VBox implements RootDataComponent {
         getChildren().addAll(idHBox, contentHBox);
 
         removeClickHandler = event -> onRemoveClick();
-        capsuleRemoveClickHandler = event -> makeEdit(() ->
-                nanoCapsule.get().setCrateID(Crate.INT_CRATE_PLACEHOLDER_ID));
+        capsuleRemoveClickHandler = event -> makeEdit(data ->
+                ((NanoCapsule) data).setCrateID(Crate.INT_CRATE_PLACEHOLDER_ID));
         capsuleIdClickHandler = event -> this.controller.showSelectCapsuleMenuForResult().ifPresent(d ->
-                makeEdit(() -> nanoCapsule.get().setCrateID(((NanoCapsule) d).getCrateID())));
+                makeEdit(data -> ((NanoCapsule) data).setCrateID(((NanoCapsule) d).getCrateID())));
     }
 
     @Override

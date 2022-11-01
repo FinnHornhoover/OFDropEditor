@@ -160,8 +160,8 @@ public class RarityWeightsComponent extends BorderPane implements DataComponent 
                                     .divide(Bindings.max(1.0, totalExpression))
                     );
 
-                    valueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
-                            rarityWeights.get().getWeights().set(index, newVal)));
+                    valueListeners.add((o, oldVal, newVal) -> makeEdit(data ->
+                            ((RarityWeights) data).getWeights().set(index, newVal)));
                     rhb.getSpinner().valueProperty().addListener(valueListeners.get(index));
                 });
     }

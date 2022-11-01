@@ -15,9 +15,4 @@ public interface RootDataComponent extends DataComponent {
     default DataComponent getParentComponent() {
         return null;
     }
-
-    @Override
-    default void makeEditable() {
-        // do not alter the root ids freely
-    }
 }

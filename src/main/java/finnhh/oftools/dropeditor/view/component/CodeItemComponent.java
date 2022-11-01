@@ -91,7 +91,7 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
                         if (!event.isConsumed()) {
                             event.consume();
                             Optional.ofNullable(itemReference)
-                                    .ifPresent(ir -> makeEdit(() -> codeItem.get().getItemReferenceIDs().remove(
+                                    .ifPresent(ir -> makeEdit(data -> ((CodeItem) data).getItemReferenceIDs().remove(
                                             (Integer) ir.getItemReferenceID())));
                         }
                     };
@@ -121,11 +121,12 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
         getChildren().addAll(idHBox, contentVBox);
 
         addClickHandler = event -> this.controller.showSelectionMenuForResult(ItemReference.class)
-                .ifPresent(d -> makeEdit(() -> {
-                    codeItem.get().getItemReferenceIDs().add(((ItemReference) d).getItemReferenceID());
-                    codeItem.get().getItemReferenceIDs().sort(Comparator.naturalOrder());
+                .ifPresent(d -> makeEdit(data -> {
+                    var itemReferenceIDs = ((CodeItem) data).getItemReferenceIDs();
+                    itemReferenceIDs.add(((ItemReference) d).getItemReferenceID());
+                    itemReferenceIDs.sort(Comparator.naturalOrder());
                 }));
-        textFieldActionHandler = event -> makeEdit(() -> codeItem.get().setCode(codeTextField.getText()));
+        textFieldActionHandler = event -> makeEdit(data -> ((CodeItem) data).setCode(codeTextField.getText()));
         removeClickHandler = event -> onRemoveClick();
     }
 
@@ -306,11 +307,11 @@ public class CodeItemComponent extends VBox implements RootDataComponent {
                     .ifPresent(d -> {
                         int oldID = getObservable().get().getItemReferenceID();
                         setObservableAndState(d);
-                        this.parent.makeEdit(() -> {
-                            int index = this.parent.getCodeItem().getItemReferenceIDs().indexOf(oldID);
-                            this.parent.getCodeItem().getItemReferenceIDs().set(index,
-                                    ((ItemReference) d).getItemReferenceID());
-                            this.parent.getCodeItem().getItemReferenceIDs().sort(Comparator.naturalOrder());
+                        this.parent.makeEdit(data -> {
+                            CodeItem ci = (CodeItem) data;
+                            int index = ci.getItemReferenceIDs().indexOf(oldID);
+                            ci.getItemReferenceIDs().set(index, ((ItemReference) d).getItemReferenceID());
+                            ci.getItemReferenceIDs().sort(Comparator.naturalOrder());
                         });
                     });
         }

@@ -6,7 +6,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class ItemSet extends Data {
     @Expose
@@ -55,6 +57,19 @@ public class ItemSet extends Data {
     @Override
     public ItemSet getEditableClone() {
         return new ItemSet(this);
+    }
+
+    @Override
+    public void setFieldsFromData(Data data) {
+        ItemSet other = (ItemSet) data;
+        this.itemSetID.set(other.itemSetID.get());
+        this.ignoreRarity.set(other.ignoreRarity.get());
+        this.ignoreGender.set(other.ignoreGender.get());
+        this.defaultItemWeight.set(other.defaultItemWeight.get());
+        this.alterRarityMap.set(FXCollections.observableMap(new LinkedHashMap<>(other.alterRarityMap.get())));
+        this.alterGenderMap.set(FXCollections.observableMap(new LinkedHashMap<>(other.alterGenderMap.get())));
+        this.alterItemWeightMap.set(FXCollections.observableMap(new LinkedHashMap<>(other.alterItemWeightMap.get())));
+        this.itemReferenceIDs.set(FXCollections.observableArrayList(other.itemReferenceIDs.get()));
     }
 
     @Override
@@ -129,6 +144,33 @@ public class ItemSet extends Data {
 
     public void setDefaultItemWeight(int defaultItemWeight) {
         this.defaultItemWeight.set(defaultItemWeight);
+    }
+
+    public void recalculateDefaultItemWeight() {
+        Map<Integer, Integer> counts = new HashMap<>();
+        Map<Integer, Integer> allKeysMap = new LinkedHashMap<>();
+
+        int mode = defaultItemWeight.get();
+        int maxOccurrence = 0;
+
+        for (int itemReferenceID : itemReferenceIDs) {
+            int weight = alterItemWeightMap.get().getOrDefault(itemReferenceID, defaultItemWeight.get());
+
+            allKeysMap.put(itemReferenceID, weight);
+            counts.put(weight, counts.getOrDefault(weight, 0) + 1);
+
+            if (counts.get(weight) > maxOccurrence) {
+                maxOccurrence = counts.get(weight);
+                mode = weight;
+            }
+        }
+
+        defaultItemWeight.set(mode);
+        alterItemWeightMap.clear();
+        allKeysMap.forEach((key, value) -> {
+            if (value != defaultItemWeight.get())
+                alterItemWeightMap.put(key, value);
+        });
     }
 
     public ObservableMap<Integer, Integer> getAlterRarityMap() {

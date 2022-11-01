@@ -30,6 +30,14 @@ public class ItemReference extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        ItemReference other = (ItemReference) data;
+        this.itemReferenceID.set(other.itemReferenceID.get());
+        this.itemID.set(other.itemID.get());
+        this.type.set(other.type.get());
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(itemReferenceID.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(itemID.lessThan(0))

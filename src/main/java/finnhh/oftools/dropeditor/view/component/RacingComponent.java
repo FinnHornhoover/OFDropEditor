@@ -103,7 +103,7 @@ public class RacingComponent extends HBox implements RootDataComponent {
         scoreVBoxCache = new ArrayList<>();
         crateTypeBoxCache = new ArrayList<>();
 
-        timeLimitListener = (o, oldVal, newVal) -> makeEdit(() -> racing.get().setTimeLimit(newVal));
+        timeLimitListener = (o, oldVal, newVal) -> makeEdit(data -> ((Racing) data).setTimeLimit(newVal));
         racingRemoveClickHandler = event -> onRemoveClick();
 
         spinnerValueListeners = new ArrayList<>();
@@ -204,13 +204,13 @@ public class RacingComponent extends HBox implements RootDataComponent {
                     ScoreVBox svb = (ScoreVBox) scoresChildren.get(index);
                     CrateTypeBoxComponent ctb = (CrateTypeBoxComponent) rewardsChildren.get(index);
 
-                    spinnerValueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
-                            racing.get().getRankScores().set(index, newVal)));
-                    crateValueListeners.add((o, oldVal, newVal) -> makeEdit(() ->
-                            racing.get().getRewards().set(index,
+                    spinnerValueListeners.add((o, oldVal, newVal) -> makeEdit(data ->
+                            ((Racing) data).getRankScores().set(index, newVal)));
+                    crateValueListeners.add((o, oldVal, newVal) -> makeEdit(data ->
+                            ((Racing) data).getRewards().set(index,
                                     Objects.isNull(newVal) ? Crate.INT_CRATE_PLACEHOLDER_ID : newVal.getCrateID())));
-                    removeClickHandlers.add(event -> makeEdit(() ->
-                            racing.get().getRewards().set(index, Crate.INT_CRATE_PLACEHOLDER_ID)));
+                    removeClickHandlers.add(event -> makeEdit(data ->
+                            ((Racing) data).getRewards().set(index, Crate.INT_CRATE_PLACEHOLDER_ID)));
 
                     svb.getSpinner().valueProperty().addListener(spinnerValueListeners.get(index));
                     ctb.crateProperty().addListener(crateValueListeners.get(index));

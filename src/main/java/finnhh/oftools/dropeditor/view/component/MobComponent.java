@@ -3,7 +3,6 @@ package finnhh.oftools.dropeditor.view.component;
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Drops;
 import finnhh.oftools.dropeditor.model.data.Mob;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -19,7 +18,6 @@ import javafx.scene.layout.Priority;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public class MobComponent extends HBox implements RootDataComponent {
@@ -124,13 +122,6 @@ public class MobComponent extends HBox implements RootDataComponent {
     @Override
     public void unbindVariables() {
         removeButton.removeEventHandler(MouseEvent.MOUSE_CLICKED, removeClickHandler);
-    }
-
-    @Override
-    public void updateObservableFromUI(Drops drops) {
-        Optional.ofNullable(mobDropComponent.getMobDrop())
-                .filter(md -> md.getMobDropID() != mob.get().getMobID())
-                .ifPresent(md -> mob.get().setMobDropID(md.getMobDropID()));
     }
 
     @Override

@@ -27,6 +27,13 @@ public class NanoCapsule extends Data {
     }
 
     @Override
+    public void setFieldsFromData(Data data) {
+        NanoCapsule other = (NanoCapsule) data;
+        this.nano.set(other.nano.get());
+        this.crateID.set(other.crateID.get());
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(nano.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(crateID.lessThanOrEqualTo(Crate.INT_CRATE_PLACEHOLDER_ID)));
