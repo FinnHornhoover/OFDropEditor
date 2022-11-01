@@ -1036,7 +1036,8 @@ public class JSONManager {
 
             JsonObject objectToSave = getChangedTree(baseObject, changedObject);
 
-            if (objectToSave.size() > 0) {
+            // save drops no matter what, only save other objects if there's a change
+            if (name.equals("drops") || objectToSave.size() > 0) {
                 try (FileWriter writer = new FileWriter(Paths.get(preferences.getSaveDirectory(), name + ".json")
                         .toFile(), StandardCharsets.UTF_8)) {
                     JsonWriter jsonWriter = gson.newJsonWriter(writer);
