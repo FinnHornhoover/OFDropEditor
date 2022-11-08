@@ -591,10 +591,6 @@ public class MainController {
                         }));
     }
 
-    public boolean cloneObjectsBeforeEditing() {
-        return cloneObjectsSwitch.isSelected();
-    }
-
     public ListView<Data> getMainListView() {
         return mainListView;
     }

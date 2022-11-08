@@ -74,6 +74,7 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
         addButton = new Button("+");
         addButton.getStyleClass().addAll("add-button", "slim-button");
+        addButton.disableProperty().bind(controller.getDrops().cloneObjectsBeforeEditingProperty().not());
 
         idHBox = new HBox(2, idLabel, addButton);
 
@@ -101,9 +102,10 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
         dragReleasedHandlers = new ArrayList<>();
     }
 
-    // TODO: these fail horribly with object cloning off
-
     public void crateDropAdded(int newCrateID) {
+        if (!controller.getDrops().isCloneObjectsBeforeEditing())
+            return;
+
         long key = controller.getDrops().generateActionKey();
         makeEdit(key, data -> ((CrateDropType) data).getCrateIDs().add(newCrateID));
         Optional.ofNullable(parent)
@@ -112,6 +114,9 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     }
 
     public void crateDropRemoved(int index) {
+        if (!controller.getDrops().isCloneObjectsBeforeEditing())
+            return;
+
         long key = controller.getDrops().generateActionKey();
         makeEdit(key, data -> ((CrateDropType) data).getCrateIDs().remove(index));
         Optional.ofNullable(parent)
@@ -120,6 +125,9 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
     }
 
     public void crateDropPermuted(List<Integer> indexList) {
+        if (!controller.getDrops().isCloneObjectsBeforeEditing())
+            return;
+
         long key = controller.getDrops().generateActionKey();
         makeEdit(key, data -> {
             var crateIDs = ((CrateDropType) data).getCrateIDs();
@@ -180,7 +188,12 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
 
         if (typeVBoxCache.size() < crateIDs.size()) {
             IntStream.range(0, crateIDs.size() - typeVBoxCache.size())
-                    .mapToObj(i -> new CrateTypeBoxComponent(boxWidth, controller, this))
+                    .mapToObj(i -> {
+                        CrateTypeBoxComponent ctb = new CrateTypeBoxComponent(boxWidth, controller, this);
+                        ctb.getRemoveButton().disableProperty().bind(
+                                controller.getDrops().cloneObjectsBeforeEditingProperty().not());
+                        return ctb;
+                    })
                     .forEach(typeVBoxCache::add);
         }
 
@@ -206,7 +219,10 @@ public class CrateDropTypeComponent extends BorderPane implements DataComponent 
                     valueListeners.add((o, oldVal, newVal) -> makeEdit(data ->
                             ((CrateDropType) data).getCrateIDs().set(index, newVal.getCrateID())));
                     removeClickHandlers.add(event -> crateDropRemoved(index));
-                    dragDetectedHandlers.add(event -> ctb.startFullDrag());
+                    dragDetectedHandlers.add(event -> {
+                        if (controller.getDrops().isCloneObjectsBeforeEditing())
+                            ctb.startFullDrag();
+                    });
                     dragEnteredHandlers.add(event -> {
                         ctb.getStyleClass().removeAll("drag-exited", "drag-released");
                         ctb.getStyleClass().add("drag-entered");

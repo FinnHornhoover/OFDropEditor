@@ -3,7 +3,6 @@ package finnhh.oftools.dropeditor.view.component;
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.MiscDropChance;
-import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -11,15 +10,14 @@ import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
 
 import java.util.List;
-import java.util.Locale;
 
 public class MiscDropChanceComponent extends BorderPane implements DataComponent {
     private final ObjectProperty<MiscDropChance> miscDropChance;
@@ -29,10 +27,10 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
     private final double boxWidth;
     private final DataComponent parent;
 
-    private final ChanceVBox potionVBox;
-    private final ChanceVBox boostVBox;
-    private final ChanceVBox taroVBox;
-    private final ChanceVBox fmVBox;
+    private final MinMaxChanceBox potionVBox;
+    private final MinMaxChanceBox boostVBox;
+    private final MinMaxChanceBox taroVBox;
+    private final MinMaxChanceBox fmVBox;
     private final HBox contentHBox;
     private final ScrollPane contentScrollPane;
     private final Label idLabel;
@@ -58,10 +56,10 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
-        potionVBox = new ChanceVBox(boxWidth);
-        boostVBox = new ChanceVBox(boxWidth);
-        taroVBox = new ChanceVBox(boxWidth);
-        fmVBox = new ChanceVBox(boxWidth);
+        potionVBox = new MinMaxChanceBox("Potions", Orientation.VERTICAL, boxWidth);
+        boostVBox = new MinMaxChanceBox("Boosts", Orientation.VERTICAL, boxWidth);
+        taroVBox = new MinMaxChanceBox("Taros", Orientation.VERTICAL, boxWidth);
+        fmVBox = new MinMaxChanceBox("FM", Orientation.VERTICAL, boxWidth);
 
         contentHBox = new HBox(boxSpacing, potionVBox, boostVBox, taroVBox, fmVBox);
         contentHBox.setAlignment(Pos.CENTER);
@@ -192,19 +190,19 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
         return miscDropChance;
     }
 
-    public ChanceVBox getPotionVBox() {
+    public MinMaxChanceBox getPotionVBox() {
         return potionVBox;
     }
 
-    public ChanceVBox getBoostVBox() {
+    public MinMaxChanceBox getBoostVBox() {
         return boostVBox;
     }
 
-    public ChanceVBox getTaroVBox() {
+    public MinMaxChanceBox getTaroVBox() {
         return taroVBox;
     }
 
-    public ChanceVBox getFMVBox() {
+    public MinMaxChanceBox getFMVBox() {
         return fmVBox;
     }
 
@@ -214,115 +212,5 @@ public class MiscDropChanceComponent extends BorderPane implements DataComponent
 
     public ScrollPane getContentScrollPane() {
         return contentScrollPane;
-    }
-
-    public static class ChanceVBox extends VBox {
-        private final StandardSpinner chanceSpinner;
-        private final StandardSpinner chanceTotalSpinner;
-        private final Separator chanceSeparator;
-        private final VBox chanceFractionVBox;
-        private final Slider chanceSlider;
-        private final Label chancePercentageLabel;
-
-        private final ChangeListener<Number> sliderChangeListener;
-        private final ChangeListener<Integer> spinnerChangeListener;
-
-        public ChanceVBox(double width) {
-            this(0, 1, width);
-        }
-
-        public ChanceVBox(int chanceValue, int chanceTotalValue, double width) {
-            chanceSpinner = new StandardSpinner(0, chanceTotalValue, chanceValue);
-            chanceTotalSpinner = new StandardSpinner(1, Integer.MAX_VALUE, chanceTotalValue);
-
-            chanceSeparator = new Separator(Orientation.HORIZONTAL);
-
-            chanceFractionVBox = new VBox(2, chanceSpinner, chanceSeparator, chanceTotalSpinner);
-            chanceFractionVBox.setAlignment(Pos.CENTER);
-
-            chanceSlider = new Slider(0, chanceTotalValue, chanceValue);
-            chanceSlider.setBlockIncrement(1);
-            chanceSlider.setMajorTickUnit(1);
-            chanceSlider.setMinorTickCount(0);
-            chanceSlider.setShowTickLabels(false);
-            chanceSlider.setSnapToTicks(true);
-
-            chancePercentageLabel = new Label();
-
-            setSpacing(2);
-            getChildren().addAll(chanceFractionVBox, chanceSlider, chancePercentageLabel);
-            setAlignment(Pos.CENTER);
-            setMinWidth(width);
-            setMaxWidth(width);
-
-            sliderChangeListener = (o, oldVal, newVal) -> chanceSpinner.getValueFactory().setValue(newVal.intValue());
-            spinnerChangeListener = (o, oldVal, newVal) -> chanceSlider.setValue(newVal);
-        }
-
-        public void bindVariables(ChangeListener<Number> valueListener, ChangeListener<Number> totalValueListener) {
-            chanceSlider.valueProperty().addListener(sliderChangeListener);
-            chanceSpinner.valueProperty().addListener(spinnerChangeListener);
-
-            ((SpinnerValueFactory.IntegerSpinnerValueFactory) chanceSpinner.getValueFactory()).maxProperty()
-                    .bind(chanceTotalSpinner.valueProperty());
-            chanceSlider.maxProperty().bind(chanceTotalSpinner.valueProperty());
-
-            chancePercentageLabel.textProperty().bind(DoubleProperty.doubleExpression(chanceSpinner.valueProperty())
-                    .multiply(100.0)
-                    .divide(DoubleProperty.doubleExpression(chanceTotalSpinner.valueProperty()))
-                    .asString(Locale.US, "%.5f%%"));
-
-            chanceSpinner.valueProperty().addListener(valueListener);
-            chanceTotalSpinner.valueProperty().addListener(totalValueListener);
-        }
-
-        public void unbindVariables(ChangeListener<Number> valueListener, ChangeListener<Number> totalValueListener) {
-            chanceSlider.valueProperty().removeListener(sliderChangeListener);
-            chanceSpinner.valueProperty().removeListener(spinnerChangeListener);
-
-            ((SpinnerValueFactory.IntegerSpinnerValueFactory) chanceSpinner.getValueFactory()).maxProperty().unbind();
-            chanceSlider.maxProperty().unbind();
-
-            chancePercentageLabel.textProperty().unbind();
-
-            chanceSpinner.valueProperty().removeListener(valueListener);
-            chanceTotalSpinner.valueProperty().removeListener(totalValueListener);
-        }
-
-        public void cleanUIState() {
-            chanceSpinner.getValueFactory().setValue(0);
-            chanceTotalSpinner.getValueFactory().setValue(1);
-            chanceSlider.setValue(0);
-        }
-
-        public void fillUIState(int value, int totalValue) {
-            chanceSpinner.getValueFactory().setValue(value);
-            chanceTotalSpinner.getValueFactory().setValue(totalValue);
-            chanceSlider.setValue(value);
-        }
-
-        public StandardSpinner getChanceSpinner() {
-            return chanceSpinner;
-        }
-
-        public StandardSpinner getChanceTotalSpinner() {
-            return chanceTotalSpinner;
-        }
-
-        public Separator getChanceSeparator() {
-            return chanceSeparator;
-        }
-
-        public VBox getChanceFractionVBox() {
-            return chanceFractionVBox;
-        }
-
-        public Slider getChanceSlider() {
-            return chanceSlider;
-        }
-
-        public Label getChancePercentageLabel() {
-            return chancePercentageLabel;
-        }
     }
 }

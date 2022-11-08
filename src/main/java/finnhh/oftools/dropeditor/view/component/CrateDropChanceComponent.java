@@ -34,12 +34,16 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     private final double boxWidth;
     private final MobDropComponent parent;
 
+    private final MinMaxChanceBox anyCrateChanceBox;
     private final HBox listHBox;
     private final ScrollPane contentScrollPane;
+    private final VBox contentVBox;
     private final Label idLabel;
 
     private final List<ChanceVBox> chanceVBoxCache;
 
+    private final ChangeListener<Number> anyCrateChanceListener;
+    private final ChangeListener<Number> anyCrateChanceTotalListener;
     private final List<ChangeListener<Integer>> valueListeners;
     private final EventHandler<MouseEvent> idClickHandler;
 
@@ -54,6 +58,10 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         this.boxSpacing = boxSpacing;
         this.boxWidth = boxWidth;
         this.parent = parent;
+
+        anyCrateChanceBox = new MinMaxChanceBox("Any Crate");
+        anyCrateChanceBox.getStyleClass().add("bordered-pane");
+
         listHBox = new HBox(boxSpacing);
         listHBox.setAlignment(Pos.CENTER);
         listHBox.getStyleClass().add("bordered-pane");
@@ -62,14 +70,23 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         contentScrollPane.setFitToHeight(true);
         contentScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
 
+        contentVBox = new VBox(2, anyCrateChanceBox, contentScrollPane);
+        contentVBox.setAlignment(Pos.CENTER);
+        contentVBox.getStyleClass().add("bordered-pane");
+
         idLabel = new Label();
         idLabel.getStyleClass().add("id-label");
 
         setTop(idLabel);
-        setCenter(contentScrollPane);
+        setCenter(contentVBox);
         setAlignment(idLabel, Pos.TOP_LEFT);
 
         chanceVBoxCache = new ArrayList<>();
+
+        anyCrateChanceListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((CrateDropChance) data).setDropChance(newVal.intValue()));
+        anyCrateChanceTotalListener = (o, oldVal, newVal) -> makeEdit(data ->
+                ((CrateDropChance) data).setDropChanceTotal(newVal.intValue()));
 
         valueListeners = new ArrayList<>();
 
@@ -114,7 +131,7 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
 
     @Override
     public List<Pane> getContentPanes() {
-        return List.of(listHBox);
+        return List.of(contentVBox);
     }
 
     @Override
@@ -136,12 +153,15 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     public void cleanUIState() {
         DataComponent.super.cleanUIState();
 
+        anyCrateChanceBox.cleanUIState();
         listHBox.getChildren().clear();
     }
 
     @Override
     public void fillUIState() {
         DataComponent.super.fillUIState();
+
+        anyCrateChanceBox.fillUIState(crateDropChance.get().getDropChance(), crateDropChance.get().getDropChanceTotal());
 
         var dropWeights = crateDropChance.get().getCrateTypeDropWeights();
 
@@ -162,6 +182,8 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
 
     @Override
     public void bindVariablesNonNull() {
+        anyCrateChanceBox.bindVariables(anyCrateChanceListener, anyCrateChanceTotalListener);
+
         DoubleExpression totalExpression = listHBox.getChildren().stream()
                 .filter(c -> c instanceof ChanceVBox)
                 .map(c -> DoubleBinding.doubleExpression(
@@ -197,6 +219,8 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
     public void unbindVariables() {
         idLabel.removeEventHandler(MouseEvent.MOUSE_CLICKED, idClickHandler);
 
+        anyCrateChanceBox.unbindVariables(anyCrateChanceListener, anyCrateChanceTotalListener);
+
         var children = listHBox.getChildren().filtered(c -> c instanceof ChanceVBox);
 
         IntStream.range(0, children.size())
@@ -230,12 +254,20 @@ public class CrateDropChanceComponent extends BorderPane implements DataComponen
         return crateDropChance;
     }
 
+    public MinMaxChanceBox getAnyCrateChanceBox() {
+        return anyCrateChanceBox;
+    }
+
     public HBox getListHBox() {
         return listHBox;
     }
 
     public ScrollPane getContentScrollPane() {
         return contentScrollPane;
+    }
+
+    public VBox getContentVBox() {
+        return contentVBox;
     }
 
     public static class ChanceVBox extends VBox {
