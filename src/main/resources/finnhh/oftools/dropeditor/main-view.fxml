@@ -11,6 +11,7 @@
         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
     </padding>
     <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="5.0">
+        <Button onAction="#onHelpButtonPressed" mnemonicParsing="false" text="?" maxHeight="Infinity"/>
         <Button fx:id="undoButton" onAction="#onUndoButtonPressed" mnemonicParsing="false" text="Undo" maxHeight="Infinity">
             <tooltip>
                 <Tooltip text="Undo last action (CTRL + Z)" showDelay="0s"/>

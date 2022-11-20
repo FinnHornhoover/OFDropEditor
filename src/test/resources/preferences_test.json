@@ -1,0 +1,10 @@
+{
+    "DropDirectory": "OpenFusion\\tdata",
+    "PatchDirectories": [
+        "OpenFusion\\tdata\\patch\\1013"
+    ],
+    "XdtFile": "OpenFusion\\tdata\\xdt1013.json",
+    "SaveDirectory": "OpenFusion\\tdata\\patch\\testpatch",
+    "StandaloneSave": false,
+    "IconDirectory": "OpenFusionDump\\icons"
+}

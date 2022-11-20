@@ -70,9 +70,16 @@ public class PreferencesBox extends VBox {
 
         standaloneSaveBox = new BooleanBox(this,
                 "Standalone Save?",
-                "If selected, all JSONs will be saved into the save directory as a whole. Edit \"tdatadir\" in" +
-                        " the server config to use.\nIf not selected, you will need to specify the patches you used" +
-                        " in the server config \"enabledpatches\" in order (plus the save folder if it is separate).",
+                """
+                        If selected, and save directory and drops directory are the same: All loaded data and edits will
+                          be merged into the drops directory data (not recommended).
+                        
+                        If selected otherwise, all patches and edits will be saved into the save directory as a whole.
+                          Edit "enabledpatches" in the server config to your save directory.
+                        
+                        If not selected, you will need to specify the patches you used in the server config
+                          "enabledpatches" in order (plus the save folder if it is not the last patch folder).
+                        """,
                 preferences.standaloneSaveProperty());
 
         iconDirectoryBox = new StringBox(this,

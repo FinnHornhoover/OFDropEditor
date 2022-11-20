@@ -23,7 +23,6 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -34,15 +33,16 @@ public class MainApplication extends Application {
     private IconManager iconManager;
     private MainController controller;
 
-    private Optional<ButtonType> showAlert(Alert.AlertType alertType, String title, String body) {
+    public Optional<ButtonType> showAlert(Alert.AlertType alertType, String title, String body) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(body);
+        alert.getDialogPane().setMinWidth(600.0);
         return alert.showAndWait();
     }
 
-    private Optional<Preferences> showPreferencesAlert(Stage stage) {
+    public Optional<Preferences> showPreferencesAlert(Stage stage) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Welcome to Open Fusion Drop Editor!");
         alert.setHeaderText("Initial Setup");
@@ -128,10 +128,10 @@ public class MainApplication extends Application {
         try {
             jsonManager.setPreferences(preferences);
             jsonManager.savePreferences();
-            iconManager.setIconDirectory(preferences.getIconDirectory());
+            iconManager.loadIcons(preferences.getIconDirectory());
 
-            jsonManager.setFromPreferences(preferences, staticDataStore);
-            drops = Objects.requireNonNull(jsonManager.getPatchedObject("drops", Drops.class));
+            jsonManager.readAllData(staticDataStore);
+            drops = jsonManager.generatePatchedDrops();
             drops.manageMaps();
 
         } catch (NullPointerException
@@ -184,7 +184,7 @@ public class MainApplication extends Application {
     @Override
     public void stop() throws Exception {
         controller.stop();
-        jsonManager.save(drops);
+        jsonManager.saveAllData(drops);
         super.stop();
     }
 

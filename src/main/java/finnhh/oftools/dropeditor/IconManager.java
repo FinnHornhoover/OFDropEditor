@@ -20,14 +20,14 @@ public class IconManager {
         iconMap = new HashMap<>();
     }
 
-    private byte[] loadSingleEmbeddedImage(String directory, String name) throws IOException {
+    private static byte[] loadResourceImage(String directory, String name) throws IOException {
         String pathString = (directory.equals(".") ? "" : directory + "/") + name + ".png";
         try (InputStream inputStream = Objects.requireNonNull(IconManager.class.getResourceAsStream(pathString))) {
             return inputStream.readAllBytes();
         }
     }
 
-    public void setIconDirectory(String iconDirectory) throws IOException {
+    public void loadIcons(String iconDirectory) throws IOException {
         iconMap.clear();
 
         try (Stream<Path> pathStream = Files.list(Paths.get(iconDirectory))) {
@@ -38,7 +38,7 @@ public class IconManager {
         }
 
         for (String name : List.of("unknown", "taro", "fm", "boosts", "potions", "down")) {
-            iconMap.put(name, loadSingleEmbeddedImage(".", name));
+            iconMap.put(name, loadResourceImage(".", name));
         }
 
         // race IZ icons
@@ -47,7 +47,7 @@ public class IconManager {
 
             for (String type : List.of("small", "big")) {
                 String name = String.format("ep_%s_%02d", type, i);
-                iconMap.put(name, loadSingleEmbeddedImage("ep", name));
+                iconMap.put(name, loadResourceImage("ep", name));
             }
         }
 
@@ -55,7 +55,7 @@ public class IconManager {
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 16; j++) {
                 String name = String.format("minimap_%d_%d", i, j);
-                iconMap.put(name, loadSingleEmbeddedImage("minimap", name));
+                iconMap.put(name, loadResourceImage("minimap", name));
             }
         }
 
@@ -64,7 +64,7 @@ public class IconManager {
             if (eventType == EventType.NO_EVENT) continue;
 
             String name = eventType.iconName();
-            iconMap.put(name, loadSingleEmbeddedImage("event", name));
+            iconMap.put(name, loadResourceImage("event", name));
         }
     }
 

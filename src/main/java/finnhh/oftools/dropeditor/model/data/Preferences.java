@@ -99,4 +99,18 @@ public class Preferences {
     public void setIconDirectory(String iconDirectory) {
         this.iconDirectory.set(iconDirectory);
     }
+
+    public boolean isOverwritingDropDirectory() {
+        return dropDirectory.get().equals(saveDirectory.get());
+    }
+
+    public boolean isOverwritingAnyPatchDirectory() {
+        int index = patchDirectories.indexOf(saveDirectory.get());
+        return index > -1 && index < patchDirectories.size();
+    }
+
+    public boolean isOverwritingLastPatchDirectory() {
+        int index = patchDirectories.indexOf(saveDirectory.get());
+        return index > -1 && index == patchDirectories.size() - 1;
+    }
 }

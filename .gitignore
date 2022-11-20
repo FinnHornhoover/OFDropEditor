@@ -27,3 +27,4 @@ hs_err_pid*
 target/
 *.iml
 drop_editor_preferences.json
+src/test/resources/tdata/xdt1013.json

@@ -84,6 +84,7 @@ public class JSONManager {
     private final Gson gson;
 
     private final Map<String, JsonObject> prePatchObjects;
+    private final Map<String, JsonObject> onePatchBeforeObjects;
     private final Map<String, JsonObject> postPatchObjects;
 
     private Preferences preferences;
@@ -96,11 +97,12 @@ public class JSONManager {
                 .setPrettyPrinting()
                 .create();
         prePatchObjects = new HashMap<>();
+        onePatchBeforeObjects = new HashMap<>();
         postPatchObjects = new HashMap<>();
         preferences = new Preferences();
     }
 
-    private void patch(JsonObject originalObject, JsonObject patchObject) {
+    private static void patch(JsonObject originalObject, JsonObject patchObject) {
         for (var entry : patchObject.entrySet()) {
             String key = entry.getKey();
             JsonElement patchValue = entry.getValue();
@@ -138,7 +140,7 @@ public class JSONManager {
         }
     }
 
-    private JsonObject getChangedTree(JsonObject baseObject, JsonObject changedObject) {
+    private static JsonObject getChangedTree(JsonObject baseObject, JsonObject changedObject) {
         JsonObject targetObject = new JsonObject();
 
         Set<String> baseKeys = baseObject.keySet();
@@ -156,7 +158,7 @@ public class JSONManager {
                 // case 1.1: if the elements are json objects, recurse down
                 //           and add if the difference is not empty
                 if (changedValue.isJsonObject()) {
-                    JsonObject targetValue = this.getChangedTree(baseValue.getAsJsonObject(),
+                    JsonObject targetValue = getChangedTree(baseValue.getAsJsonObject(),
                             changedValue.getAsJsonObject());
                     if (targetValue.size() > 0)
                         targetObject.add(key, targetValue);
@@ -356,7 +358,7 @@ public class JSONManager {
             mobInfoMap.put(type, new ArrayList<>());
         }
 
-        JsonObject npcDataObject = getPatchedObject("NPCs", JsonObject.class);
+        JsonObject npcDataObject = postPatchObjects.get("NPCs");
         List<JsonObject> npcObjectList = npcDataObject
                 .getAsJsonObject("NPCs")
                 .entrySet().stream()
@@ -381,7 +383,7 @@ public class JSONManager {
             npcInfoMap.get(type).add(npcInfo);
         }
 
-        JsonObject mobDataObject = getPatchedObject("mobs", JsonObject.class);
+        JsonObject mobDataObject = postPatchObjects.get("mobs");
         List<JsonObject> mobObjectList = Stream.of("mobs", "groups")
                 .flatMap(key -> mobDataObject.getAsJsonObject(key).entrySet().stream())
                 .map(e -> e.getValue().getAsJsonObject())
@@ -447,7 +449,7 @@ public class JSONManager {
         Map<Integer, EggTypeInfo> eggTypeInfoMap = staticDataStore.getEggTypeInfoMap();
         Map<Integer, List<EggInfo>> eggInfoMap = staticDataStore.getEggInfoMap();
 
-        JsonObject eggDataObject = getPatchedObject("eggs", JsonObject.class);
+        JsonObject eggDataObject = postPatchObjects.get("eggs");
         JsonObject eggTypeData = eggDataObject.getAsJsonObject("EggTypes");
         JsonObject eggData = eggDataObject.getAsJsonObject("Eggs");
 
@@ -696,6 +698,11 @@ public class JSONManager {
         }
     }
 
+    public static void throwForInvalid(String errorString) throws IOException {
+        if (errorString.startsWith(VALIDATION_ERR))
+            throw new IOException(errorString.substring(VALIDATION_ERR.length() + 1));
+    }
+
     public String validateDropDirectory() {
         Path dropPath = Paths.get(preferences.getDropDirectory());
 
@@ -759,22 +766,38 @@ public class JSONManager {
         if (!Files.isDirectory(savePath))
             return VALIDATION_ERR + " Save directory path does not point to a directory.";
 
-        int index = preferences.getPatchDirectories().indexOf(preferences.getSaveDirectory());
         if (preferences.isStandaloneSave()) {
-            if (index > -1)
-                return VALIDATION_WARN + " You will overwrite the data in a patch directory this way.";
-
-            if (preferences.getDropDirectory().equals(preferences.getSaveDirectory()))
+            // saving onto the drop directory is discouraged, but possible in standalone mode
+            // this doesn't create a patch, it will merge everything and save into the drop directory
+            // while destructive, the data you saved is recoverable if you load from the drops directory again with
+            // no patches specified the next time you run the program
+            if (preferences.isOverwritingDropDirectory())
                 return VALIDATION_WARN + " You will overwrite the data in the drops directory this way.";
-        } else {
-            if (index > -1 && index < preferences.getPatchDirectories().size() - 1)
-                return VALIDATION_ERR + " Save directory can only be the last patch directory or an unrelated directory unless in" +
-                        " standalone save mode.";
 
-            if (preferences.getDropDirectory().equals(preferences.getSaveDirectory()))
+            // saving onto a loaded patch is discouraged, but possible
+            // this will create one merged patch of all patches, but it will still need to be loaded
+            // while destructive, the data you saved is recoverable if you load from the drops and the merged
+            // patch directories the next time you run the program
+            if (preferences.isOverwritingAnyPatchDirectory())
+                return VALIDATION_WARN + " You will overwrite the data in a patch directory this way.";
+        } else {
+            // saving onto the drop directory is not allowed in non-standalone mode
+            // this will destroy loaded data such that no other loading mode can recover it later
+            if (preferences.isOverwritingDropDirectory())
                 return VALIDATION_ERR + " Save directory cannot be the drop directory unless in standalone save mode.";
 
-            if (index > -1 && index == preferences.getPatchDirectories().size() - 1)
+            // saving into any other patch other than the last is not allowed in non-standalone mode
+            // this will destroy loaded data such that no other loading mode can recover it later
+            if (preferences.isOverwritingAnyPatchDirectory() && !preferences.isOverwritingLastPatchDirectory())
+                return VALIDATION_ERR + " Save directory can only be the last patch directory or an unrelated" +
+                       " directory unless in standalone save mode.";
+
+            // saving onto the last patch is discouraged, but possible in non-standalone mode
+            // this will base the save off of objects from one patch before, which allows the last patch to
+            // be saved cumulatively
+            // while destructive, this is the intended method for persistent editing of a patch, and the data you saved
+            // is recoverable by relaunching the program with the same exact config
+            if (preferences.isOverwritingLastPatchDirectory())
                 return VALIDATION_WARN + " You will overwrite the data in the last patch directory this way.";
         }
 
@@ -796,13 +819,8 @@ public class JSONManager {
         return "";
     }
 
-    public void throwForInvalid(String errorString) throws IOException {
-        if (errorString.startsWith(VALIDATION_ERR))
-            throw new IOException(errorString.substring(VALIDATION_ERR.length() + 1));
-    }
-
-    public void setPreferences(Preferences preferences) throws NullPointerException {
-        this.preferences = Objects.requireNonNull(preferences, "Cannot set a null preference object.");
+    public void setPreferences(Preferences preferences) {
+        this.preferences = preferences;
     }
 
     public Preferences getPreferences() {
@@ -817,45 +835,48 @@ public class JSONManager {
         }
     }
 
-    public void setFromPreferences(Preferences preferences, StaticDataStore staticDataStore)
-            throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException,
-            URISyntaxException, IOException {
+    public void readAllData(StaticDataStore staticDataStore) throws NullPointerException, IllegalStateException,
+            ClassCastException, JsonSyntaxException, URISyntaxException, IOException {
 
         throwForInvalid(validateDropDirectory());
-        setDropsDirectory(preferences.getDropDirectory());
+        readDropDirectory();
 
         throwForInvalid(validatePatchDirectories());
-        for (String patchName : preferences.getPatchDirectories())
-            addPatchPath(patchName);
+        for (String patchDirectoryName : preferences.getPatchDirectories())
+            readPatch(patchDirectoryName);
 
         throwForInvalid(validateXDTFile());
-        setXDT(preferences.getXDTFile(), staticDataStore);
+        readXDT(staticDataStore);
 
         throwForInvalid(validateSaveDirectory());
-        setConstantDataDirectory(preferences.getSaveDirectory(), staticDataStore);
+        setAndReadConstantDataDirectory(preferences.getSaveDirectory(), staticDataStore);
 
         fillDerivativeMaps(staticDataStore);
 
         throwForInvalid(validateIconDirectory());
     }
 
-    public void setDropsDirectory(String dropsDirectory) throws NullPointerException, JsonSyntaxException, IOException {
+    public void readDropDirectory() throws NullPointerException, JsonSyntaxException, IOException {
         for (String name : PATCH_NAMES) {
-            try (FileReader fileReader = new FileReader(Paths.get(dropsDirectory, name + ".json").toFile(),
+            try (FileReader fileReader = new FileReader(Paths.get(preferences.getDropDirectory(), name + ".json").toFile(),
                     StandardCharsets.UTF_8)) {
                 JsonObject jsonObject = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                         "Object in file \"" + name + "\" must be a JSON object.");
 
                 prePatchObjects.put(name, jsonObject);
+                onePatchBeforeObjects.put(name, jsonObject.deepCopy());
                 postPatchObjects.put(name, jsonObject.deepCopy());
             }
         }
     }
 
-    public void addPatchPath(String patchDirectory) throws IOException {
+    public void readPatch(String patchDirectory) throws IOException {
+        Map<String, JsonObject> oneBeforeMap = new HashMap<>();
         boolean patchedOnce = false;
 
         for (String name : PATCH_NAMES) {
+            oneBeforeMap.put(name, postPatchObjects.get(name).deepCopy());
+
             try (FileReader fileReader = new FileReader(Paths.get(patchDirectory, name + ".json").toFile(),
                     StandardCharsets.UTF_8)) {
                 JsonObject jsonObject = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class));
@@ -866,14 +887,16 @@ public class JSONManager {
             }
         }
 
-        if (!patchedOnce)
+        if (patchedOnce)
+            onePatchBeforeObjects.replaceAll((name, obj) -> oneBeforeMap.get(name));
+        else
             throw new IOException("No valid patch files present.");
     }
 
-    public void setXDT(String xdtFile, StaticDataStore staticDataStore)
+    public void readXDT(StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException, IOException {
 
-        try (FileReader fileReader = new FileReader(xdtFile, StandardCharsets.UTF_8)) {
+        try (FileReader fileReader = new FileReader(preferences.getXDTFile(), StandardCharsets.UTF_8)) {
             JsonObject xdt = Objects.requireNonNull(gson.fromJson(fileReader, JsonObject.class),
                     "Invalid XDT file.");
 
@@ -887,7 +910,7 @@ public class JSONManager {
         }
     }
 
-    public void setConstantDataDirectory(String constantDataDirectory, StaticDataStore staticDataStore)
+    public void setAndReadConstantDataDirectory(String constantDataDirectory, StaticDataStore staticDataStore)
             throws NullPointerException, IllegalStateException, ClassCastException, JsonSyntaxException,
             IOException {
 
@@ -1016,19 +1039,19 @@ public class JSONManager {
         });
     }
 
-    public <T> T getPatchedObject(String name, Class<T> tClass) throws JsonSyntaxException {
-        return gson.fromJson(postPatchObjects.get(name), tClass);
+    public Drops generatePatchedDrops() {
+        return gson.fromJson(postPatchObjects.get("drops"), Drops.class);
     }
 
-    public void save(Drops drops) throws IOException {
+    public void saveAllData(Drops drops) throws IOException {
         for (String name : PATCH_NAMES) {
-            // shortcut
-            if (!preferences.isStandaloneSave() && !name.equals("drops"))
-                continue;
-
             JsonObject baseObject = preferences.isStandaloneSave() ?
-                    prePatchObjects.get(name) :
-                    postPatchObjects.get(name);
+                    (preferences.isOverwritingDropDirectory() ?
+                            new JsonObject() :
+                            prePatchObjects.get(name)) :
+                    (preferences.isOverwritingLastPatchDirectory() ?
+                            onePatchBeforeObjects.get(name) :
+                            postPatchObjects.get(name));
 
             JsonObject changedObject = name.equals("drops") ?
                     gson.toJsonTree(drops).getAsJsonObject() :
@@ -1054,5 +1077,17 @@ public class JSONManager {
             jsonWriter.setIndent("    ");
             gson.toJson(preferences, Preferences.class, jsonWriter);
         }
+    }
+
+    public Map<String, JsonObject> getPrePatchObjects() {
+        return prePatchObjects;
+    }
+
+    public Map<String, JsonObject> getOnePatchBeforeObjects() {
+        return onePatchBeforeObjects;
+    }
+
+    public Map<String, JsonObject> getPostPatchObjects() {
+        return postPatchObjects;
     }
 }
