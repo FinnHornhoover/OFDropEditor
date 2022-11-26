@@ -18,6 +18,7 @@ public record FilterCondition(FilterChoice filterChoice,
     public boolean conditionValid() {
         return Objects.nonNull(filterChoice)
                 && Objects.nonNull(operator)
+                && Objects.nonNull(filterValue)
                 && filterChoice.filterType().valueValid(filterValue);
     }
 

@@ -71,8 +71,8 @@ public enum FilterType {
             case NONE -> false;
             case INTEGER -> ((Integer) objectValue) != Integer.MIN_VALUE;
             case DOUBLE -> !Double.isNaN((Double) objectValue);
-            case LIST -> ((List<?>) objectValue).size() > 0;
             case STRING -> !((String) objectValue).isEmpty();
+            case LIST -> ((List<?>) objectValue).size() > 0;
         };
     }
 

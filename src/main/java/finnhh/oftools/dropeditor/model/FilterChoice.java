@@ -22,7 +22,7 @@ public record FilterChoice(FilterType filterType,
     }
 
     public String valueName() {
-        return valueNameTrail.get(0);
+        return valueNameTrail.isEmpty() ? "" : valueNameTrail.get(0);
     }
 
     @Override

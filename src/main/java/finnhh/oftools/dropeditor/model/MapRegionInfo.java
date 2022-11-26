@@ -31,6 +31,6 @@ public record MapRegionInfo(int x, int y, int width, int height,
     }
 
     public static int yToPixel(int y, int pixelTileSize) {
-        return pixelTileSize - (y % TILE_SIZE) * pixelTileSize / TILE_SIZE;
+        return pixelTileSize - 1 - (y % TILE_SIZE) * pixelTileSize / TILE_SIZE;
     }
 }
