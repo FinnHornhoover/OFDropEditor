@@ -7,6 +7,7 @@ import javafx.collections.ObservableList;
 
 import java.util.Objects;
 
+@IdMeaningful
 public class CodeItem extends Data {
     private final IntegerProperty codeID;
     @Expose

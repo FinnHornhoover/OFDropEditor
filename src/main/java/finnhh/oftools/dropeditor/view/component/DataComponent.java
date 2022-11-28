@@ -37,11 +37,11 @@ public interface DataComponent extends ObservableComponent<Data> {
     }
 
     default DataComponent getRootComponent() {
-        DataComponent parent = getParentComponent();
-        while (Objects.nonNull(parent.getParentComponent())) {
-            parent = parent.getParentComponent();
+        DataComponent rootComponent = this;
+        while (Objects.nonNull(rootComponent.getParentComponent())) {
+            rootComponent = rootComponent.getParentComponent();
         }
-        return parent;
+        return rootComponent;
     }
 
     default List<Data> getObjectChain() {
