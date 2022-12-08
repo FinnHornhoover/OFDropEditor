@@ -152,10 +152,10 @@ public class MobDrop extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof MobDrop
-                && this.mobDropID.equals(((MobDrop) obj).mobDropID)
-                && this.crateDropChanceID.equals(((MobDrop) obj).crateDropChanceID)
-                && this.crateDropTypeID.equals(((MobDrop) obj).crateDropTypeID)
-                && this.miscDropChanceID.equals(((MobDrop) obj).miscDropChanceID)
-                && this.miscDropTypeID.equals(((MobDrop) obj).miscDropTypeID);
+                && this.mobDropID.get() == ((MobDrop) obj).mobDropID.get()
+                && this.crateDropChanceID.get() == ((MobDrop) obj).crateDropChanceID.get()
+                && this.crateDropTypeID.get() == ((MobDrop) obj).crateDropTypeID.get()
+                && this.miscDropChanceID.get() == ((MobDrop) obj).miscDropChanceID.get()
+                && this.miscDropTypeID.get() == ((MobDrop) obj).miscDropTypeID.get();
     }
 }

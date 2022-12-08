@@ -88,8 +88,8 @@ public class ItemReference extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof ItemReference
-                && this.itemReferenceID.equals(((ItemReference) obj).itemReferenceID)
-                && this.itemID.equals(((ItemReference) obj).itemID)
-                && this.type.equals(((ItemReference) obj).type);
+                && this.itemReferenceID.get() == ((ItemReference) obj).itemReferenceID.get()
+                && this.itemID.get() == ((ItemReference) obj).itemID.get()
+                && this.type.get() == ((ItemReference) obj).type.get();
     }
 }

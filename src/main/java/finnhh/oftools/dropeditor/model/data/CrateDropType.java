@@ -86,7 +86,7 @@ public class CrateDropType extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof CrateDropType
-                && this.crateDropTypeID.equals(((CrateDropType) obj).crateDropTypeID)
+                && this.crateDropTypeID.get() == ((CrateDropType) obj).crateDropTypeID.get()
                 && this.crateIDs.equals(((CrateDropType) obj).crateIDs);
     }
 }

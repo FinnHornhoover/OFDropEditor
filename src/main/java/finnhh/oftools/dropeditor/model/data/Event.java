@@ -87,7 +87,7 @@ public class Event extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Event
-                && this.eventID.equals(((Event) obj).eventID)
-                && this.mobDropID.equals(((Event) obj).mobDropID);
+                && this.eventID.get() == ((Event) obj).eventID.get()
+                && this.mobDropID.get() == ((Event) obj).mobDropID.get();
     }
 }

@@ -118,9 +118,9 @@ public class CrateDropChance extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof CrateDropChance
-                && this.crateDropChanceID.equals(((CrateDropChance) obj).crateDropChanceID)
-                && this.dropChance.equals(((CrateDropChance) obj).dropChance)
-                && this.dropChanceTotal.equals(((CrateDropChance) obj).dropChanceTotal)
+                && this.crateDropChanceID.get() == ((CrateDropChance) obj).crateDropChanceID.get()
+                && this.dropChance.get() == ((CrateDropChance) obj).dropChance.get()
+                && this.dropChanceTotal.get() == ((CrateDropChance) obj).dropChanceTotal.get()
                 && this.crateTypeDropWeights.equals(((CrateDropChance) obj).crateTypeDropWeights);
     }
 }

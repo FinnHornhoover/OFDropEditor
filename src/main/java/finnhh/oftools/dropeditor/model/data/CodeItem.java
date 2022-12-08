@@ -101,8 +101,8 @@ public class CodeItem extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof CodeItem
-                && this.codeID.equals(((CodeItem) obj).codeID)
-                && this.code.equals(((CodeItem) obj).code)
+                && this.codeID.get() == ((CodeItem) obj).codeID.get()
+                && this.code.get().equals(((CodeItem) obj).code.get())
                 && this.itemReferenceIDs.equals(((CodeItem) obj).itemReferenceIDs);
     }
 }

@@ -87,7 +87,7 @@ public class Mob extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Mob
-                && this.mobID.equals(((Mob) obj).mobID)
-                && this.mobDropID.equals(((Mob) obj).mobDropID);
+                && this.mobID.get() == ((Mob) obj).mobID.get()
+                && this.mobDropID.get() == ((Mob) obj).mobDropID.get();
     }
 }

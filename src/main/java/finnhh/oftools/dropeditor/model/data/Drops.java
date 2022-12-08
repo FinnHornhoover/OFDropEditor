@@ -56,7 +56,7 @@ public class Drops extends Data {
         mobs = new AlternateMapProperty<>();
         rarityWeights = new AlternateMapProperty<>();
         itemSets = new AlternateMapProperty<>();
-        crates = new AlternateMapProperty<>();
+        crates = new AlternateMapProperty<>(Crate.INT_CRATE_PLACEHOLDER_ID);
         itemReferences = new AlternateMapProperty<>();
         racing = new AlternateMapProperty<>();
         nanoCapsules = new AlternateMapProperty<>();
@@ -124,7 +124,7 @@ public class Drops extends Data {
         }
 
         // do after synced
-        maps.forEach(map -> map.registerReferences(this));
+        maps.forEach(map -> map.values().forEach(d -> d.registerReferences(this)));
     }
 
     public ReferenceMode getReferenceModeFor(Data data) {
@@ -230,8 +230,10 @@ public class Drops extends Data {
         Data parentObject = currentObjectChain.size() > index + 1 ? currentObjectChain.get(index + 1) : null;
 
         // if safe to edit object, do nothing
-        if (!cloneObjectsBeforeEditing.get() || getReferenceModeFor(oldObject) != ReferenceMode.MULTIPLE)
+        if (!cloneObjectsBeforeEditing.get() || currentObjectChain.subList(index, currentObjectChain.size()).stream()
+                .noneMatch(d -> getReferenceModeFor(d) == ReferenceMode.MULTIPLE)) {
             return currentObjectChain;
+        }
 
         // 1. clone object
         // the cloned object has no set id field, but the values are identical to the old object
@@ -291,7 +293,7 @@ public class Drops extends Data {
                     }
                 }));
 
-        return objectChain;
+        return currentObjectChain;
     }
 
     public void makeReplacement(List<Data> objectChain, long key, Data newObject) {
@@ -578,12 +580,18 @@ public class Drops extends Data {
         private final MapProperty<Integer, V> trueMap;
         private final MapProperty<Integer, String> keyMap;
         private final BooleanProperty mapsSynced;
+        private final IntegerProperty idLowerBound;
 
         public AlternateMapProperty() {
+            this(INT_PLACEHOLDER_ID);
+        }
+
+        public AlternateMapProperty(int idLowerBound) {
             super(FXCollections.observableMap(new LinkedHashMap<>()));
             trueMap = new SimpleMapProperty<>(FXCollections.observableMap(new LinkedHashMap<>()));
             keyMap = new SimpleMapProperty<>(FXCollections.observableMap(new LinkedHashMap<>()));
             mapsSynced = new SimpleBooleanProperty(false);
+            this.idLowerBound = new SimpleIntegerProperty(idLowerBound);
         }
 
         public ObservableMap<String, V> getStringMap() {
@@ -618,6 +626,14 @@ public class Drops extends Data {
             return mapsSynced;
         }
 
+        public int getIDLowerBound() {
+            return idLowerBound.get();
+        }
+
+        public ReadOnlyIntegerProperty idLowerBoundProperty() {
+            return idLowerBound;
+        }
+
         public void syncMaps() throws NumberFormatException {
             if (!mapsSynced.get()) {
                 for (var entry : Set.copyOf(entrySet())) {
@@ -639,12 +655,8 @@ public class Drops extends Data {
             }
         }
 
-        public void registerReferences(Drops drops) {
-            values().forEach(value -> value.registerReferences(drops));
-        }
-
         public int getNextTrueID() {
-            return trueMap.keySet().stream().reduce(INT_PLACEHOLDER_ID, Math::max) + 1;
+            return trueMap.keySet().stream().reduce(idLowerBound.get(), Math::max) + 1;
         }
 
         public String getNextID() {
@@ -653,10 +665,10 @@ public class Drops extends Data {
                         try {
                             return Integer.parseInt(s);
                         } catch (NumberFormatException e) {
-                            return INT_PLACEHOLDER_ID;
+                            return idLowerBound.get();
                         }
                     })
-                    .reduce(INT_PLACEHOLDER_ID, Math::max) + 1);
+                    .reduce(idLowerBound.get(), Math::max) + 1);
         }
 
         public V add(V data) {

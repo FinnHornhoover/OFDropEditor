@@ -131,10 +131,10 @@ public class MiscDropType extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof MiscDropType
-                && this.miscDropTypeID.equals(((MiscDropType) obj).miscDropTypeID)
-                && this.potionAmount.equals(((MiscDropType) obj).potionAmount)
-                && this.boostAmount.equals(((MiscDropType) obj).boostAmount)
-                && this.taroAmount.equals(((MiscDropType) obj).taroAmount)
-                && this.fmAmount.equals(((MiscDropType) obj).fmAmount);
+                && this.miscDropTypeID.get() == ((MiscDropType) obj).miscDropTypeID.get()
+                && this.potionAmount.get() == ((MiscDropType) obj).potionAmount.get()
+                && this.boostAmount.get() == ((MiscDropType) obj).boostAmount.get()
+                && this.taroAmount.get() == ((MiscDropType) obj).taroAmount.get()
+                && this.fmAmount.get() == ((MiscDropType) obj).fmAmount.get();
     }
 }

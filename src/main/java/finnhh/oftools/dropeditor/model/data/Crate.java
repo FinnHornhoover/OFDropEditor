@@ -111,8 +111,8 @@ public class Crate extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Crate
-                && this.crateID.equals(((Crate) obj).crateID)
-                && this.itemSetID.equals(((Crate) obj).itemSetID)
-                && this.rarityWeightID.equals(((Crate) obj).rarityWeightID);
+                && this.crateID.get() == ((Crate) obj).crateID.get()
+                && this.itemSetID.get() == ((Crate) obj).itemSetID.get()
+                && this.rarityWeightID.get() == ((Crate) obj).rarityWeightID.get();
     }
 }

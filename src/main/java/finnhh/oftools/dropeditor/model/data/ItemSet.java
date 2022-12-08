@@ -224,10 +224,10 @@ public class ItemSet extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof ItemSet
-                && this.itemSetID.equals(((ItemSet) obj).itemSetID)
-                && this.ignoreRarity.equals(((ItemSet) obj).ignoreRarity)
-                && this.ignoreGender.equals(((ItemSet) obj).ignoreGender)
-                && this.defaultItemWeight.equals(((ItemSet) obj).defaultItemWeight)
+                && this.itemSetID.get() == ((ItemSet) obj).itemSetID.get()
+                && this.ignoreRarity.get() == ((ItemSet) obj).ignoreRarity.get()
+                && this.ignoreGender.get() == ((ItemSet) obj).ignoreGender.get()
+                && this.defaultItemWeight.get() == ((ItemSet) obj).defaultItemWeight.get()
                 && this.alterRarityMap.equals(((ItemSet) obj).alterRarityMap)
                 && this.alterGenderMap.equals(((ItemSet) obj).alterGenderMap)
                 && this.alterItemWeightMap.equals(((ItemSet) obj).alterItemWeightMap)

@@ -34,6 +34,12 @@ public class NanoCapsule extends Data {
     }
 
     @Override
+    public void setChildData(Data data) {
+        if (data instanceof Crate crate)
+            crateID.set(crate.getCrateID());
+    }
+
+    @Override
     public void constructBindings() {
         malformed.bind(nano.lessThanOrEqualTo(INT_PLACEHOLDER_ID)
                 .or(crateID.lessThanOrEqualTo(Crate.INT_CRATE_PLACEHOLDER_ID)));
@@ -81,7 +87,7 @@ public class NanoCapsule extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof NanoCapsule
-                && this.nano.equals(((NanoCapsule) obj).nano)
-                && this.crateID.equals(((NanoCapsule) obj).crateID);
+                && this.nano.get() == ((NanoCapsule) obj).nano.get()
+                && this.crateID.get() == ((NanoCapsule) obj).crateID.get();
     }
 }

@@ -76,7 +76,7 @@ public class RarityWeights extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof RarityWeights
-                && this.rarityWeightID.equals(((RarityWeights) obj).rarityWeightID)
+                && this.rarityWeightID.get() == ((RarityWeights) obj).rarityWeightID.get()
                 && this.weights.equals(((RarityWeights) obj).weights);
     }
 }

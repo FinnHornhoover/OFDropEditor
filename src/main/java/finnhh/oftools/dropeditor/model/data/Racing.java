@@ -132,9 +132,9 @@ public class Racing extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Racing
-                && this.EPID.equals(((Racing) obj).EPID)
+                && this.EPID.get() == ((Racing) obj).EPID.get()
                 && this.rankScores.equals(((Racing) obj).rankScores)
                 && this.rewards.equals(((Racing) obj).rewards)
-                && this.timeLimit.equals(((Racing) obj).timeLimit);
+                && this.timeLimit.get() == ((Racing) obj).timeLimit.get();
     }
 }

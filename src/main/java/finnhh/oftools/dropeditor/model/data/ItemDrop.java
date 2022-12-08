@@ -33,7 +33,7 @@ public class ItemDrop extends ItemReference {
     }
 
     @Override
-    public ItemReference getEditableClone() {
+    public ItemDrop getEditableClone() {
         return new ItemDrop(this);
     }
 
@@ -95,10 +95,10 @@ public class ItemDrop extends ItemReference {
 
     @Override
     public boolean equals(Object obj) {
-        return super.equals(obj) &&
-                obj instanceof ItemDrop &&
-                this.rarity.equals(((ItemDrop) obj).rarity) &&
-                this.gender.equals(((ItemDrop) obj).gender) &&
-                this.weight.equals(((ItemDrop) obj).weight);
+        return super.equals(obj)
+                && obj instanceof ItemDrop
+                && this.rarity.get() == ((ItemDrop) obj).rarity.get()
+                && this.gender.get() == ((ItemDrop) obj).gender.get()
+                && this.weight.get() == ((ItemDrop) obj).weight.get();
     }
 }

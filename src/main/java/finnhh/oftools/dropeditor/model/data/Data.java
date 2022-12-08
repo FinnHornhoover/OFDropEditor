@@ -37,12 +37,12 @@ public abstract class Data implements BindingConstructor {
     public void unregisterReferences(Drops drops) {
     }
 
-    public final void registerReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
+    protected final void registerReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
         referenceMap.putIfAbsent(referenced, new HashSet<>());
         referenceMap.get(referenced).add(this);
     }
 
-    public final void unregisterReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
+    protected final void unregisterReferenced(ObservableMap<Data, Set<Data>> referenceMap, Data referenced) {
         var referenceSet = referenceMap.get(referenced);
 
         if (Objects.nonNull(referenceSet)) {
@@ -52,9 +52,9 @@ public abstract class Data implements BindingConstructor {
         }
     }
 
-    public final void registerIntegerReferences(IntegerProperty integerProperty,
-                                                ObservableMap<Integer, ? extends Data> observableMap,
-                                                ObservableMap<Data, Set<Data>> referenceMap) {
+    protected final void registerIntegerReferences(IntegerProperty integerProperty,
+                                                   ObservableMap<Integer, ? extends Data> observableMap,
+                                                   ObservableMap<Data, Set<Data>> referenceMap) {
 
         Optional.ofNullable(observableMap.get(integerProperty.get()))
                 .ifPresent(ip -> registerReferenced(referenceMap, ip));
@@ -68,9 +68,9 @@ public abstract class Data implements BindingConstructor {
         });
     }
 
-    public final void registerIntegerListReferences(ListProperty<Integer> integerListProperty,
-                                                    ObservableMap<Integer, ? extends Data> observableMap,
-                                                    ObservableMap<Data, Set<Data>> referenceMap) {
+    protected final void registerIntegerListReferences(ListProperty<Integer> integerListProperty,
+                                                       ObservableMap<Integer, ? extends Data> observableMap,
+                                                       ObservableMap<Data, Set<Data>> referenceMap) {
 
         integerListProperty.stream()
                 .map(observableMap::get)
@@ -96,17 +96,17 @@ public abstract class Data implements BindingConstructor {
         });
     }
 
-    public final void unregisterIntegerReferences(IntegerProperty integerProperty,
-                                                  ObservableMap<Integer, ? extends Data> observableMap,
-                                                  ObservableMap<Data, Set<Data>> referenceMap) {
+    protected final void unregisterIntegerReferences(IntegerProperty integerProperty,
+                                                     ObservableMap<Integer, ? extends Data> observableMap,
+                                                     ObservableMap<Data, Set<Data>> referenceMap) {
 
         Optional.ofNullable(observableMap.get(integerProperty.get()))
                 .ifPresent(ip -> unregisterReferenced(referenceMap, ip));
     }
 
-    public final void unregisterIntegerListReferences(ListProperty<Integer> integerListProperty,
-                                                      ObservableMap<Integer, ? extends Data> observableMap,
-                                                      ObservableMap<Data, Set<Data>> referenceMap) {
+    protected final void unregisterIntegerListReferences(ListProperty<Integer> integerListProperty,
+                                                         ObservableMap<Integer, ? extends Data> observableMap,
+                                                         ObservableMap<Data, Set<Data>> referenceMap) {
 
         integerListProperty.stream()
                 .map(observableMap::get)

@@ -220,14 +220,14 @@ public class MiscDropChance extends Data {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof MiscDropChance
-                && this.miscDropChanceID.equals(((MiscDropChance) obj).miscDropChanceID)
-                && this.potionDropChance.equals(((MiscDropChance) obj).potionDropChance)
-                && this.potionDropChanceTotal.equals(((MiscDropChance) obj).potionDropChanceTotal)
-                && this.boostDropChance.equals(((MiscDropChance) obj).boostDropChance)
-                && this.boostDropChanceTotal.equals(((MiscDropChance) obj).boostDropChanceTotal)
-                && this.taroDropChance.equals(((MiscDropChance) obj).taroDropChance)
-                && this.taroDropChanceTotal.equals(((MiscDropChance) obj).taroDropChanceTotal)
-                && this.fmDropChance.equals(((MiscDropChance) obj).fmDropChance)
-                && this.fmDropChanceTotal.equals(((MiscDropChance) obj).fmDropChanceTotal);
+                && this.miscDropChanceID.get() == ((MiscDropChance) obj).miscDropChanceID.get()
+                && this.potionDropChance.get() == ((MiscDropChance) obj).potionDropChance.get()
+                && this.potionDropChanceTotal.get() == ((MiscDropChance) obj).potionDropChanceTotal.get()
+                && this.boostDropChance.get() == ((MiscDropChance) obj).boostDropChance.get()
+                && this.boostDropChanceTotal.get() == ((MiscDropChance) obj).boostDropChanceTotal.get()
+                && this.taroDropChance.get() == ((MiscDropChance) obj).taroDropChance.get()
+                && this.taroDropChanceTotal.get() == ((MiscDropChance) obj).taroDropChanceTotal.get()
+                && this.fmDropChance.get() == ((MiscDropChance) obj).fmDropChance.get()
+                && this.fmDropChanceTotal.get() == ((MiscDropChance) obj).fmDropChanceTotal.get();
     }
 }
