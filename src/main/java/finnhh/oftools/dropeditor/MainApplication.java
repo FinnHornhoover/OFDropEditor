@@ -10,7 +10,6 @@ import finnhh.oftools.dropeditor.view.component.FilterSelectionBox;
 import finnhh.oftools.dropeditor.view.component.PreferencesBox;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -19,7 +18,6 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -59,15 +57,12 @@ public class MainApplication extends Application {
         dialogPane.getScene().getStylesheets().add(MainApplication.class.getResource("application.css").toExternalForm());
         dialogPane.setMinWidth(600.0);
 
-        Window dialogWindow = dialogPane.getScene().getWindow();
-        dialogWindow.focusedProperty().addListener((o, oldVal, newVal) -> {
+        dialogPane.getScene().getWindow().focusedProperty().addListener((o, oldVal, newVal) -> {
             if (newVal)
                 stackPane.getChildren().remove(dummyStackPane);
             else
                 stackPane.getChildren().add(dummyStackPane);
         });
-        dialogWindow.setOnCloseRequest(Event::consume);
-
 
         return alert.showAndWait()
                 .filter(bt -> bt == ButtonType.OK)
@@ -117,10 +112,22 @@ public class MainApplication extends Application {
     private void userSetup(Stage stage) throws EditorInitializationException {
         Preferences preferences = jsonManager.readPreferences()
                 .filter(p -> showAlert(Alert.AlertType.CONFIRMATION,
-                        "Existing Setup",
-                        "Use previously set preferences (drops directory, patches, save directory etc.)?")
-                        .map(bt -> bt == ButtonType.OK)
-                        .orElse(false))
+                    "Existing Setup",
+                    "Use previously set preferences (drops directory, patches, save directory etc.)?")
+                    .map(bt -> bt == ButtonType.OK)
+                    .map(willLoad -> {
+                        if (willLoad && !p.isStandaloneSave() && !p.isOverwritingLastPatchDirectory()) {
+                            showAlert(Alert.AlertType.CONFIRMATION,
+                                    "Load Save Directory?",
+                                    "Would you like to also load the data in the save directory? You might " +
+                                            "want to do this if you've already saved edits in there. If not, we " +
+                                            "will ask again next time.")
+                                    .filter(bt -> bt == ButtonType.OK)
+                                    .ifPresent(bt -> p.getPatchDirectories().add(p.getSaveDirectory()));
+                        }
+                        return willLoad;
+                    })
+                    .orElse(false))
                 .or(() -> showPreferencesAlert(stage))
                 .orElseThrow(() -> new EditorInitializationException("Preferences Not Present",
                         "No preferences were provided to the program. Please relaunch."));
