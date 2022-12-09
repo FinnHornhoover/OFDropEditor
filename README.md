@@ -9,7 +9,7 @@ Meant for OpenFusion server admins (including local servers) who would like a mo
 
 ## Instructions
 ### Installation
-Go to Releases and download the latest ZIP release, extract it anywhere and run the JAR file in the directory. 
+Go to Releases and download the latest ZIP release, extract it anywhere and run the `OFDropEditor` or `OFDropEditor.bat` executable in the `bin` directorty. 
 You shouldn't need a prior Java installation.
 
 ### Help
