@@ -214,11 +214,14 @@ public class JSONManager {
                                 .get("m_strComment")
                                 .getAsString();
 
-                String iconName = String.format("%s_%02d", ITEM_ICON_NAMES[itemType.getTypeID()], itemIconArray
-                        .get(itemData.get("m_iIcon").getAsInt())
-                        .getAsJsonObject()
-                        .get("m_iIconNumber")
-                        .getAsInt());
+                int iconID = itemData.get("m_iIcon").getAsInt();
+                String iconName = (iconID < 0 || iconID >= itemIconArray.size()) ?
+                        "unknown" :
+                        String.format("%s_%02d", ITEM_ICON_NAMES[itemType.getTypeID()], itemIconArray
+                                .get(iconID)
+                                .getAsJsonObject()
+                                .get("m_iIconNumber")
+                                .getAsInt());
 
                 int id = itemData.get("m_iItemNumber").getAsInt();
 
@@ -514,7 +517,7 @@ public class JSONManager {
             // spelled with a typo in the actual XDT file
             JsonArray rewardItemTypes = rewardDataObject.get("m_iMissionRewarItemType").getAsJsonArray();
             Set<ItemInfo> itemRewards = IntStream.range(0, 4)
-                    .filter(idx -> rewardItemTypes.get(idx).getAsInt() > 0 || rewardItemIDs.get(idx).getAsInt() > 0)
+                    .filter(idx -> ItemType.forType(rewardItemTypes.get(idx).getAsInt()) != ItemType.NONE || rewardItemIDs.get(idx).getAsInt() > 0)
                     .mapToObj(idx -> itemInfoMap.get(
                             new Pair<>(rewardItemIDs.get(idx).getAsInt(), rewardItemTypes.get(idx).getAsInt())))
                     .filter(Objects::nonNull)
