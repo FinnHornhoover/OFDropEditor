@@ -13,6 +13,12 @@ class RacingTest extends DataTest<Racing> {
         super(new Racing());
         mainData.setEPID(15);
         mainData.setTimeLimit(120);
+        mainData.setScoreCap(777);
+        mainData.setTotalPods(14);
+        mainData.setScaleFactor(5.5);
+        mainData.setPodFactor(1.2);
+        mainData.setTimeFactor(1.0);
+        mainData.setEPName("Unknown EP");
 
         crates = new ArrayList<>();
         for (int i = 0; i < 5; i++) {

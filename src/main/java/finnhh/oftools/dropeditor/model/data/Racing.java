@@ -2,10 +2,7 @@ package finnhh.oftools.dropeditor.model.data;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.ListProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -20,6 +17,19 @@ public class Racing extends Data {
     private final ListProperty<Integer> rewards;
     @Expose
     private final IntegerProperty timeLimit;
+    @Expose
+    private final IntegerProperty scoreCap;
+    @Expose
+    private final IntegerProperty totalPods;
+    @Expose
+    private final DoubleProperty scaleFactor;
+    @Expose
+    private final DoubleProperty podFactor;
+    @Expose
+    private final DoubleProperty timeFactor;
+    @Expose
+    @SerializedName("EPName")
+    private final StringProperty EPName;
 
     public Racing() {
         EPID = new SimpleIntegerProperty(INT_PLACEHOLDER_ID);
@@ -31,6 +41,12 @@ public class Racing extends Data {
                 Crate.INT_CRATE_PLACEHOLDER_ID,
                 Crate.INT_CRATE_PLACEHOLDER_ID));
         timeLimit = new SimpleIntegerProperty(0);
+        scoreCap = new SimpleIntegerProperty(0);
+        totalPods = new SimpleIntegerProperty(0);
+        scaleFactor = new SimpleDoubleProperty(0.0);
+        podFactor = new SimpleDoubleProperty(0.0);
+        timeFactor = new SimpleDoubleProperty(0.0);
+        EPName = new SimpleStringProperty(null);
     }
 
     public Racing(Racing other) {
@@ -38,6 +54,12 @@ public class Racing extends Data {
         this.rankScores = new SimpleListProperty<>(FXCollections.observableArrayList(other.rankScores.get()));
         this.rewards = new SimpleListProperty<>(FXCollections.observableArrayList(other.rewards.get()));
         this.timeLimit = new SimpleIntegerProperty(other.timeLimit.get());
+        this.scoreCap = new SimpleIntegerProperty(other.scoreCap.get());
+        this.totalPods = new SimpleIntegerProperty(other.totalPods.get());
+        this.scaleFactor = new SimpleDoubleProperty(other.scaleFactor.get());
+        this.podFactor = new SimpleDoubleProperty(other.podFactor.get());
+        this.timeFactor = new SimpleDoubleProperty(other.timeFactor.get());
+        this.EPName = new SimpleStringProperty(other.EPName.get());
     }
 
     @Override
@@ -52,6 +74,12 @@ public class Racing extends Data {
         this.rankScores.set(FXCollections.observableArrayList(other.rankScores.get()));
         this.rewards.set(FXCollections.observableArrayList(other.rewards.get()));
         this.timeLimit.set(other.timeLimit.get());
+        this.scoreCap.set(other.scoreCap.get());
+        this.totalPods.set(other.totalPods.get());
+        this.scaleFactor.set(other.scaleFactor.get());
+        this.podFactor.set(other.podFactor.get());
+        this.timeFactor.set(other.timeFactor.get());
+        this.EPName.set(other.EPName.get());
     }
 
     @Override
@@ -63,7 +91,13 @@ public class Racing extends Data {
                 .or(rewards.isNull())
                 .or(rewards.sizeProperty().lessThan(5))
                 .or(rewards.sizeProperty().greaterThan(5))
-                .or(timeLimit.lessThan(0)));
+                .or(timeLimit.lessThan(0))
+                .or(scoreCap.lessThan(0))
+                .or(totalPods.lessThan(0))
+                .or(scaleFactor.lessThan(0.0))
+                .or(podFactor.lessThan(0.0))
+                .or(timeFactor.lessThan(0.0))
+                .or(EPName.isNull()));
 
         id.set(String.valueOf(EPID.get()));
         EPID.addListener((o, oldVal, newVal) -> id.set(String.valueOf(newVal.intValue())));
@@ -129,12 +163,90 @@ public class Racing extends Data {
         this.timeLimit.set(timeLimit);
     }
 
+    public int getScoreCap() {
+        return scoreCap.get();
+    }
+
+    public IntegerProperty scoreCapProperty() {
+        return scoreCap;
+    }
+
+    public void setScoreCap(int scoreCap) {
+        this.scoreCap.set(scoreCap);
+    }
+
+    public int getTotalPods() {
+        return totalPods.get();
+    }
+
+    public IntegerProperty totalPodsProperty() {
+        return totalPods;
+    }
+
+    public void setTotalPods(int totalPods) {
+        this.totalPods.set(totalPods);
+    }
+
+    public double getScaleFactor() {
+        return scaleFactor.get();
+    }
+
+    public DoubleProperty scaleFactorProperty() {
+        return scaleFactor;
+    }
+
+    public void setScaleFactor(double scaleFactor) {
+        this.scaleFactor.set(scaleFactor);
+    }
+
+    public double getPodFactor() {
+        return podFactor.get();
+    }
+
+    public DoubleProperty podFactorProperty() {
+        return podFactor;
+    }
+
+    public void setPodFactor(double podFactor) {
+        this.podFactor.set(podFactor);
+    }
+
+    public double getTimeFactor() {
+        return timeFactor.get();
+    }
+
+    public DoubleProperty timeFactorProperty() {
+        return timeFactor;
+    }
+
+    public void setTimeFactor(double timeFactor) {
+        this.timeFactor.set(timeFactor);
+    }
+
+    public String getEPName() {
+        return EPName.get();
+    }
+
+    public StringProperty EPNameProperty() {
+        return EPName;
+    }
+
+    public void setEPName(String EPName) {
+        this.EPName.set(EPName);
+    }
+
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Racing
                 && this.EPID.get() == ((Racing) obj).EPID.get()
                 && this.rankScores.equals(((Racing) obj).rankScores)
                 && this.rewards.equals(((Racing) obj).rewards)
-                && this.timeLimit.get() == ((Racing) obj).timeLimit.get();
+                && this.timeLimit.get() == ((Racing) obj).timeLimit.get()
+                && this.scoreCap.get() == ((Racing) obj).scoreCap.get()
+                && this.totalPods.get() == ((Racing) obj).totalPods.get()
+                && this.scaleFactor.get() == ((Racing) obj).scaleFactor.get()
+                && this.podFactor.get() == ((Racing) obj).podFactor.get()
+                && this.timeFactor.get() == ((Racing) obj).timeFactor.get()
+                && this.EPName.get().equals(((Racing) obj).EPName.get());
     }
 }
