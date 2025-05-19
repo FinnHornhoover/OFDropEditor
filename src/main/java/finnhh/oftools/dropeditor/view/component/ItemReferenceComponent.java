@@ -4,6 +4,7 @@ import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.*;
 import finnhh.oftools.dropeditor.model.data.Data;
 import finnhh.oftools.dropeditor.model.data.ItemReference;
+import finnhh.oftools.dropeditor.model.data.ItemSet;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -18,6 +19,7 @@ import javafx.util.Pair;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ItemReferenceComponent extends VBox implements RootDataComponent {
@@ -235,6 +237,27 @@ public class ItemReferenceComponent extends VBox implements RootDataComponent {
     @Override
     public Button getRemoveButton() {
         return removeButton;
+    }
+
+    @Override
+    public void onRemoveClick() {
+        Set<ItemSet> itemSets = controller.getDrops().getReferenceMap().getOrDefault(itemReference.get(), Set.of())
+                .stream()
+                .filter(d -> d instanceof ItemSet)
+                .map(d -> (ItemSet) d)
+                .collect(Collectors.toSet());
+
+        itemSets.forEach(is -> {
+            Integer id = itemReference.get().getItemReferenceID();
+
+            is.getItemReferenceIDs().removeIf(id::equals);
+            is.getAlterGenderMap().remove(id);
+            is.getAlterRarityMap().remove(id);
+            is.getAlterItemWeightMap().remove(id);
+        });
+
+        // do this later, UI update changes the target
+        RootDataComponent.super.onRemoveClick();
     }
 
     public ItemReference getItemReference() {

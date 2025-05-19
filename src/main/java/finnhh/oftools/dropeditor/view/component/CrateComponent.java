@@ -4,6 +4,7 @@ import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.FilterChoice;
 import finnhh.oftools.dropeditor.model.ItemType;
 import finnhh.oftools.dropeditor.model.data.Crate;
+import finnhh.oftools.dropeditor.model.data.CrateDropType;
 import finnhh.oftools.dropeditor.model.data.Data;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -21,6 +22,7 @@ import javafx.util.Pair;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CrateComponent extends HBox implements RootDataComponent {
     private final ObjectProperty<Crate> crate;
@@ -166,6 +168,21 @@ public class CrateComponent extends HBox implements RootDataComponent {
     @Override
     public Button getRemoveButton() {
         return removeButton;
+    }
+
+    @Override
+    public void onRemoveClick() {
+        Set<CrateDropType> crateDropTypes = controller.getDrops().getReferenceMap().getOrDefault(crate.get(), Set.of())
+                .stream()
+                .filter(d -> d instanceof CrateDropType)
+                .map(d -> (CrateDropType) d)
+                .collect(Collectors.toSet());
+
+        crateDropTypes.forEach(cdt -> cdt.getCrateIDs()
+                .replaceAll(i -> i.equals(crate.get().getCrateID()) ? Crate.INT_CRATE_PLACEHOLDER_ID : i));
+
+        // do this later, UI update changes the target
+        RootDataComponent.super.onRemoveClick();
     }
 
     public Crate getCrate() {
