@@ -125,7 +125,7 @@ public class MainController {
                 - If standalone save was not selected, your patches will not be merged.
                   + If the last patch directory is your save directory, you'll be able to redefine (only) that patch with your edits. In this case, edit server config "enabledpatches" to be a comma-separated list of all the patches you loaded to load the data into the game.
                   + If not, only your edits will be saved into your save directory as a new patch. In this case, edit server config "enabledpatches" to be a comma-separated list of all the patches you loaded, and add your save folder at the end, to load the data into the game.
-                  
+                
                 Make sure you have your edits finalized before closing the program, as the program will forget your edits and will not be able to undo them after you quit.
                 
                 I hope you find the program useful.
@@ -325,9 +325,10 @@ public class MainController {
     }
 
     @SafeVarargs
-    public final <T> TableView<T> getTableGraphic(Supplier<List<T>> dataGetter,
-                                                  Supplier<TableColumn<T, ?>>... columnMakers) {
-        TableView<T> tableView = new TableView<>();
+    public final <T> FilteringTableBox<T> getTableGraphic(Supplier<List<T>> dataGetter,
+                                                          Supplier<TableColumn<T, ?>>... columnMakers) {
+        FilteringTableBox<T> filteringTableBox = new FilteringTableBox<>(dataGetter);
+        TableView<T> tableView = filteringTableBox.getTableView();
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
@@ -336,10 +337,10 @@ public class MainController {
 
         tableView.getItems().addAll(dataGetter.get());
 
-        return tableView;
+        return filteringTableBox;
     }
 
-    public TableView<ReferenceListBox> getReferenceGraphic(Class<? extends Data> dataClass,
+    public FilteringTableBox<ReferenceListBox> getReferenceGraphic(Class<? extends Data> dataClass,
                                                            Predicate<Data> filterCondition) {
         return getTableGraphic(
                 () -> drops.getDataMap(dataClass).stream()
@@ -366,7 +367,7 @@ public class MainController {
         );
     }
 
-    public TableView<MobTypeInfo> getMobAdditionGraphic() {
+    public FilteringTableBox<MobTypeInfo> getMobAdditionGraphic() {
         return getTableGraphic(
                 () -> staticDataStore.getMobTypeInfoMap().values().stream()
                         .filter(mti -> !drops.mobsProperty().containsKey(mti.type()))
@@ -379,7 +380,7 @@ public class MainController {
         );
     }
 
-    public TableView<ItemInfo> getCrateAdditionGraphic() {
+    public FilteringTableBox<ItemInfo> getCrateAdditionGraphic() {
         return getTableGraphic(
                 () -> staticDataStore.getItemInfoMap().values().stream()
                         .filter(ii -> ii.type() == ItemType.CRATE && !drops.cratesProperty().containsKey(ii.id()))
@@ -393,7 +394,7 @@ public class MainController {
         );
     }
 
-    public TableView<InstanceInfo> getRacingAdditionGraphic() {
+    public FilteringTableBox<InstanceInfo> getRacingAdditionGraphic() {
         return getTableGraphic(
                 () -> staticDataStore.getEPInstanceMap().values().stream()
                         .filter(ii -> !drops.racingProperty().containsKey(ii.EPID()))
@@ -413,7 +414,7 @@ public class MainController {
         );
     }
 
-    public TableView<ItemInfo> getItemReferenceAdditionGraphic() {
+    public FilteringTableBox<ItemInfo> getItemReferenceAdditionGraphic() {
         return getTableGraphic(
                 () -> {
                     Set<ItemInfo> itemInfoSet = new HashSet<>(staticDataStore.getItemInfoMap().values());
@@ -437,7 +438,7 @@ public class MainController {
         );
     }
 
-    public TableView<ItemInfo> getCapsuleSelectionGraphic() {
+    public FilteringTableBox<ItemInfo> getCapsuleSelectionGraphic() {
         return getTableGraphic(
                 () -> {
                     Set<Integer> crateIDSet = drops.getNanoCapsules().values().stream()
@@ -456,7 +457,7 @@ public class MainController {
         );
     }
 
-    public TableView<NanoInfo> getNanoCapsuleAdditionGraphic() {
+    public FilteringTableBox<NanoInfo> getNanoCapsuleAdditionGraphic() {
         return getTableGraphic(
                 () -> {
                     Set<Integer> nanoIDSet = drops.getNanoCapsules().values().stream()
@@ -476,7 +477,7 @@ public class MainController {
         );
     }
 
-    public TableView<EventType> getEventAdditionGraphic() {
+    public FilteringTableBox<EventType> getEventAdditionGraphic() {
         return getTableGraphic(
                 () -> Arrays.stream(EventType.values())
                         .filter(et -> et != EventType.NO_EVENT && !drops.getEvents().containsKey(et.getTypeID()))
@@ -489,7 +490,7 @@ public class MainController {
 
     public TextField getCodeItemAdditionGraphic() {
         TextField textField = new TextField();
-        textField.getStyleClass().add("code-text-field");
+        textField.getStyleClass().add("add-graphic-text-field");
         return textField;
     }
 
@@ -504,7 +505,7 @@ public class MainController {
                 dataClass.getSimpleName() + " Selection",
                 "Please select one:",
                 getReferenceGraphic(dataClass, filterCondition),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(ReferenceListBox::getOriginData));
     }
 
@@ -517,7 +518,7 @@ public class MainController {
                 "Add New Mob",
                 "Please select one to add:",
                 getMobAdditionGraphic(),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(mti -> {
                             Mob mob = new Mob();
                             mob.setMobID(mti.type());
@@ -530,7 +531,7 @@ public class MainController {
                 "Add New Crate",
                 "Please select one to add:",
                 getCrateAdditionGraphic(),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(ii -> {
                             Crate crate = new Crate();
                             crate.setCrateID(ii.id());
@@ -543,7 +544,7 @@ public class MainController {
                 "Add New Racing Object",
                 "Please select one to add:",
                 getRacingAdditionGraphic(),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(ii -> {
                             Racing racing = new Racing();
                             racing.setEPID(ii.EPID());
@@ -571,7 +572,7 @@ public class MainController {
                 "Add New Item Reference",
                 "Please select one to add:",
                 getItemReferenceAdditionGraphic(),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(ii -> {
                             ItemReference itemReference = new ItemReference();
                             itemReference.setItemID(ii.id());
@@ -585,7 +586,7 @@ public class MainController {
                 "Capsule Selection",
                 "Please select one:",
                 getCapsuleSelectionGraphic(),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(ii -> {
                             NanoCapsule nanoCapsule = new NanoCapsule();
                             nanoCapsule.setCrateID(ii.id());
@@ -599,7 +600,7 @@ public class MainController {
                 "Add New Nano Capsule",
                 "Please select Nano to add a Capsule for:",
                 getNanoCapsuleAdditionGraphic(),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(ni -> {
                             NanoCapsule nanoCapsule = new NanoCapsule();
                             nanoCapsule.setNano(ni.id());
@@ -612,7 +613,7 @@ public class MainController {
                 "Add New Event Setting",
                 "Please select one to add:",
                 getEventAdditionGraphic(),
-                tableView -> Optional.ofNullable(tableView.getSelectionModel().getSelectedItem())
+                ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(et -> {
                             Event event = new Event();
                             event.setEventID((et == EventType.CUSTOM_EVENT) ?
