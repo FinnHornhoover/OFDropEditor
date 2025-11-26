@@ -6,7 +6,7 @@
 
     <groupId>finnhh.oftools.dropeditor</groupId>
     <artifactId>OFDropEditor</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
     <name>OFDropEditor</name>
 
     <properties>
