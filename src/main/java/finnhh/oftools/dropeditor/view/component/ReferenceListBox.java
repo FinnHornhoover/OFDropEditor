@@ -3,13 +3,7 @@ package finnhh.oftools.dropeditor.view.component;
 import finnhh.oftools.dropeditor.MainController;
 import finnhh.oftools.dropeditor.model.EventType;
 import finnhh.oftools.dropeditor.model.ItemType;
-import finnhh.oftools.dropeditor.model.data.CodeItem;
-import finnhh.oftools.dropeditor.model.data.Crate;
-import finnhh.oftools.dropeditor.model.data.Data;
-import finnhh.oftools.dropeditor.model.data.Event;
-import finnhh.oftools.dropeditor.model.data.ItemReference;
-import finnhh.oftools.dropeditor.model.data.Mob;
-import finnhh.oftools.dropeditor.model.data.Racing;
+import finnhh.oftools.dropeditor.model.data.*;
 import finnhh.oftools.dropeditor.view.util.NoSelectionModel;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
@@ -51,7 +45,7 @@ public class ReferenceListBox extends ListView<ReferenceTrailBox> {
         setEditable(false);
         setFocusTraversable(false);
         setOnMouseClicked(event -> {
-            if (getParent() instanceof TableCell<?,?> tableCell)
+            if (getParent() instanceof TableCell<?, ?> tableCell)
                 tableCell.getTableView().getSelectionModel().select(tableCell.getTableRow().getIndex());
         });
         setSelectionModel(new NoSelectionModel<>());
@@ -155,15 +149,13 @@ public class ReferenceListBox extends ListView<ReferenceTrailBox> {
     private void constructReferenceString(boolean includeReferenceLeafs) {
         if (includeReferenceLeafs) {
             referenceString.set(
-                Stream.concat(
-                    getDataRecordString(getOriginData()).stream(),
-                    getReferenceTrails().stream().flatMap(rt -> getDataRecordString(rt.getLastData()).stream()))
-                .collect(Collectors.joining(", "))
+                    Stream.concat(
+                            getDataRecordString(getOriginData()).stream(),
+                            getReferenceTrails().stream().flatMap(rt -> getDataRecordString(rt.getLastData()).stream())
+                    ).collect(Collectors.joining(", "))
             );
         } else {
-            referenceString.set(
-                getDataRecordString(getOriginData()).stream().collect(Collectors.joining(", "))
-            );
+            referenceString.set(String.join(", ", getDataRecordString(getOriginData())));
         }
     }
 
