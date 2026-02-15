@@ -513,7 +513,8 @@ public class MainController {
     public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass,
                                                      Predicate<Data> filterCondition) {
         var graphic = getReferenceGraphic(dataClass, filterCondition);
-        graphic.setIDAboveSwitchEnabled(true);
+        drops.getDataMap(dataClass).ifPresent(altMap ->
+                graphic.enableCloneSelectedObjectChoice(altMap.getNextTrueID()));
 
         return application.showSelectionAlert(
                 dataClass.getSimpleName() + " Selection",
@@ -522,12 +523,13 @@ public class MainController {
                 ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
                         .map(ReferenceListBox::getOriginData)
                         .map(d -> {
-                            if (ftb.getShouldUseOneIDAbove().isSelected()) {
+                            if (ftb.getShouldCloneToDesiredIDSwitch().isSelected()) {
                                 try {
-                                    String idAbove = String.valueOf(Integer.parseInt(d.getId()) + 1);
+                                    String idSelected = String.valueOf(Integer.parseInt(ftb.getDesiredIDTextField().getText()));
                                     // returns null if this fails, which means we will not replace anything
-                                    return drops.getFullyConstructedEditableClone(d, idAbove);
-                                } catch (NumberFormatException ignored) {
+                                    return drops.getFullyConstructedEditableClone(d, idSelected);
+                                } catch (NumberFormatException e) {
+                                    return null;
                                 }
                             }
                             return d;
