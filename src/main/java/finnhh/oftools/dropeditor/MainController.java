@@ -525,9 +525,8 @@ public class MainController {
                             if (ftb.getShouldUseOneIDAbove().isSelected()) {
                                 try {
                                     String idAbove = String.valueOf(Integer.parseInt(d.getId()) + 1);
-                                    Data dc = drops.getFullyConstructedEditableClone(d, idAbove);
-                                    if (Objects.nonNull(dc))
-                                        return dc;
+                                    // returns null if this fails, which means we will not replace anything
+                                    return drops.getFullyConstructedEditableClone(d, idAbove);
                                 } catch (NumberFormatException ignored) {
                                 }
                             }
