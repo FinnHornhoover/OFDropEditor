@@ -97,6 +97,22 @@ public class ImageSummaryBox extends StackPane {
         } else if (data instanceof CodeItem ci) {
             tooltip.setText(ci.getCode());
             idLabel.setText(ci.getCode());
+        } else if (data instanceof MobDrop || data instanceof MiscDropType) {
+            String levelMobTypeSuggestion = "";
+            if (data instanceof MobDrop md) {
+                levelMobTypeSuggestion = MobDrop.getSuggestedIDSpaceMapping().getOrDefault(md.getMobDropID(), "");
+            } else {
+                MiscDropType mdt = (MiscDropType) data;
+                levelMobTypeSuggestion = MiscDropType.getSuggestedIDSpaceMapping().getOrDefault(mdt.getMiscDropTypeID(), "");
+            }
+
+            if (levelMobTypeSuggestion.isEmpty()) {
+                tooltip.setText(data.toString());
+            } else {
+                String[] suggestionParts = levelMobTypeSuggestion.split(" ", 2);
+                tooltip.setText(String.format("%s (%s)", levelMobTypeSuggestion, data.getId()));
+                setExtra(suggestionParts[0].replace("Lv", "") + suggestionParts[1].substring(0, 2));
+            }
         } else {
             tooltip.setText(data.toString());
         }

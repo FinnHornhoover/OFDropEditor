@@ -5,7 +5,14 @@ import com.google.gson.annotations.SerializedName;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 public class MiscDropType extends Data {
+    public final static String[] MOB_TYPE_SUGGESTIONS = new String[] { "Single", "Group", "Boss", "Fusion" };
+
     @Expose
     private final IntegerProperty miscDropTypeID;
     @Expose
@@ -136,5 +143,18 @@ public class MiscDropType extends Data {
                 && this.boostAmount.get() == ((MiscDropType) obj).boostAmount.get()
                 && this.taroAmount.get() == ((MiscDropType) obj).taroAmount.get()
                 && this.fmAmount.get() == ((MiscDropType) obj).fmAmount.get();
+    }
+
+    public static Map<Integer, String> getSuggestedIDSpaceMapping() {
+        return IntStream.range(1, 36 * MOB_TYPE_SUGGESTIONS.length + 1)
+                .boxed()
+                .collect(Collectors.toUnmodifiableMap(
+                        Function.identity(),
+                        i -> {
+                            int levelSuggestion = 1 + (i - 1) / MOB_TYPE_SUGGESTIONS.length;
+                            int mobTypeSuggestion = (i - 1) % MOB_TYPE_SUGGESTIONS.length;
+                            return String.format("%dLv %s", levelSuggestion, MOB_TYPE_SUGGESTIONS[mobTypeSuggestion]);
+                        }
+                ));
     }
 }

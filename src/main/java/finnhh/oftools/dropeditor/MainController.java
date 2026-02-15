@@ -341,11 +341,22 @@ public class MainController {
     }
 
     public FilteringTableBox<ReferenceListBox> getReferenceGraphic(Class<? extends Data> dataClass,
-                                                           Predicate<Data> filterCondition) {
+                                                                   Predicate<Data> filterCondition) {
         return getTableGraphic(
                 () -> drops.getDataMap(dataClass).stream()
                         .flatMap(dataMap -> dataMap.values().stream())
                         .filter(filterCondition)
+                        .sorted(Comparator.comparingInt(d -> {
+                            // preserve CodeItem order
+                            if (d instanceof CodeItem)
+                                return 0;
+                            // otherwise, order by ID if possible
+                            try {
+                                return Integer.parseInt(d.getId());
+                            } catch (NumberFormatException e) {
+                                return 0;
+                            }
+                        }))
                         .map(d -> new ReferenceListBox(64.0, this, d))
                         .toList(),
                 () -> getTableColumn("ID", 68.0,
@@ -501,12 +512,27 @@ public class MainController {
 
     public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass,
                                                      Predicate<Data> filterCondition) {
+        var graphic = getReferenceGraphic(dataClass, filterCondition);
+        graphic.setIDAboveSwitchEnabled(true);
+
         return application.showSelectionAlert(
                 dataClass.getSimpleName() + " Selection",
                 "Please select one:",
-                getReferenceGraphic(dataClass, filterCondition),
+                graphic,
                 ftb -> Optional.ofNullable(ftb.getTableView().getSelectionModel().getSelectedItem())
-                        .map(ReferenceListBox::getOriginData));
+                        .map(ReferenceListBox::getOriginData)
+                        .map(d -> {
+                            if (ftb.getShouldUseOneIDAbove().isSelected()) {
+                                try {
+                                    String idAbove = String.valueOf(Integer.parseInt(d.getId()) + 1);
+                                    Data dc = drops.getFullyConstructedEditableClone(d, idAbove);
+                                    if (Objects.nonNull(dc))
+                                        return dc;
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
+                            return d;
+                        }));
     }
 
     public Optional<Data> showSelectionMenuForResult(Class<? extends Data> dataClass) {

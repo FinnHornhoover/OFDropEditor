@@ -159,34 +159,38 @@ public class Drops extends Data {
     }
 
     public Data add(Data data) {
+        return add(data, false);
+    }
+
+    public Data add(Data data, boolean overrideID) {
         if (data instanceof CrateDropChance)
-            return crateDropChances.add((CrateDropChance) data);
+            return crateDropChances.add((CrateDropChance) data, overrideID);
         else if (data instanceof CrateDropType)
-            return crateDropTypes.add((CrateDropType) data);
+            return crateDropTypes.add((CrateDropType) data, overrideID);
         else if (data instanceof MiscDropChance)
-            return miscDropChances.add((MiscDropChance) data);
+            return miscDropChances.add((MiscDropChance) data, overrideID);
         else if (data instanceof MiscDropType)
-            return miscDropTypes.add((MiscDropType) data);
+            return miscDropTypes.add((MiscDropType) data, overrideID);
         else if (data instanceof MobDrop)
-            return mobDrops.add((MobDrop) data);
+            return mobDrops.add((MobDrop) data, overrideID);
         else if (data instanceof Event)
-            return events.add((Event) data);
+            return events.add((Event) data, overrideID);
         else if (data instanceof Mob)
-            return mobs.add((Mob) data);
+            return mobs.add((Mob) data, overrideID);
         else if (data instanceof RarityWeights)
-            return rarityWeights.add((RarityWeights) data);
+            return rarityWeights.add((RarityWeights) data, overrideID);
         else if (data instanceof ItemSet)
-            return itemSets.add((ItemSet) data);
+            return itemSets.add((ItemSet) data, overrideID);
         else if (data instanceof Crate)
-            return crates.add((Crate) data);
+            return crates.add((Crate) data, overrideID);
         else if (data instanceof ItemReference)
-            return itemReferences.add((ItemReference) data);
+            return itemReferences.add((ItemReference) data, overrideID);
         else if (data instanceof Racing)
-            return racing.add((Racing) data);
+            return racing.add((Racing) data, overrideID);
         else if (data instanceof NanoCapsule)
-            return nanoCapsules.add((NanoCapsule) data);
+            return nanoCapsules.add((NanoCapsule) data, overrideID);
         else if (data instanceof CodeItem)
-            return codeItems.add((CodeItem) data);
+            return codeItems.add((CodeItem) data, overrideID);
         else
             return null;
     }
@@ -224,6 +228,42 @@ public class Drops extends Data {
             return null;
     }
 
+    public Data getFullyConstructedEditableClone(Data oldObject) {
+        return getFullyConstructedEditableClone(oldObject, oldObject.getId());
+    }
+
+    public Data getFullyConstructedEditableClone(Data oldObject, String newID) {
+        // null check
+        if (Objects.isNull(oldObject))
+            return null;
+
+        // 1. clone object
+        // the cloned object has no set id field, but the values are identical to the old object
+        Data newObject = oldObject.getEditableClone();
+
+        // 2. make bindings for the clone object, the id field is now identical to the old object
+        newObject.constructBindings();
+
+        // 3. alter ID if the given ID is not equal to the old object's id
+        // caller has to make sure this string ID is Integer parseable
+        boolean overrideID = !oldObject.getId().equals(newID);
+        newObject.setId(newID);
+
+        // 4. add new object to the drops, the new object is given the first available unique id here if no override
+        Data properNewObject = add(newObject, overrideID);
+
+        // final null check
+        if (Objects.isNull(properNewObject))
+            return null;
+
+        // 5. register other object ids that the new object references
+        // also construct change listeners that handle other object id changes
+        properNewObject.registerReferences(this);
+
+        // 6. done with object, return
+        return properNewObject;
+    }
+
     public List<Data> makeEditable(List<Data> objectChain, int index, long key) {
         List<Data> currentObjectChain = objectChain;
         Data oldObject = currentObjectChain.get(index);
@@ -235,40 +275,29 @@ public class Drops extends Data {
             return currentObjectChain;
         }
 
-        // 1. clone object
-        // the cloned object has no set id field, but the values are identical to the old object
-        Data newObject = oldObject.getEditableClone();
+        // 1. clone object and fully construct it
+        Data newObject = getFullyConstructedEditableClone(oldObject);
 
-        // 2. make bindings for the clone object, the id field is now identical to the old object
-        newObject.constructBindings();
-
-        // 3. add new object to the drops, the new object is given the first available unique id here
-        add(newObject);
-
-        // 4. register other object ids that the new object references
-        // also construct change listeners that handle other object id changes
-        newObject.registerReferences(this);
-
-        // 5. update the object chain
+        // 2. update the object chain
         currentObjectChain.set(index, newObject);
 
         // if component has a parent
         if (Objects.nonNull(parentObject)) {
-            // 6?. make the parent editable as well
+            // 3?. make the parent editable as well
             currentObjectChain = makeEditable(currentObjectChain, index + 1, key);
             parentObject = currentObjectChain.get(index + 1);
 
-            // 7?. update fields of parent to reflect new object's new id
+            // 4?. update fields of parent to reflect new object's new id
             parentObject.setChildData(newObject);
 
-            // 8?. remove the reference map ties of old object
+            // 5?. remove the reference map ties of old object
             parentObject.unregisterReferenced(referenceMap, oldObject);
 
-            // 9?. tie the new object in the reference map
+            // 6?. tie the new object in the reference map
             parentObject.registerReferenced(referenceMap, newObject);
         }
 
-        // 10. register undo
+        // 7. register undo
         final Data finalParentObject = parentObject;
         registerUndo(new ReversibleAction(key,
                 currentObjectChain.get(currentObjectChain.size() - 1),
@@ -672,14 +701,18 @@ public class Drops extends Data {
         }
 
         public V add(V data) {
+            return add(data, false);
+        }
+
+        public V add(V data, boolean overrideID) {
             if (!mapsSynced.get())
                 return null;
 
             int intKey = getNextTrueID();
             String id = data.getId();
 
-            if (data.getClass().isAnnotationPresent(IdMeaningful.class) &&
-                    !id.equals(PLACEHOLDER_ID) && !id.equals(UNSET_ID)) {
+            if (!id.equals(PLACEHOLDER_ID) && !id.equals(UNSET_ID) &&
+                    (overrideID || data.getClass().isAnnotationPresent(IdMeaningful.class))) {
                 try {
                     intKey = Integer.parseInt(id);
                 } catch (NumberFormatException ignored) {

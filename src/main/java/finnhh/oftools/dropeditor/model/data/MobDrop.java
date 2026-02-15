@@ -4,7 +4,15 @@ import com.google.gson.annotations.Expose;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 public class MobDrop extends Data {
+    public final static int SUGGESTION_SPACING = 10;
+    public final static String[] MOB_TYPE_SUGGESTIONS = new String[] { "Single", "Group", "Boss", "Fusion" };
+
     @Expose
     private final IntegerProperty mobDropID;
     @Expose
@@ -157,5 +165,18 @@ public class MobDrop extends Data {
                 && this.crateDropTypeID.get() == ((MobDrop) obj).crateDropTypeID.get()
                 && this.miscDropChanceID.get() == ((MobDrop) obj).miscDropChanceID.get()
                 && this.miscDropTypeID.get() == ((MobDrop) obj).miscDropTypeID.get();
+    }
+
+    public static Map<Integer, String> getSuggestedIDSpaceMapping() {
+        return IntStream.range(0, 36 * SUGGESTION_SPACING * MOB_TYPE_SUGGESTIONS.length)
+                .boxed()
+                .collect(Collectors.toUnmodifiableMap(
+                        Function.identity(),
+                        i -> {
+                            int levelSuggestion = 1 + i / (SUGGESTION_SPACING * MOB_TYPE_SUGGESTIONS.length);
+                            int mobTypeSuggestion = (i / SUGGESTION_SPACING) % MOB_TYPE_SUGGESTIONS.length;
+                            return String.format("%dLv %s", levelSuggestion, MOB_TYPE_SUGGESTIONS[mobTypeSuggestion]);
+                        }
+                ));
     }
 }
