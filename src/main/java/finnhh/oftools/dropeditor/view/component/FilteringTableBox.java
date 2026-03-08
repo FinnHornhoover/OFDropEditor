@@ -1,9 +1,11 @@
 package finnhh.oftools.dropeditor.view.component;
 
 import javafx.animation.PauseTransition;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
@@ -11,6 +13,7 @@ import org.controlsfx.control.ToggleSwitch;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class FilteringTableBox<T> extends VBox {
@@ -18,6 +21,9 @@ public class FilteringTableBox<T> extends VBox {
     private final TextField textField;
     private final ToggleSwitch shouldCloneToDesiredIDSwitch;
     private final TextField desiredIDTextField;
+    private final Button desiredIDNextButton;
+    private final Button desiredIDLastButton;
+    private final HBox desiredIDHBox;
     private final PauseTransition pause;
 
     public FilteringTableBox(final Supplier<List<T>> dataGetter) {
@@ -37,7 +43,14 @@ public class FilteringTableBox<T> extends VBox {
 
         desiredIDTextField = new TextField();
         desiredIDTextField.getStyleClass().add("add-graphic-text-field");
-        desiredIDTextField.setDisable(true);
+
+        desiredIDNextButton = new Button("Next");
+        desiredIDLastButton = new Button("Last");
+
+        desiredIDHBox = new HBox(2);
+        desiredIDHBox.getChildren().addAll(desiredIDTextField, desiredIDNextButton, desiredIDLastButton);
+        HBox.setHgrow(desiredIDTextField, Priority.ALWAYS);
+        desiredIDHBox.setDisable(true);
 
         // Only update after the user stops typing (debounce with PauseTransition)
         pause = new PauseTransition(Duration.millis(350));
@@ -60,14 +73,25 @@ public class FilteringTableBox<T> extends VBox {
         setVgrow(tableView, Priority.ALWAYS);
     }
 
-    public void enableCloneSelectedObjectChoice(int nextTrueID) {
+    public void enableCloneSelectedObjectChoice(Function<Integer, Integer> nextTrueIDGetter, Supplier<Integer> lastTrueIDGetter) {
         shouldCloneToDesiredIDSwitch.setDisable(false);
-        desiredIDTextField.setText(String.valueOf(nextTrueID));
+        desiredIDTextField.setText(String.valueOf(lastTrueIDGetter.get()));
 
         shouldCloneToDesiredIDSwitch.selectedProperty().addListener((o, oldVal, newVal) ->
-                desiredIDTextField.setDisable(!newVal));
+                desiredIDHBox.setDisable(!newVal));
 
-        getChildren().addAll(shouldCloneToDesiredIDSwitch, desiredIDTextField);
+        desiredIDNextButton.setOnAction(e -> {
+            try {
+                ReferenceListBox rlb = (ReferenceListBox) tableView.getSelectionModel().getSelectedItem();
+                int nextTrueID = nextTrueIDGetter.apply(Integer.parseInt(rlb.getOriginData().getId()));
+                desiredIDTextField.setText(String.valueOf(nextTrueID));
+            } catch (ClassCastException | NullPointerException | NumberFormatException ignored) {
+            }
+        });
+        desiredIDLastButton.setOnAction(e ->
+                desiredIDTextField.setText(String.valueOf(lastTrueIDGetter.get())));
+
+        getChildren().addAll(shouldCloneToDesiredIDSwitch, desiredIDHBox);
     }
 
     public TableView<T> getTableView() {
@@ -84,5 +108,17 @@ public class FilteringTableBox<T> extends VBox {
 
     public TextField getDesiredIDTextField() {
         return desiredIDTextField;
+    }
+
+    public Button getDesiredIDNextButton() {
+        return desiredIDNextButton;
+    }
+
+    public Button getDesiredIDLastButton() {
+        return desiredIDLastButton;
+    }
+
+    public HBox getDesiredIDHBox() {
+        return desiredIDHBox;
     }
 }

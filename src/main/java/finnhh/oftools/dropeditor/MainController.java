@@ -514,7 +514,7 @@ public class MainController {
                                                      Predicate<Data> filterCondition) {
         var graphic = getReferenceGraphic(dataClass, filterCondition);
         drops.getDataMap(dataClass).ifPresent(altMap ->
-                graphic.enableCloneSelectedObjectChoice(altMap.getNextTrueID()));
+                graphic.enableCloneSelectedObjectChoice(altMap::getNextTrueIDAfter,  altMap::getNextTrueID));
 
         return application.showSelectionAlert(
                 dataClass.getSimpleName() + " Selection",

@@ -10,6 +10,7 @@ import javafx.collections.ObservableMap;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 public class Drops extends Data {
     @Expose
@@ -686,6 +687,13 @@ public class Drops extends Data {
 
         public int getNextTrueID() {
             return trueMap.keySet().stream().reduce(idLowerBound.get(), Math::max) + 1;
+        }
+
+        public int getNextTrueIDAfter(int id) {
+            int lastTrueID = getNextTrueID();
+            return IntStream.range(idLowerBound.get(), lastTrueID)
+                    .filter(i -> i > id && !trueMap.containsKey(i))
+                    .reduce(lastTrueID, Math::min);
         }
 
         public String getNextID() {
