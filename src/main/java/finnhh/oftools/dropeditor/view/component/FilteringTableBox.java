@@ -75,10 +75,12 @@ public class FilteringTableBox<T> extends VBox {
 
     public void enableCloneSelectedObjectChoice(Function<Integer, Integer> nextTrueIDGetter, Supplier<Integer> lastTrueIDGetter) {
         shouldCloneToDesiredIDSwitch.setDisable(false);
-        desiredIDTextField.setText(String.valueOf(lastTrueIDGetter.get()));
+        desiredIDTextField.setText("No Copy");
 
-        shouldCloneToDesiredIDSwitch.selectedProperty().addListener((o, oldVal, newVal) ->
-                desiredIDHBox.setDisable(!newVal));
+        shouldCloneToDesiredIDSwitch.selectedProperty().addListener((o, oldVal, newVal) -> {
+            desiredIDTextField.setText(newVal ? String.valueOf(lastTrueIDGetter.get()) : "No Copy");
+            desiredIDHBox.setDisable(!newVal);
+        });
 
         desiredIDNextButton.setOnAction(e -> {
             try {
