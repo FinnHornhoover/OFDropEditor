@@ -201,7 +201,13 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
                 removeClickHandler = event -> handleEvent(
                         event,
                         itemDropVBox.getIdLabel()::getText,
-                        (is, idr, newVal) -> is.getItemReferenceIDs().remove((Integer) idr.getItemReferenceID())
+                        (is, idr, newVal) -> {
+                            Integer irID = idr.getItemReferenceID();
+                            is.getItemReferenceIDs().remove(irID);
+                            is.getAlterItemWeightMap().remove(irID);
+                            is.getAlterRarityMap().remove(irID);
+                            is.getAlterGenderMap().remove(irID);
+                        }
                 );
                 rarityHandler = event -> handleEvent(
                         event,
@@ -420,6 +426,10 @@ public class ItemSetComponent extends BorderPane implements DataComponent {
             int index = is.getItemReferenceIDs().indexOf(oldItemReferenceID);
             is.getItemReferenceIDs().set(index, newItemReferenceID);
             is.getItemReferenceIDs().sort(Comparator.naturalOrder());
+
+            is.getAlterItemWeightMap().remove(oldItemReferenceID);
+            is.getAlterRarityMap().remove(oldItemReferenceID);
+            is.getAlterGenderMap().remove(oldItemReferenceID);
         });
 
         rarityViewSettingsChoiceBox.setValue(rarity);
