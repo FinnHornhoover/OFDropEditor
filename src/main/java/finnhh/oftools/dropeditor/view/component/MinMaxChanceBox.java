@@ -111,9 +111,11 @@ public class MinMaxChanceBox extends VBox {
         chanceSpinner.getValueFactory().setValue(0);
         chanceTotalSpinner.getValueFactory().setValue(1);
         chanceSlider.setValue(0);
+        ((SpinnerValueFactory.IntegerSpinnerValueFactory) chanceSpinner.getValueFactory()).setMax(1);
     }
 
     public void fillUIState(int value, int totalValue) {
+        ((SpinnerValueFactory.IntegerSpinnerValueFactory) chanceSpinner.getValueFactory()).setMax(totalValue);
         chanceSpinner.getValueFactory().setValue(value);
         chanceTotalSpinner.getValueFactory().setValue(totalValue);
         chanceSlider.setValue(value);
