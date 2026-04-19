@@ -94,6 +94,7 @@ public class JSONManager {
                 .serializeNulls()
                 .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
                 .excludeFieldsWithoutExposeAnnotation()
+                .disableHtmlEscaping()
                 .setPrettyPrinting()
                 .create();
         prePatchObjects = new HashMap<>();
