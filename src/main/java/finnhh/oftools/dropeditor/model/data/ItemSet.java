@@ -1,6 +1,7 @@
 package finnhh.oftools.dropeditor.model.data;
 
 import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.JsonAdapter;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -20,10 +21,13 @@ public class ItemSet extends Data {
     @Expose
     private final IntegerProperty defaultItemWeight;
     @Expose
+    @JsonAdapter(SimpleIntegerMapJsonAdapter.class)
     private final MapProperty<Integer, Integer> alterRarityMap;
     @Expose
+    @JsonAdapter(SimpleIntegerMapJsonAdapter.class)
     private final MapProperty<Integer, Integer> alterGenderMap;
     @Expose
+    @JsonAdapter(SimpleIntegerMapJsonAdapter.class)
     private final MapProperty<Integer, Integer> alterItemWeightMap;
     @Expose
     private final ListProperty<Integer> itemReferenceIDs;
