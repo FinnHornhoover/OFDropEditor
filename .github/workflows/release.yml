@@ -1,0 +1,204 @@
+# Manual release: builds four ZIPs and publishes a GitHub Release.
+#
+# Artifacts:
+# - academyicons.zip / retrobutionicons.zip — from FinnHornhoover/FFInfoPacks latest release
+# - ofdropeditor_linux.zip — javafx:jlink on Linux (target/ofdropeditor.zip renamed)
+# - ofdropeditor_windows.zip — javafx:jlink on Windows (target/ofdropeditor.zip renamed)
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag for this release (e.g. v1.3.1). Created at the workflow commit if missing."
+        required: true
+        type: string
+      draft:
+        description: Create as draft release
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  verify-release-tag:
+    name: Verify tag matches pom.xml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert workflow tag matches project version in pom.xml
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          POM_VERSION=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+          root = ET.parse('pom.xml').getroot()
+          v = root.find('m:version', ns)
+          if v is None or not (v.text and v.text.strip()):
+              raise SystemExit('Could not read project version from pom.xml')
+          print(v.text.strip())
+          ")
+          EXPECTED="v${POM_VERSION}"
+          if [ "$RELEASE_TAG" != "$EXPECTED" ]; then
+            echo "::error::Release tag must be '${EXPECTED}' (pom.xml <version> is '${POM_VERSION}'), got: '${RELEASE_TAG}'"
+            exit 1
+          fi
+          echo "OK: tag '${RELEASE_TAG}' matches pom.xml version '${POM_VERSION}'"
+
+  icon-packs:
+    name: Icon packs from FFInfoPacks
+    needs: verify-release-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build academyicons.zip and retrobutionicons.zip
+        env:
+          FFINFOPACKS_REPO: FinnHornhoover/FFInfoPacks
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_JSON=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            "https://api.github.com/repos/${FFINFOPACKS_REPO}/releases/latest")
+
+          pick_first_url() {
+            local prefix="$1"
+            local url
+            url=$(echo "$RELEASE_JSON" | jq -r --arg p "$prefix" '
+              [.assets[] | select(.name | startswith($p)) | .browser_download_url]
+              | sort
+              | .[0]
+            ')
+            if [ "$url" = "null" ] || [ -z "$url" ]; then
+              echo "No asset found with prefix: ${prefix}" >&2
+              exit 1
+            fi
+            printf '%s' "$url"
+          }
+
+          RETRO_URL=$(pick_first_url "retrobution")
+          ACADEMY_URL=$(pick_first_url "beta-20111013")
+
+          build_icon_zip() {
+            local url="$1"
+            local folder_name="$2"
+            local out_zip="$3"
+            local work
+            work=$(mktemp -d)
+
+            curl -fsSL "$url" -o "$work/pack.zip"
+            mkdir -p "$work/root"
+            unzip -q "$work/pack.zip" -d "$work/root"
+
+            local icons_path
+            icons_path=$(find "$work/root" -type d -name icons | head -n1)
+            if [ -z "$icons_path" ]; then
+              echo "No icons/ directory inside downloaded pack: $url" >&2
+              exit 1
+            fi
+
+            local parent
+            parent=$(dirname "$icons_path")
+            mv "$icons_path" "${parent}/${folder_name}"
+            (cd "$parent" && zip -rq "$GITHUB_WORKSPACE/${out_zip}" "$folder_name")
+            rm -rf "$work"
+          }
+
+          build_icon_zip "$RETRO_URL" retrobutionicons retrobutionicons.zip
+          build_icon_zip "$ACADEMY_URL" academyicons academyicons.zip
+
+          ls -la academyicons.zip retrobutionicons.zip
+
+      - name: Upload icon zip artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: icon-zips
+          path: |
+            academyicons.zip
+            retrobutionicons.zip
+
+  build-linux:
+    name: OFDropEditor (Linux jlink)
+    needs: verify-release-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Package runtime (jlink)
+        run: mvn -B --no-transfer-progress clean javafx:jlink
+
+      - name: Rename distribution zip
+        run: mv target/ofdropeditor.zip ofdropeditor_linux.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ofdropeditor-linux
+          path: ofdropeditor_linux.zip
+
+  build-windows:
+    name: OFDropEditor (Windows jlink)
+    needs: verify-release-tag
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Package runtime (jlink)
+        shell: bash
+        run: mvn -B --no-transfer-progress clean javafx:jlink
+
+      - name: Rename distribution zip
+        shell: bash
+        run: mv target/ofdropeditor.zip ofdropeditor_windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ofdropeditor-windows
+          path: ofdropeditor_windows.zip
+
+  publish:
+    name: Publish GitHub Release
+    needs: [icon-packs, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: List release assets
+        run: ls -la release-assets
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          target_commitish: ${{ github.sha }}
+          draft: ${{ inputs.draft }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/academyicons.zip
+            release-assets/retrobutionicons.zip
+            release-assets/ofdropeditor_linux.zip
+            release-assets/ofdropeditor_windows.zip
